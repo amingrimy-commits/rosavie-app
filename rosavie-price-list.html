@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rosa Vie</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Vazirmatn',sans-serif;background:#f9f0e8;color:#3d2b1f}
+.hdr{background:#3d2b1f;color:#f9f0e8;text-align:center;padding:16px}
+.hdr h1{font-size:1.4rem;font-weight:900;letter-spacing:4px}
+.hdr p{font-size:0.68rem;color:#d4a87a;letter-spacing:3px;margin-top:2px}
+.topbar{background:#5a3d28;padding:8px 12px;display:flex;flex-wrap:wrap;justify-content:center;gap:7px}
+.topbar a{color:#eddfc9;text-decoration:none;font-size:0.74rem;padding:4px 10px;border:1px solid #d4a87a;border-radius:20px}
+.hrs{background:#eddfc9;padding:8px 14px;text-align:center;font-size:0.73rem;line-height:1.9;color:#3d2b1f}
+.wrap{max-width:980px;margin:0 auto;padding:12px 10px}
+.tabs{display:flex;gap:5px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.tab{flex-shrink:0;padding:8px 14px;border-radius:9px;border:2px solid #e2cdb0;background:#fff;color:#9a6e3a;font-family:'Vazirmatn',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer}
+.tab.on{background:#3d2b1f;color:#f9f0e8;border-color:#3d2b1f}
+.pg{display:none}.pg.on{display:block}
+.card{background:#fff;border-radius:12px;border:1px solid #e2cdb0;padding:14px;margin-bottom:10px}
+.ctitle{font-size:0.85rem;font-weight:700;color:#9a6e3a;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid #eddfc9}
+.lbl{display:block;font-size:0.71rem;font-weight:600;color:#7a6a5a;margin-bottom:3px}
+.fi{width:100%;padding:8px 10px;border:1.5px solid #e2cdb0;border-radius:7px;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;color:#3d2b1f;background:#f9f0e8;outline:none;direction:rtl}
+.fi:focus{border-color:#d4a87a;background:#fff}
+textarea.fi{resize:vertical;min-height:80px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+.g1{margin-bottom:9px}
+.bb{border:2px solid #e2cdb0;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.bh{background:#eddfc9;padding:9px 11px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.blp{width:36px;height:36px;border-radius:6px;object-fit:contain;border:1px solid #d4a87a;display:none}
+.bni{flex:1;min-width:110px;padding:6px 8px;border:1.5px solid #d4a87a;border-radius:6px;font-family:'Vazirmatn',sans-serif;font-size:0.8rem;background:#fff;direction:rtl;outline:none}
+.blb,.bdb{padding:5px 9px;border-radius:6px;font-family:'Vazirmatn',sans-serif;font-size:0.73rem;cursor:pointer;white-space:nowrap}
+.blb{border:1.5px solid #d4a87a;background:#fff;color:#9a6e3a}
+.bdb{border:1px solid #f5b8b8;background:#fde8e8;color:#c04040;margin-right:auto}
+input[type=file]{display:none}
+.tw{padding:8px 9px 10px;overflow-x:auto}
+.wt-head,.wt-row{display:grid;grid-template-columns:28px 70px 70px 1fr 1fr 90px 1fr 80px 30px;gap:4px;min-width:620px}
+.nt-head,.nt-row{display:grid;grid-template-columns:28px 70px 1fr 1fr 90px 1fr 80px 30px;gap:4px;min-width:520px}
+.wt-head,.nt-head{padding:7px 6px;background:#eddfc9;border-radius:6px;font-size:0.63rem;font-weight:700;color:#9a6e3a;margin-bottom:3px;align-items:center}
+.wt-head span,.nt-head span{text-align:center}
+.wt-row,.nt-row{padding:3px 0;border-bottom:1px dashed #eddfc9;align-items:center}
+.wt-row.dragging,.nt-row.dragging{opacity:0.35}
+.wt-row.dover,.nt-row.dover{border-top:2.5px solid #d4a87a}
+.wt-row input,.nt-row input{padding:6px 7px;font-size:0.76rem}
+.dh{color:#bbb;font-size:0.95rem;cursor:grab;text-align:center;user-select:none;touch-action:none}
+.tbtn{width:100%;padding:4px 3px;border-radius:6px;border:1.5px solid;font-family:'Vazirmatn',sans-serif;font-size:0.65rem;font-weight:700;cursor:pointer;text-align:center;white-space:nowrap}
+.t-set{background:#e8f0ff;border-color:#6080e0;color:#203880}
+.t-bra{background:#ffe8f0;border-color:#e06080;color:#8b2040}
+.t-tset{background:#e8ffe8;border-color:#40a060;color:#205030}
+.t-top{background:#fff0e8;border-color:#e08040;color:#804020}
+.sbtn{width:100%;padding:4px 3px;border-radius:6px;border:1.5px solid;font-family:'Vazirmatn',sans-serif;font-size:0.65rem;font-weight:700;cursor:pointer;text-align:center;white-space:nowrap}
+.s-in{background:#e8f5ee;border-color:#a8d8b8;color:#1a6a3a}
+.s-call{background:#fff3cd;border-color:#ffc107;color:#856404}
+.s-out{background:#fde8e8;border-color:#f5b8b8;color:#8b2020}
+.ddel{width:28px;height:28px;background:#fde8e8;border:1px solid #f5b8b8;border-radius:6px;color:#c04040;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.addr{width:100%;margin-top:5px;padding:7px;border:2px dashed #e2cdb0;border-radius:7px;background:none;color:#9a6e3a;font-family:'Vazirmatn',sans-serif;font-size:0.79rem;cursor:pointer}
+.addb{width:100%;padding:9px;border:2px dashed #d4a87a;border-radius:9px;background:none;color:#9a6e3a;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:10px}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.chip{padding:5px 11px;border-radius:20px;border:1.5px solid #e2cdb0;background:#fff;color:#9a6e3a;font-family:'Vazirmatn',sans-serif;font-size:0.74rem;font-weight:600;cursor:pointer}
+.chip.on{background:#3d2b1f;color:#f9f0e8;border-color:#3d2b1f}
+.slbl{font-size:0.72rem;color:#9a6e3a;font-weight:700;align-self:center}
+.rc{background:#fff;border:1px solid #e2cdb0;border-radius:9px;padding:11px;display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:7px}
+.rn{font-weight:700;font-size:0.86rem}.rb{font-size:0.7rem;color:#9a6e3a;margin-top:1px}
+.rm{font-size:0.73rem;color:#7a6a5a;margin-top:3px;display:flex;flex-wrap:wrap;gap:7px}
+.rp{font-size:0.92rem;font-weight:900;color:#9a6e3a}
+.ri{font-size:0.7rem;font-weight:700;color:#1a6a3a;background:#e8f5ee;padding:3px 7px;border-radius:10px}
+.rcl{font-size:0.7rem;font-weight:700;color:#856404;background:#fff3cd;padding:3px 7px;border-radius:10px}
+.ro{font-size:0.7rem;font-weight:700;color:#8b2020;background:#fde8e8;padding:3px 7px;border-radius:10px}
+.nores{text-align:center;color:#bbb;padding:28px}
+.pbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:9px}
+.pbtn{padding:12px 5px;border-radius:9px;border:none;font-family:'Vazirmatn',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;text-align:center;line-height:1.7}
+.pb1{background:#3d2b1f;color:#f9f0e8}.pb2{background:#c9b8e8;color:#3a1a5a}.pb3{background:#ffb6c1;color:#5a2030}
+.sbig{width:100%;padding:12px;border-radius:9px;border:none;font-family:'Vazirmatn',sans-serif;font-size:0.87rem;font-weight:700;cursor:pointer;margin-top:7px;display:block}
+.sbig:disabled{opacity:0.55;cursor:not-allowed}
+.stg{background:#229ed9;color:#fff}
+.stat{display:none;margin-top:8px;padding:10px 12px;border-radius:8px;font-size:0.79rem;font-weight:600}
+.sok{display:block;background:#e8f5ee;color:#1a6a3a;border:1px solid #a8d8b8}
+.serr{display:block;background:#fde8e8;color:#8b2020;border:1px solid #f5b8b8}
+.sload{display:block;background:#e8f2fd;color:#1a4a8b;border:1px solid #b8d0f5}
+
+
+
+.fupload p{font-size:0.78rem;color:#9a6e3a;margin-top:4px}
+
+
+
+
+
+
+
+
+
+.ptpl{position:fixed;top:-19999px;left:-19999px;width:794px;font-family:'Vazirmatn',sans-serif;direction:rtl;padding:26px}
+@media(max-width:640px){.g2{grid-template-columns:1fr}.pbtns{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hdr"><h1>ROSA VIE</h1><p>under wear</p></div>
+<div class="topbar">
+  <a href="https://t.me/rozavie_underwear" target="_blank">کانال: @rozavie_underwear</a>
+  <a href="https://www.instagram.com/rozavie_underwear" target="_blank">اینستاگرام: rozavie_underwear</a>
+  <a href="tel:09190134599">تماس: ۰۹۱۹۰۱۳۴۵۹۹</a>
+  <a href="https://t.me/amin_beik_mohammady" target="_blank">ادمین: @amin_beik_mohammady</a>
+</div>
+<div class="hrs">شنبه تا چهارشنبه ۸:۳۰–۱۸:۰۰ 🕖 | پنجشنبه‌ها ۸:۳۰–۱۶:۰۰ 🕑<br>⭕️ جهت انجام خدمات بهتر یک ساعت قبل از اتمام ساعت کاری ثبت سفارش کنید</div>
+<div class="wrap">
+<div class="tabs">
+  <button class="tab on" onclick="showTab('p1',this)">👙 سوتین+ست</button>
+  <button class="tab" onclick="showTab('p2',this)">👗 نیم‌تنه+ست</button>
+  <button class="tab" onclick="showTab('p3',this)">👛 شورت</button>
+  <button class="tab" onclick="showTab('ps',this)">🔍 جستجو</button>
+  <button class="tab" onclick="showTab('pz',this)">✈️ ارسال</button>
+</div>
+
+<div class="pg on" id="p1"><div class="card"><div class="ctitle">👙 سوتین و ست سوتین</div><button class="addb" onclick="addBrand('p1')">+ افزودن برند</button><div id="BB-p1"></div></div></div>
+<div class="pg" id="p2"><div class="card"><div class="ctitle">👗 نیم‌تنه و ست نیم‌تنه</div><button class="addb" onclick="addBrand('p2')">+ افزودن برند</button><div id="BB-p2"></div></div></div>
+<div class="pg" id="p3"><div class="card"><div class="ctitle">👛 شورت‌ها</div><button class="addb" onclick="addBrand('p3')">+ افزودن برند</button><div id="BB-p3"></div></div></div>
+
+<div class="pg" id="ps">
+  <div class="card"><div class="ctitle">🔍 جستجو</div>
+    <div class="g1"><input class="fi" type="text" id="SQ" placeholder="جستجو با کد، سایز یا رنگ..." oninput="doSearch()"></div>
+    <div class="chips" id="FC">
+      <span class="slbl">فیلتر:</span>
+      <button class="chip on" onclick="setFil('all',this)">همه</button>
+      <button class="chip" onclick="setFil('bra',this)">سوتین</button>
+      <button class="chip" onclick="setFil('set',this)">ست سوتین</button>
+      <button class="chip" onclick="setFil('top',this)">نیم‌تنه</button>
+      <button class="chip" onclick="setFil('tset',this)">ست نیم‌تنه</button>
+      <button class="chip" onclick="setFil('panty',this)">شورت</button>
+      <button class="chip" onclick="setFil('in',this)">موجود</button>
+      <button class="chip" onclick="setFil('call',this)">تماس بگیرید</button>
+      <button class="chip" onclick="setFil('out',this)">ناموجود</button>
+    </div>
+    <div class="chips" id="SC">
+      <span class="slbl">مرتب‌سازی:</span>
+      <button class="chip" onclick="setSort('cheap',this)">ارزان‌ترین</button>
+      <button class="chip" onclick="setSort('exp',this)">گران‌ترین</button>
+      <button class="chip" onclick="setSort('minq',this)">کمترین تعداد</button>
+      <button class="chip" onclick="setSort('maxq',this)">بیشترین تعداد</button>
+    </div>
+    <div id="SR"></div>
+  </div>
+</div>
+
+<div class="pg" id="pz">
+  <div class="card"><div class="ctitle">⚙️ تنظیمات تلگرام</div>
+    <div class="g2">
+      <div><span class="lbl">Token ربات</span><input class="fi" type="text" id="TGK" style="direction:ltr" value="8835510367:AAFQ0NgeCZO_twZGWbNqNNK6WrxRoeof3O8"></div>
+      <div><span class="lbl">Chat ID کانال</span><input class="fi" type="text" id="TGCID" style="direction:ltr" value="@rozavie_underwear"></div>
+    </div>
+  </div>
+  <div class="card"><div class="ctitle">📝 یادداشت PDF (اختیاری)</div>
+    <textarea class="fi" id="NOTE" placeholder="مثال: قیمت‌ها شامل مالیات نیست"></textarea>
+  </div>
+  <div class="card"><div class="ctitle">📄 دانلود PDF</div>
+    <div class="pbtns">
+      <button class="pbtn pb1" onclick="dlPDF(1)">👙 سوتین+ست<br><small>پس‌زمینه کرم</small></button>
+      <button class="pbtn pb2" onclick="dlPDF(2)">👗 نیم‌تنه+ست<br><small>پس‌زمینه یاسی</small></button>
+      <button class="pbtn pb3" onclick="dlPDF(3)">👛 شورت<br><small>پس‌زمینه صورتی</small></button>
+    </div>
+  </div>
+  <div class="card"><div class="ctitle">✈️ ارسال لیست قیمت به تلگرام</div>
+    <button class="sbig stg" id="BTN_TG" onclick="sendPDFs()">✈️ ارسال هر ۳ PDF به کانال</button>
+    <div class="stat" id="STAT"></div>
+  </div>
+</div>
+
+</div>
+
+<div id="C1" class="ptpl"></div>
+<div id="C2" class="ptpl"></div>
+<div id="C3" class="ptpl"></div>
+
+<script>
+var BID=0, RID=0, LOGOS={}, DRAG=null, CFIL='all', CSORT='';
+var TSEQ={p1:['set','bra'],p2:['tset','top'],p3:['panty']};
+var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیم‌تنه',panty:'شورت'};
+var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',panty:'tbtn t-bra'};
+var TG_BASE='https://api.telegram.org/bot';
+var FINAL_MSG='🌹 لیست قیمت فروشگاه رُزاوی 😁\n\n😍 سلام دوستان و همکارای عزیز\n\n📋 لیست قیمت به‌روز خدمتتون ارسال شد 👇🏼\n🗓 آپدیت: DATE\n\n📞 تماس:\n09190134599\n\n🙏 ممنون از اعتماد و همراهیتون 🌸 پرسود و پرفروش باشید 🤝';
+
+function pdate(){try{return new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'long',day:'numeric'}).format(new Date());}catch(e){return new Date().toLocaleDateString();}}
+function toF(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});}
+function fmtP(p){if(!p||p==='—')return'—';var n=String(p).replace(/,/g,'');if(!isNaN(n)&&n!=='')return Number(n).toLocaleString('fa-IR')+' تومان';return p;}
+function numP(p){return parseFloat(String(p||0).replace(/,/g,''))||0;}
+function numQ(q){return parseFloat(String(q||0).replace(/[^0-9.]/g,''))||0;}
+function V(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+
+function showTab(id,btn){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+  if(id==='ps')doSearch();
+}
+
+
+
+// ── XHR helpers ──
+function xhrDoc(url,fd,cb){
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST',url,true);
+  xhr.timeout=90000;
+  xhr.onload=function(){
+    try{
+      var r=JSON.parse(xhr.responseText);
+      if(r.ok)cb(null,r.result);
+      else cb('('+r.error_code+') '+r.description,null);
+    }catch(e){cb('خطا در پردازش پاسخ',null);}
+  };
+  xhr.onerror=function(){cb('خطا در اتصال به تلگرام',null);};
+  xhr.ontimeout=function(){cb('زمان ارسال تموم شد — دوباره امتحان کن',null);};
+  xhr.send(fd);
+}
+function xhrMsg(url,data,cb){
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST',url,true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.timeout=20000;
+  xhr.onload=function(){
+    try{
+      var r=JSON.parse(xhr.responseText);
+      if(r.ok)cb(null,r.result);
+      else cb('('+r.error_code+') '+r.description,null);
+    }catch(e){cb('خطا در پردازش پاسخ',null);}
+  };
+  xhr.onerror=function(){cb('خطا در اتصال به تلگرام',null);};
+  xhr.ontimeout=function(){cb('زمان ارسال تموم شد',null);};
+  xhr.send(JSON.stringify(data));
+}
+function xhrDel(url,data,cb){
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST',url,true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.timeout=8000;
+  xhr.onload=xhr.onerror=xhr.ontimeout=function(){cb();};
+  xhr.send(JSON.stringify(data));
+}
+
+// ── SEND PDFs ──
+function sendPDFs(){
+  var token=V('TGK'), chatId=V('TGCID');
+  if(!token){setStat('❌ Token ربات را وارد کنید','serr');return;}
+  if(!chatId){setStat('❌ Chat ID کانال را وارد کنید','serr');return;}
+  var btn=document.getElementById('BTN_TG');
+  btn.disabled=true;
+  var newIds=[], pi=0;
+  var pdfs=[
+    {n:1,fa:'سوتین و ست',fn:'RosaVie-BraSet'},
+    {n:2,fa:'نیم‌تنه و ست',fn:'RosaVie-TopSet'},
+    {n:3,fa:'شورت‌ها',fn:'RosaVie-Panty'}
+  ];
+  var KEY='rv_tg_'+chatId;
+
+  function step1_delOld(){
+    var old=[];
+    try{var r=localStorage.getItem(KEY);if(r)old=JSON.parse(r);}catch(e){}
+    if(!old.length){step2_sendDocs();return;}
+    setStat('⏳ حذف پیام‌های قبلی...','sload');
+    var di=0;
+    function loop(){
+      if(di>=old.length){
+        try{localStorage.removeItem(KEY);}catch(e){}
+        step2_sendDocs();
+        return;
+      }
+      xhrDel(TG_BASE+token+'/deleteMessage',{chat_id:chatId,message_id:old[di]},function(){di++;loop();});
+    }
+    loop();
+  }
+
+  function step2_sendDocs(){
+    if(pi>=pdfs.length){step3_sendMsg();return;}
+    var p=pdfs[pi];
+    setStat('⏳ ارسال '+toF(pi+1)+'/۳: '+p.fa+'...','sload');
+    renderPDF(p.n,function(err,blob){
+      if(err){btn.disabled=false;setStat('❌ خطا در ساخت PDF: '+err,'serr');return;}
+      var fd=new FormData();
+      fd.append('chat_id',chatId);
+      fd.append('document',blob,p.fn+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+      fd.append('caption','📋 لیست قیمت Rozavie\n'+p.fa+'\n🗓 '+pdate());
+      xhrDoc(TG_BASE+token+'/sendDocument',fd,function(err2,res){
+        if(err2){btn.disabled=false;setStat('❌ خطا در ارسال '+p.fa+': '+err2,'serr');return;}
+        if(res&&res.message_id)newIds.push(res.message_id);
+        pi++;
+        setTimeout(step2_sendDocs,2000);
+      });
+    });
+  }
+
+  function step3_sendMsg(){
+    setStat('⏳ ارسال پیام نهایی...','sload');
+    var msg=FINAL_MSG.replace('DATE',pdate());
+    xhrMsg(TG_BASE+token+'/sendMessage',{chat_id:chatId,text:msg},function(err3,res){
+      if(res&&res.message_id)newIds.push(res.message_id);
+      try{localStorage.setItem(KEY,JSON.stringify(newIds));}catch(e){}
+      btn.disabled=false;
+      if(err3)setStat('⚠️ PDFها ارسال شدند ولی پیام متنی خطا داد: '+err3,'serr');
+      else setStat('✅ هر ۳ PDF + پیام به کانال ارسال شد! 🎉','sok');
+    });
+  }
+
+  step1_delOld();
+}
+
+// ── SEND POST ──
+
+function setStat(msg,cls){var el=document.getElementById('STAT');el.textContent=msg;el.className='stat '+cls;}
+
+// ── SORT ──
+function stockOrd(row){var b=row.querySelector('.sbtn');if(!b)return 0;if(b.classList.contains('s-in'))return 0;if(b.classList.contains('s-call'))return 1;return 2;}
+function typeOrd(row,tab){var b=row.querySelector('[id^="TT"]');var t=b?b.dataset.t:TSEQ[tab][0];var i=TSEQ[tab].indexOf(t);return i<0?99:i;}
+function sortRows(cont,tab){
+  var rows=Array.from(cont.querySelectorAll(':scope > .wt-row,:scope > .nt-row'));
+  rows.sort(function(a,b){if(tab!=='p3'){var d=typeOrd(a,tab)-typeOrd(b,tab);if(d!==0)return d;}return stockOrd(a)-stockOrd(b);});
+  rows.forEach(function(r){cont.appendChild(r);});
+}
+
+// ── BRAND ──
+function addBrand(tab,nm,sRows,sLogo){
+  BID++;var bid=BID;var hasT=(tab!=='p3');
+  var hcls=hasT?'wt-head':'nt-head';
+  var thH=hasT?
+    '<span>↕</span><span>نوع</span><span>کد</span><span>سایزبندی</span><span>رنگ‌بندی</span><span>حداقل تعداد</span><span>قیمت</span><span>موجودی</span><span></span>':
+    '<span>↕</span><span>کد</span><span>سایزبندی</span><span>رنگ‌بندی</span><span>حداقل تعداد</span><span>قیمت</span><span>موجودی</span><span></span>';
+  var div=document.createElement('div');
+  div.className='bb';div.id='B'+bid;div.dataset.tab=tab;
+  div.innerHTML=
+    '<div class="bh">'+
+      '<img class="blp" id="LP'+bid+'">'+
+      '<input class="bni" type="text" id="BN'+bid+'" placeholder="نام برند..." value="'+(nm||'')+'">'+
+      '<button class="blb" onclick="pickL('+bid+')">🖼 لوگو</button>'+
+      '<input type="file" id="LF'+bid+'" accept="image/*">'+
+      '<button class="bdb" onclick="delB('+bid+')">🗑 حذف</button>'+
+    '</div>'+
+    '<div class="tw">'+
+      '<div class="'+hcls+'">'+thH+'</div>'+
+      '<div id="RR'+bid+'"></div>'+
+      '<button class="addr" onclick="addRow('+bid+',\''+tab+'\')">+ ردیف جدید</button>'+
+    '</div>';
+  document.getElementById('BB-'+tab).appendChild(div);
+  document.getElementById('LF'+bid).addEventListener('change',function(){loadL(bid,this);});
+  document.getElementById('BN'+bid).addEventListener('input',save);
+  if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
+  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r[0],r[1],r[2],r[3],r[4],r[5],r[6]);});}
+  else if(!sRows){addRow(bid,tab);}
+  save();
+}
+function delB(bid){var el=document.getElementById('B'+bid);if(el){el.remove();delete LOGOS[bid];save();}}
+function pickL(bid){document.getElementById('LF'+bid).click();}
+function loadL(bid,inp){
+  var f=inp.files[0];if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(e){LOGOS[bid]=e.target.result;var lp=document.getElementById('LP'+bid);lp.src=e.target.result;lp.style.display='block';save();};
+  fr.readAsDataURL(f);
+}
+
+// ── ROW ──
+function addRow(bid,tab,type,code,sizes,colors,minO,price,stock){
+  RID++;var rid=RID;var hasT=(tab!=='p3');
+  type=type||(TSEQ[tab]?TSEQ[tab][0]:'panty');
+  code=code||'';sizes=sizes||'';colors=colors||'';minO=minO||'';price=price||'';stock=stock||'in';
+  var sC='sbtn '+(stock==='out'?'s-out':stock==='call'?'s-call':'s-in');
+  var sT=stock==='out'?'ناموجود':stock==='call'?'تماس بگیرید':'موجود ✓';
+  var rcls=hasT?'wt-row':'nt-row';
+  var typeCell=hasT?'<button class="'+TCLS[type]+'" id="TT'+rid+'" data-t="'+type+'" onclick="togT('+rid+',\''+tab+'\')">'+TLBL[type]+'</button>':'';
+  var div=document.createElement('div');
+  div.className=rcls;div.id='R'+rid;div.dataset.bid=String(bid);div.dataset.tab=tab;div.setAttribute('draggable','true');
+  div.innerHTML=
+    '<span class="dh" id="DH'+rid+'">⠿</span>'+
+    typeCell+
+    '<input class="fi" type="text" placeholder="کد" value="'+code+'" id="CD'+rid+'">'+
+    '<input class="fi" type="text" placeholder="سایز" value="'+sizes+'" id="SZ'+rid+'">'+
+    '<input class="fi" type="text" placeholder="رنگ" value="'+colors+'" id="CL'+rid+'">'+
+    '<input class="fi" type="text" placeholder="تعداد" value="'+minO+'" id="MO'+rid+'">'+
+    '<input class="fi" type="text" placeholder="قیمت" value="'+price+'" id="PR'+rid+'">'+
+    '<button class="'+sC+'" id="ST'+rid+'" onclick="togS('+rid+')">'+sT+'</button>'+
+    '<button class="ddel" onclick="delR('+rid+')">✕</button>';
+  document.getElementById('RR'+bid).appendChild(div);
+  ['CD','SZ','CL','MO','PR'].forEach(function(p){var el=document.getElementById(p+rid);if(el)el.addEventListener('input',save);});
+  // drag desktop
+  div.addEventListener('dragstart',function(e){DRAG=div;div.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+  div.addEventListener('dragend',function(){div.classList.remove('dragging');document.querySelectorAll('.wt-row,.nt-row').forEach(function(r){r.classList.remove('dover');});save();});
+  div.addEventListener('dragover',function(e){e.preventDefault();div.classList.add('dover');});
+  div.addEventListener('dragleave',function(){div.classList.remove('dover');});
+  div.addEventListener('drop',function(e){
+    e.preventDefault();div.classList.remove('dover');
+    if(DRAG&&DRAG!==div&&DRAG.dataset.bid===div.dataset.bid){
+      var p=div.parentNode;
+      var all=Array.from(p.querySelectorAll(':scope > .wt-row,:scope > .nt-row'));
+      var si=all.indexOf(DRAG),di=all.indexOf(div);
+      if(si<di)p.insertBefore(DRAG,div.nextSibling);else p.insertBefore(DRAG,div);
+      save();
+    }
+  });
+  // drag touch
+  var dh=document.getElementById('DH'+rid);
+  dh.addEventListener('touchstart',function(){DRAG=div;div.classList.add('dragging');},{passive:true});
+  dh.addEventListener('touchmove',function(e){
+    e.preventDefault();
+    var t=e.touches[0];
+    document.querySelectorAll('.wt-row,.nt-row').forEach(function(r){r.classList.remove('dover');});
+    var els=document.elementsFromPoint(t.clientX,t.clientY);
+    for(var i=0;i<els.length;i++){
+      if((els[i].classList.contains('wt-row')||els[i].classList.contains('nt-row'))&&els[i]!==DRAG&&els[i].dataset.bid===DRAG.dataset.bid){els[i].classList.add('dover');break;}
+    }
+  },{passive:false});
+  dh.addEventListener('touchend',function(){
+    div.classList.remove('dragging');
+    var tgt=document.querySelector('.dover');
+    document.querySelectorAll('.wt-row,.nt-row').forEach(function(r){r.classList.remove('dover');});
+    if(tgt&&tgt!==DRAG&&tgt.dataset.bid===DRAG.dataset.bid){tgt.parentNode.insertBefore(DRAG,tgt);}
+    DRAG=null;save();
+  });
+  save();
+}
+function togT(rid,tab){
+  var btn=document.getElementById('TT'+rid);if(!btn)return;
+  var seq=TSEQ[tab]||['bra'];var cur=btn.dataset.t;
+  var nxt=seq[(seq.indexOf(cur)+1)%seq.length];
+  btn.dataset.t=nxt;btn.className=TCLS[nxt];btn.textContent=TLBL[nxt];
+  var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,tab);
+  save();
+}
+function togS(rid){
+  var btn=document.getElementById('ST'+rid);if(!btn)return;
+  if(btn.classList.contains('s-in')){btn.classList.replace('s-in','s-call');btn.textContent='تماس بگیرید';}
+  else if(btn.classList.contains('s-call')){btn.classList.replace('s-call','s-out');btn.textContent='ناموجود';}
+  else{btn.classList.replace('s-out','s-in');btn.textContent='موجود ✓';}
+  var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,row.dataset.tab);
+  save();
+}
+function delR(rid){var el=document.getElementById('R'+rid);if(el){el.remove();save();}}
+
+// ── DATA ──
+function getBrands(tab){
+  var res=[];
+  document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
+    var bid=bl.id.slice(1);
+    var bnEl=document.getElementById('BN'+bid);
+    var rows=[];
+    bl.querySelectorAll(':scope .wt-row,:scope .nt-row').forEach(function(row){
+      var rid=row.id.slice(1);
+      var cdEl=document.getElementById('CD'+rid);if(!cdEl)return;
+      var ttEl=document.getElementById('TT'+rid);
+      var stEl=document.getElementById('ST'+rid);
+      var stk='in';
+      if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
+      rows.push({
+        type:ttEl?ttEl.dataset.t:(tab==='p3'?'panty':'set'),
+        code:cdEl.value||'—',
+        sizes:V('SZ'+rid)||'—',
+        colors:V('CL'+rid)||'—',
+        minO:V('MO'+rid)||'—',
+        price:V('PR'+rid)||'—',
+        stock:stk
+      });
+    });
+    res.push({name:bnEl?bnEl.value.trim():'',logo:LOGOS[bid]||null,rows:rows});
+  });
+  return res;
+}
+function allProds(){
+  var all=[];
+  ['p1','p2','p3'].forEach(function(t){getBrands(t).forEach(function(b){b.rows.forEach(function(r){r.brandName=b.name;all.push(r);});});});
+  return all;
+}
+
+// ── SEARCH ──
+function setFil(f,btn){CFIL=f;document.querySelectorAll('#FC .chip').forEach(function(c){c.classList.remove('on');});btn.classList.add('on');doSearch();}
+function setSort(s,btn){CSORT=CSORT===s?'':s;document.querySelectorAll('#SC .chip').forEach(function(c){c.classList.remove('on');});if(CSORT)btn.classList.add('on');doSearch();}
+function doSearch(){
+  var q=V('SQ').toLowerCase();
+  var items=allProds().filter(function(p){
+    var mq=!q||[p.code,p.sizes,p.colors].some(function(v){return(v||'').toLowerCase().indexOf(q)>-1;});
+    var mf=CFIL==='all'||CFIL===p.type||CFIL===p.stock;
+    return mq&&mf;
+  });
+  if(CSORT==='cheap')items.sort(function(a,b){return numP(a.price)-numP(b.price);});
+  else if(CSORT==='exp')items.sort(function(a,b){return numP(b.price)-numP(a.price);});
+  else if(CSORT==='minq')items.sort(function(a,b){return numQ(a.minO)-numQ(b.minO);});
+  else if(CSORT==='maxq')items.sort(function(a,b){return numQ(b.minO)-numQ(a.minO);});
+  var el=document.getElementById('SR');
+  if(!items.length){el.innerHTML='<div class="nores">🔍 محصولی یافت نشد</div>';return;}
+  el.innerHTML=items.map(function(p){
+    var stEl=p.stock==='in'?'<span class="ri">موجود ✓</span>':p.stock==='call'?'<span class="rcl">تماس بگیرید</span>':'<span class="ro">ناموجود</span>';
+    return '<div class="rc"><div>'+
+      '<div class="rn">'+TLBL[p.type]+(p.code&&p.code!=='—'?' — کد: '+p.code:'')+'</div>'+
+      '<div class="rb">'+(p.brandName||'')+'</div>'+
+      '<div class="rm">'+
+        (p.sizes&&p.sizes!=='—'?'<span>📐 '+p.sizes+'</span>':'')+
+        (p.colors&&p.colors!=='—'?'<span>🎨 '+p.colors+'</span>':'')+
+        (p.minO&&p.minO!=='—'?'<span>📦 '+p.minO+'</span>':'')+
+      '</div></div>'+
+      '<div style="text-align:left"><div class="rp">'+fmtP(p.price)+'</div><div style="margin-top:4px">'+stEl+'</div></div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── PDF ──
+function buildPDF(num){
+  var tab={1:'p1',2:'p2',3:'p3'}[num];
+  var bgPage={1:'#f9f0e8',2:'#f5f0ff',3:'#fff0f5'}[num];
+  var bgHdr={1:'#3d2b1f',2:'#5a2080',3:'#8b2040'}[num];
+  var bgAcc={1:'#eddfc9',2:'#e8d8ff',3:'#ffd6e0'}[num];
+  var bgHrs={1:'#fff8f2',2:'#f0ebff',3:'#fff5f8'}[num];
+  var bdrHrs={1:'#d4a87a',2:'#9060c0',3:'#e06080'}[num];
+  var bgEv={1:'#fff8f2',2:'#f5f0ff',3:'#fff8fa'}[num];
+  var clP={1:'#9a6e3a',2:'#5a2080',3:'#8b2040'}[num];
+  var brands=getBrands(tab);
+  var note=V('NOTE');
+  var date=pdate();
+  var hasT=(num!==3);
+  var h='<div style="background:'+bgPage+';font-family:Vazirmatn,sans-serif;direction:rtl;padding:26px">';
+  h+='<div style="background:'+bgHdr+';color:#f9f0e8;padding:18px 24px;border-radius:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">';
+  h+='<div style="flex:1;text-align:center"><div style="font-size:1.4rem;font-weight:900;letter-spacing:4px;direction:ltr">ROSA VIE</div><div style="font-size:0.7rem;letter-spacing:2px;opacity:0.8;margin-top:3px">under wear</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.15);padding:9px 14px;border-radius:8px;text-align:left"><div style="font-size:0.63rem;opacity:0.8">تاریخ صدور</div><div style="font-size:0.9rem;font-weight:700">'+date+'</div></div></div>';
+  h+='<div style="background:'+bgAcc+';padding:8px 12px;border-radius:8px;margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap;font-size:0.73rem;justify-content:center"><span>تلگرام: rozavie_underwear</span><span>اینستاگرام: rozavie_underwear</span><span>تماس: ۰۹۱۹۰۱۳۴۵۹۹</span></div>';
+  h+='<div style="background:'+bgHrs+';border-right:4px solid '+bdrHrs+';padding:8px 12px;border-radius:8px;font-size:0.7rem;line-height:1.9;margin-bottom:12px;text-align:center">شنبه تا چهارشنبه ۸:۳۰–۱۸:۰۰ | پنجشنبه‌ها ۸:۳۰–۱۶:۰۰<br>⭕️ جهت انجام خدمات بهتر یک ساعت قبل از اتمام ساعت کاری ثبت سفارش کنید</div>';
+  if(note)h+='<div style="background:'+bgHrs+';border-right:4px solid '+bdrHrs+';padding:8px 12px;border-radius:8px;font-size:0.72rem;margin-bottom:12px">📌 '+note+'</div>';
+  var hasData=brands.some(function(b){return b.rows.length>0;});
+  if(!hasData){h+='<p style="text-align:center;color:#aaa;padding:30px">محصولی وارد نشده</p>';}
+  else{
+    brands.forEach(function(brand){
+      if(!brand.rows.length)return;
+      h+='<div style="background:'+bgAcc+';padding:9px 12px;border-radius:8px;margin-bottom:6px;display:flex;align-items:center;gap:10px">';
+      if(brand.logo)h+='<img src="'+brand.logo+'" style="width:90px;height:90px;object-fit:contain;border-radius:8px">';
+      if(brand.name)h+='<div style="font-size:1rem;font-weight:900;color:#3d2b1f">'+brand.name+'</div>';
+      h+='</div>';
+      var thS='background:'+bgHdr+';color:#fff;padding:8px 6px;font-size:0.68rem;text-align:center;border:1px solid '+bgAcc;
+      var tdS='padding:8px 6px;font-size:0.72rem;text-align:center;border:1px solid '+bgAcc+';color:#3d2b1f';
+      var evS=tdS+';background:'+bgEv;
+      h+='<table style="width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed"><thead><tr>';
+      h+='<th style="'+thS+';width:5%">ردیف</th>';
+      if(hasT)h+='<th style="'+thS+';width:9%">نوع</th>';
+      h+='<th style="'+thS+';width:10%">کد</th>';
+      h+='<th style="'+thS+';width:15%">سایزبندی</th>';
+      h+='<th style="'+thS+';width:17%">رنگ‌بندی</th>';
+      h+='<th style="'+thS+';width:16%">حداقل تعداد سفارش</th>';
+      h+='<th style="'+thS+';width:14%">قیمت</th>';
+      h+='<th style="'+thS+';width:14%">موجودی</th>';
+      h+='</tr></thead><tbody>';
+      brand.rows.forEach(function(p,i){
+        var td=i%2===1?evS:tdS;
+        var tClr={set:'background:#e8f0ff;color:#203880',bra:'background:#ffe8f0;color:#8b2040',tset:'background:#e8ffe8;color:#205030',top:'background:#fff0e8;color:#804020'}[p.type]||'';
+        var sClr=p.stock==='in'?'background:#e8f5ee;color:#1a6a3a':p.stock==='call'?'background:#fff3cd;color:#856404':'background:#fde8e8;color:#8b2020';
+        var sTxt=p.stock==='in'?'موجود ✓':p.stock==='call'?'تماس بگیرید':'ناموجود';
+        h+='<tr><td style="'+td+';color:#aaa;font-size:0.62rem">'+toF(i+1)+'</td>';
+        if(hasT)h+='<td style="'+td+'"><span style="font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:3px;'+tClr+'">'+TLBL[p.type]+'</span></td>';
+        h+='<td style="'+td+'">'+p.code+'</td>';
+        h+='<td style="'+td+'">'+p.sizes+'</td>';
+        h+='<td style="'+td+'">'+p.colors+'</td>';
+        h+='<td style="'+td+'">'+p.minO+'</td>';
+        h+='<td style="'+td+';font-weight:700;color:'+clP+'">'+fmtP(p.price)+'</td>';
+        h+='<td style="'+td+'"><span style="font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:3px;'+sClr+'">'+sTxt+'</span></td>';
+        h+='</tr>';
+      });
+      h+='</tbody></table>';
+    });
+  }
+  h+='<div style="margin-top:14px;padding:12px 16px;border-radius:8px;text-align:center;font-size:0.73rem;line-height:1.9;background:'+bgHrs+';border:1px solid '+bgAcc+'">';
+  h+='<strong>با تشکر از اعتماد شما 🌸</strong><br>';
+  h+='قیمت‌های فوق به‌روز بوده و همکاری ما بر پایه صداقت، کیفیت کالا و ارسال به‌موقع است.<br>';
+  h+='امیدواریم در کنار هم کسب‌وکاری پررونق داشته باشیم.</div>';
+  h+='<div style="margin-top:12px;padding-top:10px;border-top:2px solid '+bgAcc+';display:flex;justify-content:space-between;font-size:0.68rem;color:'+clP+'">';
+  h+='<span>تلگرام: rozavie_underwear | اینستاگرام: rozavie_underwear | تماس: ۰۹۱۹۰۱۳۴۵۹۹</span>';
+  h+='<span>قیمت‌ها ممکن است تغییر کنند</span></div>';
+  h+='</div>';
+  return h;
+}
+
+function renderPDF(num,cb){
+  var el=document.getElementById('C'+num);
+  el.innerHTML=buildPDF(num);
+  var imgs=el.querySelectorAll('img'),total=imgs.length,done=0;
+  function go(){
+    setTimeout(function(){
+      html2canvas(el,{scale:1.5,useCORS:true,allowTaint:true,backgroundColor:null,width:794,windowWidth:794,logging:false}).then(function(canvas){
+        var img=canvas.toDataURL('image/jpeg',0.85);
+        var pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'px',format:'a4'});
+        var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+        var ih=(canvas.height*pw)/canvas.width;
+        if(ih<=ph){pdf.addImage(img,'JPEG',0,0,pw,ih);}
+        else{var y=0;while(y<ih){if(y>0)pdf.addPage();pdf.addImage(img,'JPEG',0,-y,pw,ih);y+=ph;}}
+        cb(null,pdf.output('blob'));
+      }).catch(function(e){cb(e.message||'خطا در ساخت PDF',null);});
+    },500);
+  }
+  if(!total){go();return;}
+  imgs.forEach(function(img){
+    if(img.complete){done++;if(done===total)go();}
+    else{img.onload=function(){done++;if(done===total)go();};img.onerror=function(){done++;if(done===total)go();};}
+  });
+}
+
+function dlPDF(num){
+  setStat('در حال ساخت PDF...','sload');
+  renderPDF(num,function(err,blob){
+    if(err){setStat('❌ خطا: '+err,'serr');return;}
+    var n={1:'RosaVie-BraSet',2:'RosaVie-TopSet',3:'RosaVie-Panty'}[num];
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;
+    a.download=n+'-'+new Date().toISOString().slice(0,10)+'.pdf';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setStat('✅ PDF دانلود شد!','sok');
+  });
+}
+
+// ── SAVE / LOAD ──
+function save(){
+  try{
+    var d={note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID')};
+    ['p1','p2','p3'].forEach(function(tab){
+      var brands=[];
+      document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
+        var bid=bl.id.slice(1);
+        var bnEl=document.getElementById('BN'+bid);
+        var rows=[];
+        bl.querySelectorAll(':scope .wt-row,:scope .nt-row').forEach(function(row){
+          var rid=row.id.slice(1);
+          var cdEl=document.getElementById('CD'+rid);if(!cdEl)return;
+          var ttEl=document.getElementById('TT'+rid);
+          var stEl=document.getElementById('ST'+rid);
+          var stk='in';
+          if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
+          rows.push([ttEl?ttEl.dataset.t:(tab==='p3'?'panty':'set'),cdEl.value,V('SZ'+rid),V('CL'+rid),V('MO'+rid),V('PR'+rid),stk]);
+        });
+        brands.push({n:bnEl?bnEl.value:'',l:LOGOS[bid]||null,r:rows});
+      });
+      d[tab]=brands;
+    });
+    localStorage.setItem('rv_final',JSON.stringify(d));
+  }catch(e){}
+}
+
+function load(){
+  try{
+    var raw=localStorage.getItem('rv_final')||localStorage.getItem('rv9')||localStorage.getItem('rv8')||localStorage.getItem('rv7')||localStorage.getItem('rv6')||localStorage.getItem('rv5');
+    if(!raw){['p1','p2','p3'].forEach(function(t){addBrand(t);});return;}
+    var d=JSON.parse(raw);
+    if(d.note)document.getElementById('NOTE').value=d.note;
+    if(d.tgk)document.getElementById('TGK').value=d.tgk;
+    if(d.tgcid)document.getElementById('TGCID').value=d.tgcid;
+    ['p1','p2','p3'].forEach(function(tab){
+      var brands=d[tab]||[];
+      if(!brands.length){addBrand(tab);return;}
+      brands.forEach(function(b){
+        var rows=b.r&&b.r.length?b.r.map(function(r){
+          return r.length===6?[r[0],'',r[1],r[2],r[3],r[4],r[5]]:r;
+        }):null;
+        addBrand(tab,b.n,rows,b.l);
+      });
+    });
+  }catch(e){['p1','p2','p3'].forEach(function(t){addBrand(t);});}
+}
+
+load();
+</script>
+</body>
+</html>
