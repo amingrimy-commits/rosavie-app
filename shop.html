@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rosa Vie | رُزاوی</title>
+<link rel="icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Vazirmatn',sans-serif;background:#111111;color:#eee;min-height:100vh}
+.hdr{background:linear-gradient(135deg,#c4607a,#d4789a,#e8a0b0);padding:20px 16px;text-align:center}
+.hdr h1{font-size:1.8rem;font-weight:900;letter-spacing:6px;color:#fff}
+.hdr p{font-size:0.72rem;color:rgba(255,255,255,0.85);letter-spacing:4px;margin-top:3px}
+.searchbar{max-width:960px;margin:16px auto 0;padding:0 14px}
+.searchbar input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #2a2a2a;background:#1a1a1a;color:#eee;font-family:inherit;font-size:0.86rem}
+.searchbar input::placeholder{color:#777}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px;max-width:960px;margin:0 auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid #333;background:#1a1a1a;color:#ccc;font-size:0.74rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.chip.on{border-color:#d4789a;background:#2a1a22;color:#f0a8c0}
+.rescount{max-width:960px;margin:10px auto 0;padding:0 16px;font-size:0.72rem;color:#888}
+.grid{max-width:960px;margin:10px auto 30px;padding:0 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.card{background:#1e1e1e;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a;cursor:pointer;position:relative}
+.card-img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#252525}
+.card-img-ph{width:100%;aspect-ratio:1;background:#252525;display:flex;align-items:center;justify-content:center;font-size:2.2rem}
+.cat-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);color:#eee;font-size:0.6rem;padding:3px 8px;border-radius:8px}
+.card-body{padding:10px 11px 12px}
+.card-name{font-size:0.78rem;font-weight:700;color:#f0f0f0;line-height:1.4}
+.card-brand{font-size:0.66rem;color:#999;margin-top:2px}
+.card-code{font-size:0.66rem;color:#888;margin-top:2px}
+.card-info{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.card-tag{font-size:0.62rem;background:#252525;color:#bbb;padding:2px 7px;border-radius:6px}
+.card-price{font-size:0.88rem;color:#e8a0b8;font-weight:900;margin-top:8px}
+.badge-in,.badge-call,.badge-out{display:inline-block;margin-top:6px;font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:6px}
+.badge-in{background:#12331f;color:#6fcf97}
+.badge-call{background:#332912;color:#e0b060}
+.badge-out{background:#331515;color:#e57373}
+.nores{text-align:center;padding:60px 20px;color:#666;font-size:0.85rem;grid-column:1/-1}
+.loading{text-align:center;padding:60px 20px;color:#888;font-size:0.85rem;grid-column:1/-1}
+/* مودال جزئیات */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;align-items:flex-end;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:#161616;border-radius:18px 18px 0 0;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:20px 18px}
+@media(min-width:640px){.modal-ov{align-items:center}.modal{border-radius:16px}}
+.modal-close{width:32px;height:32px;border-radius:50%;background:#1e1e1e;border:1px solid #333;color:#eee;font-size:1rem;float:left;cursor:pointer}
+.modal-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;margin-top:8px;background:#252525}
+.modal-name{font-size:1.05rem;font-weight:900;color:#fff;margin-top:6px}
+.modal-brand{font-size:0.75rem;color:#999;margin-top:2px}
+.modal-price{font-size:1.2rem;color:#e8a0b8;font-weight:900;margin-top:12px}
+.modal-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #2a2a2a;font-size:0.78rem}
+.modal-row span:first-child{color:#999}
+.modal-row span:last-child{color:#eee;font-weight:700}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.modal-actions a{text-align:center;padding:11px 6px;border-radius:10px;text-decoration:none;font-size:0.74rem;font-weight:700;background:#1e1e1e;border:1px solid #333;color:#eee}
+.modal-actions a.act-main{background:#2a9d5c;border-color:#2a9d5c;color:#fff;grid-column:1/-1}
+.footer-note{max-width:960px;margin:0 auto 30px;padding:0 16px;text-align:center;color:#666;font-size:0.7rem;line-height:1.9}
+/* سبد خرید */
+.qty-box{display:flex;align-items:center;gap:14px;justify-content:center;margin:16px 0}
+.qty-btn{width:38px;height:38px;border-radius:10px;background:#1e1e1e;border:1px solid #333;color:#eee;font-size:1.2rem;cursor:pointer}
+.qty-val{font-size:1.05rem;font-weight:900;min-width:28px;text-align:center}
+.addcart-btn{display:block;width:100%;text-align:center;padding:13px;border-radius:10px;background:#d4789a;color:#fff;font-weight:900;font-size:0.86rem;border:none;cursor:pointer;margin-top:6px}
+.fab-cart{position:fixed;bottom:18px;left:18px;width:54px;height:54px;border-radius:50%;background:#d4789a;color:#fff;font-size:1.3rem;border:none;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:2500;cursor:pointer;display:none;align-items:center;justify-content:center}
+.fab-cart.show{display:flex}
+.fab-cart-badge{position:absolute;top:-4px;right:-4px;background:#fff;color:#c67b9c;font-size:0.66rem;font-weight:900;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.cart-item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid #2a2a2a}
+.cart-item img,.cart-item-ph{width:60px;height:60px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#252525;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-name{font-size:0.78rem;font-weight:700;color:#eee}
+.cart-item-price{font-size:0.74rem;color:#d4789a;margin-top:3px;font-weight:700}
+.cart-qty{display:flex;align-items:center;gap:8px;margin-top:6px}
+.cart-qty button{width:24px;height:24px;border-radius:6px;background:#1e1e1e;border:1px solid #333;color:#eee;cursor:pointer;font-size:0.85rem}
+.cart-qty span{font-size:0.78rem;font-weight:700;min-width:16px;text-align:center}
+.cart-remove{color:#e57373;font-size:0.68rem;cursor:pointer;text-decoration:underline;margin-right:8px}
+.cart-empty{text-align:center;color:#555;padding:50px 20px;font-size:2.4rem}
+.cart-total-row{display:flex;justify-content:space-between;font-size:0.92rem;font-weight:900;color:#fff;margin:14px 0}
+.cart-total-row span:last-child{color:#d4789a}
+.checkout-btn{display:block;width:100%;text-align:center;padding:13px;border-radius:10px;background:#2a9d5c;color:#fff;font-weight:900;font-size:0.86rem;border:none;cursor:pointer;margin-top:8px}
+.form-field{margin-bottom:12px}
+.form-field label{display:block;font-size:0.74rem;color:#999;margin-bottom:5px}
+.form-field input,.form-field textarea{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #333;background:#1a1a1a;color:#eee;font-family:inherit;font-size:0.82rem}
+.form-field textarea{resize:vertical;min-height:56px}
+.order-ok{text-align:center;padding:20px 6px}
+.order-ok .oi{font-size:2.6rem;margin-bottom:10px}
+.order-ok .onum{font-size:1.1rem;font-weight:900;color:#d4789a;margin:8px 0;direction:ltr}
+</style>
+</head>
+<body>
+<div class="hdr"><h1>ROSA VIE</h1><p>under wear</p></div>
+<div class="searchbar"><input id="SQ" type="text" placeholder="جستجوی کد، نام یا سایز محصول..." oninput="renderGrid()"></div>
+<div class="chips" id="CHIPS"></div>
+<div class="rescount" id="RC"></div>
+<div class="grid" id="GRID"><div class="loading">در حال دریافت محصولات...</div></div>
+
+<div class="modal-ov" id="MODAL_OV" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="MODAL_BODY"></div>
+</div>
+
+<div class="footer-note">برای ثبت سفارش، محصول رو به سبد اضافه کن یا از دکمه‌ی تماس با ما استفاده کن.</div>
+
+<button class="fab-cart" id="FABCART" onclick="openCart()">🛒<span class="fab-cart-badge" id="FABBADGE">0</span></button>
+<div class="modal-ov" id="CART_OV" onclick="if(event.target===this)closeCart()">
+  <div class="modal" id="CART_BODY"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+var firebaseConfig={apiKey:"AIzaSyCNFSPZFDSCrhVloy-3yv0rUGcKIzSz50A",authDomain:"rosavie-app.firebaseapp.com",projectId:"rosavie-app",storageBucket:"rosavie-app.firebasestorage.app",messagingSenderId:"559569944295",appId:"1:559569944295:web:ffee7e8bd00ae61ed12c42"};
+firebase.initializeApp(firebaseConfig);
+var db=firebase.firestore();
+
+var CATS=[
+  {v:'all',l:'همه'},{v:'p1',l:'سوتین و ست'},{v:'p2',l:'نیمتنه و ست'},{v:'p3',l:'شورت'},
+  {v:'p4',l:'لباس خواب'},{v:'p5',l:'لوازم جانبی'},{v:'p6',l:'مایو'},{v:'p7',l:'کراپ'},
+  {v:'p8',l:'تاپ'},{v:'p9',l:'بادی'}
+];
+var PRODUCTS=[];
+var CUR_CAT='all';
+var TEL_UNDERWEAR='https://t.me/rozavie_underwear';
+var TEL_SLEEPWEAR='https://t.me/rozavie_sleepwear';
+var BALE_LINK='https://ble.ir/rozavie_underwear';
+var INSTAGRAM_LINK='https://www.instagram.com/rozavie_underwear';
+var SUPPORT_TG='https://t.me/amin_beik_mohammady';
+var PHONE_NUM='09190134599';
+
+function fmtP(v){
+  var n=parseInt(String(v).replace(/[^\d]/g,''),10);
+  if(!n)return v||'--';
+  return n.toLocaleString('en-US')+' تومان';
+}
+
+function renderChips(){
+  var el=document.getElementById('CHIPS');
+  el.innerHTML=CATS.map(function(c){
+    return '<button class="chip'+(CUR_CAT===c.v?' on':'')+'" onclick="setCat(\''+c.v+'\')">'+c.l+'</button>';
+  }).join('');
+}
+function setCat(v){CUR_CAT=v;renderChips();renderGrid();}
+
+function renderGrid(){
+  var q=(document.getElementById('SQ').value||'').trim().toLowerCase();
+  var items=PRODUCTS.filter(function(p){
+    var mc=CUR_CAT==='all'||p.tab===CUR_CAT;
+    var mq=!q||[p.code,p.title,p.sizes,p.colors,p.brand].some(function(v){return (v||'').toLowerCase().indexOf(q)>-1;});
+    return mc&&mq;
+  });
+  document.getElementById('RC').textContent=items.length+' محصول';
+  var grid=document.getElementById('GRID');
+  if(!items.length){grid.innerHTML='<div class="nores">محصولی یافت نشد</div>';return;}
+  grid.innerHTML=items.map(function(p,i){
+    var st=p.stock==='in'?'<span class="badge-in">موجود</span>':p.stock==='call'?'<span class="badge-call">تماس بگیرید</span>':'<span class="badge-out">ناموجود</span>';
+    var nm=p.title||p.typeLabel||p.code;
+    var imgHTML=p.img?'<img class="card-img" src="'+p.img+'" loading="lazy">':'<div class="card-img-ph">👗</div>';
+    return '<div class="card" onclick="openModal('+i+')">'+imgHTML+'<span class="cat-badge">'+(p.tabLabel||'')+'</span>'+
+      '<div class="card-body"><div class="card-name">'+nm+'</div>'+
+      (p.brand?'<div class="card-brand">'+p.brand+'</div>':'')+
+      (p.code?'<div class="card-code">کد: '+p.code+'</div>':'')+
+      '<div class="card-info">'+(p.sizes?'<span class="card-tag">'+p.sizes+'</span>':'')+(p.colors?'<span class="card-tag">'+p.colors+'</span>':'')+(p.minOrder?'<span class="card-tag">حداقل '+p.minOrder+'</span>':'')+'</div>'+
+      '<div class="card-price">'+fmtP(p.price)+'</div>'+st+'</div></div>';
+  }).join('');
+  window._VISIBLE=items;
+}
+
+function openModal(i){
+  var p=window._VISIBLE[i];
+  window._CURP=p;
+  window._CURQTY=1;
+  var nm=p.title||p.typeLabel||p.code;
+  var isSleep=(p.tab==='p4');
+  var mainLink=isSleep?TEL_SLEEPWEAR:TEL_UNDERWEAR;
+  var mainLabel=isSleep?'📢 کانال لباس خواب (سوال)':'📢 کانال لباس زیر (سوال)';
+  var canOrder=p.stock!=='out';
+  var html='<button class="modal-close" onclick="closeModal()">✕</button><div style="clear:both"></div>'+
+    (p.img?'<img class="modal-img" src="'+p.img+'">':'')+
+    '<div class="modal-name">'+nm+'</div>'+
+    (p.brand?'<div class="modal-brand">'+p.brand+'</div>':'')+
+    '<div class="modal-price">'+fmtP(p.price)+'</div>'+
+    (p.code?'<div class="modal-row"><span>کد محصول</span><span>'+p.code+'</span></div>':'')+
+    (p.sizes?'<div class="modal-row"><span>سایزبندی</span><span>'+p.sizes+'</span></div>':'')+
+    (p.colors?'<div class="modal-row"><span>رنگبندی</span><span>'+p.colors+'</span></div>':'')+
+    (p.minOrder?'<div class="modal-row"><span>حداقل سفارش</span><span>'+p.minOrder+' عدد</span></div>':'')+
+    (p.material?'<div class="modal-row"><span>جنس</span><span>'+p.material+'</span></div>':'')+
+    (p.desc1?'<div class="modal-row"><span>توضیحات</span><span>'+p.desc1+'</span></div>':'')+
+    (canOrder?('<div class="qty-box"><button class="qty-btn" onclick="chQty(-1)">−</button><span class="qty-val" id="MQTY">1</span><button class="qty-btn" onclick="chQty(1)">+</button></div>'+
+    '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>')+
+    '<div class="modal-actions">'+
+      '<a class="act-main" href="'+mainLink+'" target="_blank">'+mainLabel+'</a>'+
+      '<a href="'+SUPPORT_TG+'" target="_blank">👤 پشتیبانی تلگرام</a>'+
+      '<a href="'+BALE_LINK+'" target="_blank">🔵 کانال بله</a>'+
+      '<a href="'+INSTAGRAM_LINK+'" target="_blank">📸 اینستاگرام</a>'+
+      '<a href="tel:'+PHONE_NUM+'">☎️ '+PHONE_NUM+'</a>'+
+    '</div>';
+  document.getElementById('MODAL_BODY').innerHTML=html;
+  document.getElementById('MODAL_OV').classList.add('open');
+}
+function chQty(d){
+  window._CURQTY=Math.max(1,(window._CURQTY||1)+d);
+  var el=document.getElementById('MQTY');if(el)el.textContent=window._CURQTY;
+}
+function closeModal(){document.getElementById('MODAL_OV').classList.remove('open');}
+
+// ── سبد خرید ──
+var CART=[];
+function loadCart(){
+  try{var raw=localStorage.getItem('rv_shop_cart');CART=raw?JSON.parse(raw):[];}catch(e){CART=[];}
+  updateFab();
+}
+function saveCart(){try{localStorage.setItem('rv_shop_cart',JSON.stringify(CART));}catch(e){}}
+function updateFab(){
+  var n=CART.reduce(function(s,c){return s+c.qty;},0);
+  var fab=document.getElementById('FABCART');
+  document.getElementById('FABBADGE').textContent=n;
+  fab.classList.toggle('show',n>0);
+}
+function addToCart(){
+  var p=window._CURP,qty=window._CURQTY||1;
+  if(!p)return;
+  var existing=CART.find(function(c){return c.id===p.id;});
+  if(existing)existing.qty+=qty;
+  else CART.push({id:p.id,code:p.code,title:p.title||p.typeLabel||p.code,price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty});
+  saveCart();updateFab();closeModal();
+  showToast((p.title||p.code)+' به سبد اضافه شد ✅');
+}
+function showToast(msg){
+  var old=document.querySelector('.rv-toast');if(old)old.remove();
+  var t=document.createElement('div');t.className='rv-toast';t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#2a2a2a;color:#fff;padding:11px 20px;border-radius:22px;font-size:0.8rem;font-weight:700;z-index:5000;box-shadow:0 4px 18px rgba(0,0,0,0.5)';
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove();},2200);
+}
+function cartTotal(){return CART.reduce(function(s,c){var n=parseInt(String(c.price).replace(/[^\d]/g,''),10)||0;return s+n*c.qty;},0);}
+function renderCart(){
+  var body=document.getElementById('CART_BODY');
+  if(!CART.length){
+    body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div><div class="cart-empty">🛒</div><div style="text-align:center;color:#888;font-size:0.82rem">سبد خریدت خالیه</div>';
+    return;
+  }
+  var itemsHTML=CART.map(function(c,i){
+    var img=c.img?'<img src="'+c.img+'">':'<div class="cart-item-ph">👗</div>';
+    return '<div class="cart-item">'+img+'<div class="cart-item-info"><div class="cart-item-name">'+c.title+'</div>'+
+      '<div class="cart-item-price">'+fmtP(c.price)+'</div>'+
+      '<div class="cart-qty"><button onclick="cartQty('+i+',-1)">−</button><span>'+c.qty+'</span><button onclick="cartQty('+i+',1)">+</button>'+
+      '<span class="cart-remove" onclick="cartRemove('+i+')">حذف</span></div></div></div>';
+  }).join('');
+  body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
+    '<div class="modal-name" style="margin-bottom:10px">سبد خرید</div>'+
+    itemsHTML+
+    '<div class="cart-total-row"><span>جمع کل</span><span>'+fmtP(cartTotal())+'</span></div>'+
+    '<button class="checkout-btn" onclick="renderCheckout()">تکمیل سفارش</button>';
+}
+function cartQty(i,d){CART[i].qty=Math.max(1,CART[i].qty+d);saveCart();updateFab();renderCart();}
+function cartRemove(i){CART.splice(i,1);saveCart();updateFab();renderCart();}
+function openCart(){renderCart();document.getElementById('CART_OV').classList.add('open');}
+function closeCart(){document.getElementById('CART_OV').classList.remove('open');}
+
+function renderCheckout(){
+  var body=document.getElementById('CART_BODY');
+  body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
+    '<div class="modal-name" style="margin-bottom:12px">تکمیل سفارش</div>'+
+    '<div class="cart-total-row"><span>جمع کل ('+CART.reduce(function(s,c){return s+c.qty;},0)+' قلم)</span><span>'+fmtP(cartTotal())+'</span></div>'+
+    '<div class="form-field"><label>نام و نام‌خانوادگی *</label><input id="OF_NAME" type="text" placeholder="مثال: زهرا محمدی"></div>'+
+    '<div class="form-field"><label>شماره تماس *</label><input id="OF_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left"></div>'+
+    '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="آدرس، رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
+    '<div id="OF_ERR" style="color:#e57373;font-size:0.76rem;margin-bottom:8px"></div>'+
+    '<button class="checkout-btn" id="OF_SUBMIT" onclick="submitOrder()">✅ ثبت نهایی سفارش</button>'+
+    '<div style="text-align:center;color:#777;font-size:0.68rem;margin-top:10px">بعد از ثبت، از طریق شماره تماس باهات هماهنگ می‌کنیم.</div>';
+}
+function genOrderNo(){
+  var d=new Date();
+  var ymd=d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  var rnd=Math.random().toString(36).slice(2,6).toUpperCase();
+  return 'RV'+ymd+'-'+Date.now().toString(36).slice(-4).toUpperCase()+rnd;
+}
+function submitOrder(){
+  var name=(document.getElementById('OF_NAME').value||'').trim();
+  var phone=(document.getElementById('OF_PHONE').value||'').trim();
+  var note=(document.getElementById('OF_NOTE').value||'').trim();
+  var errEl=document.getElementById('OF_ERR');
+  if(!name){errEl.textContent='لطفاً نام رو وارد کن';return;}
+  if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
+  errEl.textContent='';
+  var btn=document.getElementById('OF_SUBMIT');
+  btn.disabled=true;btn.textContent='در حال ثبت سفارش...';
+  var orderNo=genOrderNo();
+  var order={
+    orderNo:orderNo,
+    items:CART.map(function(c){return {code:c.code,title:c.title,qty:c.qty,price:c.price,tab:c.tab};}),
+    total:cartTotal(),
+    customerName:name,
+    customerPhone:phone,
+    note:note,
+    status:'new',
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  db.collection('orders').doc(orderNo).set(order).then(function(){
+    CART=[];saveCart();updateFab();
+    document.getElementById('CART_BODY').innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
+      '<div class="order-ok"><div class="oi">🎉</div><div style="font-weight:900;font-size:0.95rem">سفارشت با موفقیت ثبت شد!</div>'+
+      '<div class="onum">'+orderNo+'</div>'+
+      '<div style="color:#999;font-size:0.78rem">این شماره رو نگه‌دار. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>';
+  }).catch(function(err){
+    btn.disabled=false;btn.textContent='✅ ثبت نهایی سفارش';
+    errEl.textContent='خطا در ثبت سفارش: '+(err&&err.message?err.message:err);
+  });
+}
+
+function loadProducts(){
+  db.collection('products').get().then(function(snap){
+    PRODUCTS=[];
+    snap.forEach(function(doc){PRODUCTS.push(doc.data());});
+    renderChips();
+    renderGrid();
+  }).catch(function(err){
+    document.getElementById('GRID').innerHTML='<div class="nores">خطا در دریافت محصولات: '+(err&&err.message?err.message:err)+'</div>';
+  });
+}
+loadCart();
+loadProducts();
+</script>
+</body>
+</html>
