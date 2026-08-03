@@ -83,10 +83,33 @@ body{font-family:'Vazirmatn',sans-serif;background:#111111;color:#eee;min-height
 .order-ok{text-align:center;padding:20px 6px}
 .order-ok .oi{font-size:2.6rem;margin-bottom:10px}
 .order-ok .onum{font-size:1.1rem;font-weight:900;color:#d4789a;margin:8px 0;direction:ltr}
+/* دکمه شناور پشتیبانی/کانال‌ها بالا راست */
+.fab-support{position:fixed;top:16px;right:16px;width:44px;height:44px;border-radius:50%;background:rgba(20,20,20,0.85);backdrop-filter:blur(4px);color:#fff;font-size:1.15rem;border:1.5px solid rgba(255,255,255,0.25);box-shadow:0 4px 14px rgba(0,0,0,0.4);z-index:2500;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.support-panel-list a{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;background:#1e1e1e;border:1px solid #333;color:#eee;text-decoration:none;font-size:0.82rem;font-weight:700;margin-bottom:8px}
+/* بنر */
+.banner-wrap{max-width:960px;margin:14px auto 0;padding:0 14px}
+.banner-slide{width:100%;border-radius:14px;overflow:hidden;margin-bottom:10px;cursor:pointer;display:block}
+.banner-slide img{width:100%;display:block;aspect-ratio:16/7;object-fit:cover}
+/* پیشنهاد ویژه (VIP) */
+.vip-title{max-width:960px;margin:6px auto 0;padding:0 16px;font-size:0.85rem;font-weight:900;color:#eee;display:flex;align-items:center;gap:6px}
+.vip-title span{color:#d4789a}
+.vip-scroll{display:flex;gap:10px;overflow-x:auto;max-width:960px;margin:0 auto;padding:8px 14px 16px;scrollbar-width:none}
+.vip-scroll::-webkit-scrollbar{display:none}
+.vip-card{flex-shrink:0;width:150px;background:#1e1e1e;border:1.5px solid #444;border-radius:16px;overflow:hidden;cursor:pointer;position:relative}
+.vip-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.vip-card-ph{width:100%;aspect-ratio:1;background:#252525;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+.vip-card-body{padding:9px 10px 11px}
+.vip-card-name{font-size:0.72rem;font-weight:700;color:#f0f0f0;line-height:1.4}
+.vip-price-old{font-size:0.66rem;color:#888;text-decoration:line-through;margin-top:6px}
+.vip-price-new{font-size:0.86rem;color:#ff6b8a;font-weight:900;margin-top:2px}
+.vip-discount-badge{position:absolute;top:7px;left:7px;background:#e0304f;color:#fff;font-size:0.6rem;font-weight:900;padding:2px 7px;border-radius:7px;z-index:2}
 </style>
 </head>
 <body>
 <div class="hdr"><h1>ROSA VIE</h1><p>under wear</p></div>
+<button class="fab-support" onclick="openSupport()" aria-label="ارتباط با ما">💬</button>
+<div class="banner-wrap" id="BANNER_WRAP"></div>
+<div id="VIP_SECTION"></div>
 <div class="searchbar"><input id="SQ" type="text" placeholder="جستجوی کد، نام یا سایز محصول..." oninput="renderGrid()"></div>
 <div class="chips" id="CHIPS"></div>
 <div class="rescount" id="RC"></div>
@@ -94,6 +117,10 @@ body{font-family:'Vazirmatn',sans-serif;background:#111111;color:#eee;min-height
 
 <div class="modal-ov" id="MODAL_OV" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="MODAL_BODY"></div>
+</div>
+
+<div class="modal-ov" id="SUPPORT_OV" onclick="if(event.target===this)closeSupport()">
+  <div class="modal" id="SUPPORT_BODY"></div>
 </div>
 
 <div class="footer-note">برای ثبت سفارش، محصول رو به سبد اضافه کن یا از دکمه‌ی تماس با ما استفاده کن.</div>
@@ -168,8 +195,7 @@ function openModal(i){
   window._CURQTY=1;
   var nm=p.title||p.typeLabel||p.code;
   var isSleep=(p.tab==='p4');
-  var mainLink=isSleep?TEL_SLEEPWEAR:TEL_UNDERWEAR;
-  var mainLabel=isSleep?'📢 کانال لباس خواب (سوال)':'📢 کانال لباس زیر (سوال)';
+  var mainLink=p.tgLink||(isSleep?TEL_SLEEPWEAR:TEL_UNDERWEAR);
   var canOrder=p.stock!=='out';
   var html='<button class="modal-close" onclick="closeModal()">✕</button><div style="clear:both"></div>'+
     (p.img?'<img class="modal-img" src="'+p.img+'">':'')+
@@ -185,20 +211,52 @@ function openModal(i){
     (canOrder?('<div class="qty-box"><button class="qty-btn" onclick="chQty(-1)">−</button><span class="qty-val" id="MQTY">1</span><button class="qty-btn" onclick="chQty(1)">+</button></div>'+
     '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>')+
     '<div class="modal-actions">'+
-      '<a class="act-main" href="'+mainLink+'" target="_blank">'+mainLabel+'</a>'+
-      '<a href="'+SUPPORT_TG+'" target="_blank">👤 پشتیبانی تلگرام</a>'+
-      '<a href="'+BALE_LINK+'" target="_blank">🔵 کانال بله</a>'+
-      '<a href="'+INSTAGRAM_LINK+'" target="_blank">📸 اینستاگرام</a>'+
-      '<a href="tel:'+PHONE_NUM+'">☎️ '+PHONE_NUM+'</a>'+
+      '<a class="act-main" href="'+mainLink+'" target="_blank">🎥 مشاهده عکس و فیلم بیشتر در کانال</a>'+
     '</div>';
   document.getElementById('MODAL_BODY').innerHTML=html;
   document.getElementById('MODAL_OV').classList.add('open');
+  pushModalState();
 }
 function chQty(d){
   window._CURQTY=Math.max(1,(window._CURQTY||1)+d);
   var el=document.getElementById('MQTY');if(el)el.textContent=window._CURQTY;
 }
-function closeModal(){document.getElementById('MODAL_OV').classList.remove('open');}
+function closeModal(){closeTopModal();}
+
+// ── دکمه شناور پشتیبانی/کانال‌ها ──
+function openSupport(){
+  document.getElementById('SUPPORT_BODY').innerHTML=
+    '<button class="modal-close" onclick="closeSupport()">✕</button><div style="clear:both"></div>'+
+    '<div class="modal-name" style="margin-bottom:12px">ارتباط با ما</div>'+
+    '<div class="support-panel-list">'+
+      '<a href="'+TEL_UNDERWEAR+'" target="_blank">📢 کانال لباس زیر</a>'+
+      '<a href="'+TEL_SLEEPWEAR+'" target="_blank">📢 کانال لباس خواب</a>'+
+      '<a href="'+SUPPORT_TG+'" target="_blank">👤 پشتیبانی تلگرام</a>'+
+      '<a href="'+BALE_LINK+'" target="_blank">🔵 کانال بله</a>'+
+      '<a href="'+INSTAGRAM_LINK+'" target="_blank">📸 اینستاگرام</a>'+
+      '<a href="tel:'+PHONE_NUM+'">☎️ '+PHONE_NUM+'</a>'+
+    '</div>';
+  document.getElementById('SUPPORT_OV').classList.add('open');
+  pushModalState();
+}
+function closeSupport(){closeTopModal();}
+
+// ── مدیریت دکمه بک گوشی برای مودال‌ها (به‌جای خروج کامل از سایت) ──
+var RV_MODAL_DEPTH=0;
+function pushModalState(){RV_MODAL_DEPTH++;history.pushState({rvModal:RV_MODAL_DEPTH},'');}
+function hideAllModals(){
+  document.getElementById('MODAL_OV').classList.remove('open');
+  document.getElementById('SUPPORT_OV').classList.remove('open');
+  var co=document.getElementById('CART_OV');if(co)co.classList.remove('open');
+}
+function closeTopModal(){
+  if(RV_MODAL_DEPTH>0){history.back();}
+  else{hideAllModals();}
+}
+window.addEventListener('popstate',function(){
+  if(RV_MODAL_DEPTH>0)RV_MODAL_DEPTH--;
+  hideAllModals();
+});
 
 // ── سبد خرید ──
 var CART=[];
@@ -251,8 +309,8 @@ function renderCart(){
 }
 function cartQty(i,d){CART[i].qty=Math.max(1,CART[i].qty+d);saveCart();updateFab();renderCart();}
 function cartRemove(i){CART.splice(i,1);saveCart();updateFab();renderCart();}
-function openCart(){renderCart();document.getElementById('CART_OV').classList.add('open');}
-function closeCart(){document.getElementById('CART_OV').classList.remove('open');}
+function openCart(){renderCart();document.getElementById('CART_OV').classList.add('open');pushModalState();}
+function closeCart(){closeTopModal();}
 
 function renderCheckout(){
   var body=document.getElementById('CART_BODY');
@@ -265,6 +323,27 @@ function renderCheckout(){
     '<div id="OF_ERR" style="color:#e57373;font-size:0.76rem;margin-bottom:8px"></div>'+
     '<button class="checkout-btn" id="OF_SUBMIT" onclick="submitOrder()">✅ ثبت نهایی سفارش</button>'+
     '<div style="text-align:center;color:#777;font-size:0.68rem;margin-top:10px">بعد از ثبت، از طریق شماره تماس باهات هماهنگ می‌کنیم.</div>';
+}
+function copyOrderNo(no){
+  var done=function(){
+    var btn=document.getElementById('COPY_BTN');
+    if(btn){btn.textContent='✅ کپی شد';setTimeout(function(){btn.textContent='📋 کپی شماره سفارش';},1800);}
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(no).then(done).catch(function(){fallbackCopy(no,done);});
+  }else{
+    fallbackCopy(no,done);
+  }
+}
+function fallbackCopy(text,cb){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(cb)cb();
+  }catch(e){}
 }
 function genOrderNo(){
   var d=new Date();
@@ -297,12 +376,63 @@ function submitOrder(){
     CART=[];saveCart();updateFab();
     document.getElementById('CART_BODY').innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
       '<div class="order-ok"><div class="oi">🎉</div><div style="font-weight:900;font-size:0.95rem">سفارشت با موفقیت ثبت شد!</div>'+
-      '<div class="onum">'+orderNo+'</div>'+
-      '<div style="color:#999;font-size:0.78rem">این شماره رو نگه‌دار. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>';
+      '<div class="onum" id="ORDNO_TXT">'+orderNo+'</div>'+
+      '<button class="checkout-btn" style="background:#1e1e1e;border:1px solid #333" onclick="copyOrderNo(\''+orderNo+'\')" id="COPY_BTN">📋 کپی شماره سفارش</button>'+
+      '<div style="color:#999;font-size:0.78rem;margin-top:10px">این شماره رو نگه‌دار. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>';
   }).catch(function(err){
     btn.disabled=false;btn.textContent='✅ ثبت نهایی سفارش';
     errEl.textContent='خطا در ثبت سفارش: '+(err&&err.message?err.message:err);
   });
+}
+
+function renderBanners(banners){
+  var wrap=document.getElementById('BANNER_WRAP');
+  var valid=(banners||[]).filter(function(b){return b&&b.img;});
+  if(!valid.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=valid.map(function(b){
+    return '<a class="banner-slide" href="javascript:void(0)" onclick="bannerClick('+JSON.stringify(b.link).replace(/"/g,'&quot;')+')"><img src="'+b.img+'"></a>';
+  }).join('');
+}
+function bannerClick(link){
+  if(!link)return;
+  if(link.type==='code'&&link.value){
+    document.getElementById('SQ').value=link.value;
+    setCat('all');
+    window.scrollTo({top:document.querySelector('.searchbar').offsetTop-10,behavior:'smooth'});
+  }
+}
+function renderVip(vip){
+  var sec=document.getElementById('VIP_SECTION');
+  var valid=(vip||[]).filter(function(v){return v&&v.code;});
+  if(!valid.length){sec.innerHTML='';return;}
+  var cardsHTML=valid.map(function(v){
+    var img=v.img?'<img src="'+v.img+'">':'<div class="vip-card-ph">👗</div>';
+    var hasDisc=v.discountPrice&&v.discountPrice!==v.price;
+    var priceHTML=hasDisc?
+      '<div class="vip-price-old">'+fmtP(v.price)+'</div><div class="vip-price-new">'+fmtP(v.discountPrice)+'</div>':
+      '<div class="vip-price-new">'+fmtP(v.price)+'</div>';
+    var badge=hasDisc?'<span class="vip-discount-badge">تخفیف ویژه</span>':'';
+    var safeCode=(v.code||'').replace(/'/g,"\\'");
+    return '<div class="vip-card" onclick="openByCode(\''+safeCode+'\')">'+badge+img+'<div class="vip-card-body"><div class="vip-card-name">'+(v.title||v.code)+'</div>'+priceHTML+'</div></div>';
+  }).join('');
+  sec.innerHTML='<div class="vip-title"><span>⭐</span> پیشنهاد ویژه</div><div class="vip-scroll">'+cardsHTML+'</div>';
+}
+function openByCode(code){
+  var idx=PRODUCTS.findIndex(function(p){return p.code===code;});
+  if(idx<0)return;
+  CUR_CAT='all';
+  document.getElementById('SQ').value='';
+  renderChips();renderGrid();
+  var vi=window._VISIBLE.findIndex(function(p){return p.code===code;});
+  if(vi>=0)openModal(vi);
+}
+function loadSiteData(){
+  db.collection('siteData').doc('homepage').get().then(function(doc){
+    if(!doc.exists)return;
+    var d=doc.data();
+    renderBanners(d.banners);
+    renderVip(d.vip);
+  }).catch(function(err){console.error('loadSiteData error',err);});
 }
 
 function loadProducts(){
@@ -317,6 +447,7 @@ function loadProducts(){
 }
 loadCart();
 loadProducts();
+loadSiteData();
 </script>
 </body>
 </html>
