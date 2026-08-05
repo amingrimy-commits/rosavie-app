@@ -586,7 +586,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-03 06:52 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-04 14:20 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -601,6 +601,11 @@ input[type=file]{display:none}
     <div id="ORDERS_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
     <button class="sbig" style="margin-top:8px;background:#eee2d0;color:#3d2b1f" onclick="toggleDoneOrders()" id="DONE_TOGGLE_BTN">📋 مشاهده سفارش‌های انجام‌شده</button>
     <div id="DONE_ORDERS_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
+  </div>
+  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">👥 مشتریان ثبت‌نام‌شده</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">مشتری‌هایی که توی سایت shop.html حساب کاربری ساختن، با شماره و آدرسشون اینجا نشون داده می‌شن.</p>
+    <div class="g1"><input class="fi" type="text" id="CUST2_SEARCH" placeholder="جستجو با نام، شماره، استان یا شهر..." oninput="renderCustomers2()"></div>
+    <div id="CUSTOMERS2_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px">در حال اتصال...</div>
   </div>
   <div class="card" style="border:2px solid #d4a87a"><div class="ctitle">📦 پشتیبان‌گیری کامل (برای مهاجرت به میزبانی جدید)</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">وقتی اپ رو جای دیگه (مثل GitHub Pages) باز کنی، چون آدرس فرق می‌کنه، همه‌ی محصولات و عکس‌ها خالی نشون داده میشن. برای انتقال بدون از دست دادن هیچی:</p>
@@ -856,6 +861,48 @@ function startOrdersListener(){
   });
 }
 setTimeout(startOrdersListener,1200);
+
+// ── مشتریان ثبت‌نام‌شده (زنده از Firestore) ──
+var CUSTOMERS2=[];
+function renderCustomers2(){
+  var q=(document.getElementById('CUST2_SEARCH').value||'').trim().toLowerCase();
+  var el=document.getElementById('CUSTOMERS2_LIST');
+  if(!el)return;
+  var list=CUSTOMERS2.filter(function(c){
+    if(!q)return true;
+    return [c.name,c.phone,c.province,c.city].some(function(v){return (v||'').toLowerCase().indexOf(q)>-1;});
+  });
+  if(!list.length){el.innerHTML='هیچ مشتری‌ای پیدا نشد.';return;}
+  el.innerHTML='<div style="font-size:0.72rem;color:#9a6e3a;margin-bottom:6px">'+list.length+' مشتری</div>'+
+    list.map(function(c){
+      var addrLine=[c.province,c.city].filter(Boolean).join(' - ');
+      var termsLine=c.termsAccepted?('پذیرش قوانین: '+(c.termsAcceptedAt&&c.termsAcceptedAt.toDate?c.termsAcceptedAt.toDate().toLocaleDateString('fa-IR'):'بله')):'قوانین را نپذیرفته';
+      return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
+        '<div style="font-weight:900;color:#3d2b1f">'+(c.name||'—')+'</div>'+
+        '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px;direction:ltr;text-align:right">'+(c.phone||'—')+'</div>'+
+        (addrLine?'<div style="color:#3d2b1f;font-size:0.74rem;margin-top:4px">'+addrLine+'</div>':'')+
+        (c.address?'<div style="color:#3d2b1f;font-size:0.72rem;margin-top:3px">'+c.address+(c.postal?' — کدپستی '+c.postal:'')+'</div>':'')+
+        '<div style="color:#9a6e3a;font-size:0.68rem;margin-top:5px">'+termsLine+'</div>'+
+        '<a href="tel:'+(c.phone||'')+'" style="display:block;text-align:center;background:#3d2b1f;color:#fff;padding:6px;border-radius:8px;text-decoration:none;font-size:0.7rem;margin-top:7px">☎️ تماس</a>'+
+        '</div>';
+    }).join('');
+}
+function startCustomersListener(){
+  if(!initFirebase()){
+    var el=document.getElementById('CUSTOMERS2_LIST');
+    if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
+    return;
+  }
+  fbDb.collection('customers').onSnapshot(function(snap){
+    CUSTOMERS2=[];
+    snap.forEach(function(doc){CUSTOMERS2.push(Object.assign({_id:doc.id},doc.data()));});
+    renderCustomers2();
+  },function(err){
+    var el=document.getElementById('CUSTOMERS2_LIST');
+    if(el)el.innerHTML='خطا در دریافت مشتریان: '+(err&&err.message?err.message:err);
+  });
+}
+setTimeout(startCustomersListener,1400);
 
 
 // ── سینک محصولات با Firestore ──
