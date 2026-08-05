@@ -29,8 +29,6 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .side-drawer-x{width:30px;height:30px;border-radius:50%;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;font-size:0.9rem;cursor:pointer}
 .side-drawer-item{display:flex;align-items:center;gap:10px;padding:13px 10px;border-radius:10px;color:#3a2e29;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none}
 .side-drawer-acc-head{justify-content:space-between}
-.side-drawer-acc-chev{transition:transform 0.25s;font-size:0.75rem;color:#8a7a6c}
-.side-drawer-acc-chev.open{transform:rotate(180deg)}
 .side-drawer-acc-body{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
 .side-drawer-acc-body.open{max-height:500px}
 .side-drawer-sub-item{display:block;padding:10px 10px 10px 10px;margin-right:14px;border-right:2px solid #ecdfd2;color:#5a4d45;font-size:0.8rem;font-weight:600;cursor:pointer}
@@ -119,11 +117,17 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .mag-faq span{font-size:0.76rem;color:#5a4d45;line-height:1.9}
 @media(max-width:380px){.mag-type-grid,.mag-proscons{grid-template-columns:1fr}}
 .searchbar{max-width:960px;margin:16px auto 0;padding:0 14px}
-.searchbar input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #ecdfd2;background:#ffffff;color:#3a2e29;font-family:inherit;font-size:0.86rem}
-.searchbar input::placeholder{color:#b5a493}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px;max-width:960px;margin:0 auto;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid #e0d0c0;background:#ffffff;color:#6b5d55;font-size:0.74rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.searchbar-inner{display:flex;align-items:stretch;background:#ffffff;border:1px solid #ecdfd2;border-radius:14px;overflow:hidden}
+.searchbar-inner input{flex:1;min-width:0;border:none;background:none;padding:12px 14px;font-family:inherit;font-size:0.86rem;color:#3a2e29}
+.searchbar-inner input:focus{outline:none}
+.searchbar-inner input::placeholder{color:#b5a493}
+.searchbar-prod-btn{display:flex;align-items:center;gap:5px;padding:0 12px;background:#f7efe6;border:none;border-left:1px solid #ecdfd2;color:#3a2e29;font-family:inherit;font-size:0.76rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chev-svg{transition:transform 0.25s;color:#8a7a6c;flex-shrink:0}
+.chev-svg.open{transform:rotate(180deg)}
+.home-prod-acc-body{max-width:960px;margin:0 auto;padding:0 14px;max-height:0;overflow:hidden;transition:max-height 0.3s ease}
+.home-prod-acc-body.open{max-height:500px;margin-top:8px}
+.home-prod-item{display:block;padding:11px 14px;margin-bottom:6px;border-radius:10px;background:#fff;border:1px solid #ecdfd2;color:#3a2e29;font-size:0.8rem;font-weight:700;cursor:pointer}
+.home-prod-item.on{background:#fbe8ee;border-color:#d4789a;color:#b0517a}
 .chip.on{border-color:#d4789a;background:#fbe8ee;color:#b0517a}
 .rescount{max-width:960px;margin:10px auto 0;padding:0 16px;font-size:0.72rem;color:#a89686}
 .grid{max-width:960px;margin:10px auto 30px;padding:0 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
@@ -241,7 +245,7 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
   <a class="side-drawer-item" href="javascript:void(0)" onclick="goHome()">🏠 خانه</a>
   <div class="side-drawer-acc">
     <div class="side-drawer-item side-drawer-acc-head" onclick="toggleProductsAcc()">
-      <span>🛍️ محصولات</span><span class="side-drawer-acc-chev" id="PROD_ACC_CHEV">▾</span>
+      <span>🛍️ محصولات</span><svg class="chev-svg" id="PROD_ACC_CHEV" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
     </div>
     <div class="side-drawer-acc-body" id="PROD_ACC_BODY"></div>
   </div>
@@ -299,8 +303,13 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
   </div>
 </div>
 <div id="VIP_SECTION"></div>
-<div class="searchbar"><input id="SQ" type="text" placeholder="جستجوی کد، نام یا سایز محصول..." oninput="renderGrid()"></div>
-<div class="chips" id="CHIPS"></div>
+<div class="searchbar">
+  <div class="searchbar-inner">
+    <button class="searchbar-prod-btn" onclick="toggleHomeProdAcc()"><span id="HOME_PROD_LABEL">محصولات</span><svg class="chev-svg" id="HOME_PROD_CHEV" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+    <input id="SQ" type="text" placeholder="جستجوی کد، نام یا سایز محصول..." oninput="renderGrid()">
+  </div>
+</div>
+<div class="home-prod-acc-body" id="HOME_PROD_ACC_BODY"></div>
 <div class="rescount" id="RC"></div>
 <div class="grid" id="GRID"><div class="loading">در حال دریافت محصولات...</div></div>
 
@@ -359,10 +368,34 @@ function fmtP(v){
 }
 
 function renderChips(){
-  var el=document.getElementById('CHIPS');
-  el.innerHTML=CATS.map(function(c){
-    return '<button class="chip'+(CUR_CAT===c.v?' on':'')+'" onclick="setCat(\''+c.v+'\')">'+c.l+'</button>';
+  var cur=CATS.find(function(c){return c.v===CUR_CAT;});
+  var lbl=document.getElementById('HOME_PROD_LABEL');
+  if(lbl)lbl.textContent=(cur&&cur.v!=='all')?cur.l:'محصولات';
+  var body=document.getElementById('HOME_PROD_ACC_BODY');
+  if(body&&body.innerHTML)renderHomeProdAccList();
+}
+function toggleHomeProdAcc(){
+  var body=document.getElementById('HOME_PROD_ACC_BODY');
+  var chev=document.getElementById('HOME_PROD_CHEV');
+  if(!body.innerHTML)renderHomeProdAccList();
+  var willOpen=!body.classList.contains('open');
+  body.classList.toggle('open',willOpen);
+  chev.classList.toggle('open',willOpen);
+}
+function renderHomeProdAccList(){
+  var body=document.getElementById('HOME_PROD_ACC_BODY');
+  body.innerHTML=CATS.map(function(c){
+    return '<div class="home-prod-item'+(CUR_CAT===c.v?' on':'')+'" onclick="setCatFromHome(\''+c.v+'\')">'+c.l+'</div>';
   }).join('');
+}
+function setCatFromHome(v){
+  CUR_CAT=v;
+  renderChips();
+  renderGrid();
+  var body=document.getElementById('HOME_PROD_ACC_BODY');
+  var chev=document.getElementById('HOME_PROD_CHEV');
+  body.classList.remove('open');
+  chev.classList.remove('open');
 }
 function setCat(v){CUR_CAT=v;renderChips();renderGrid();}
 
