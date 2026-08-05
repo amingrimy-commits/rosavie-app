@@ -28,6 +28,13 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .side-drawer-head span{font-size:1rem;font-weight:900;color:#2e2320}
 .side-drawer-x{width:30px;height:30px;border-radius:50%;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;font-size:0.9rem;cursor:pointer}
 .side-drawer-item{display:flex;align-items:center;gap:10px;padding:13px 10px;border-radius:10px;color:#3a2e29;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none}
+.side-drawer-acc-head{justify-content:space-between}
+.side-drawer-acc-chev{transition:transform 0.25s;font-size:0.75rem;color:#8a7a6c}
+.side-drawer-acc-chev.open{transform:rotate(180deg)}
+.side-drawer-acc-body{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
+.side-drawer-acc-body.open{max-height:500px}
+.side-drawer-sub-item{display:block;padding:10px 10px 10px 10px;margin-right:14px;border-right:2px solid #ecdfd2;color:#5a4d45;font-size:0.8rem;font-weight:600;cursor:pointer}
+.side-drawer-sub-item:active{color:#b0517a}
 .side-drawer-item:active{background:#f7efe6}
 /* بنر متحرک ۴:۳ */
 .banner-wrap{max-width:960px;margin:14px auto 0;padding:0 14px}
@@ -44,6 +51,23 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 /* صفحه‌ی اطلاعات تمام‌صفحه (درباره ما/تماس با ما/مجله/حساب کاربری) */
 .info-page{display:none;position:fixed;inset:0;background:#faf6f1;z-index:4200;overflow-y:auto}
 #INFO_OV{z-index:4300}
+/* تقویم شمسی */
+.jcal-overlay{display:none;position:fixed;inset:0;z-index:4900;background:rgba(0,0,0,0.4)}
+.jcal-overlay.open{display:block}
+.jcal-popup{display:none;position:fixed;z-index:4901;top:50%;left:50%;transform:translate(-50%,-50%);width:290px;max-width:90vw;background:#fff;border:1.5px solid #ecdfd2;border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,0.3);padding:12px}
+.jcal-popup.open{display:block}
+.jcal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:4px}
+.jcal-sels{display:flex;gap:4px;flex:1;min-width:0}
+.jcal-sel{flex:1;min-width:0;font-family:'Vazirmatn',sans-serif;font-size:0.74rem;font-weight:700;color:#3a2e29;background:#f7efe6;border:1.5px solid #ecdfd2;border-radius:8px;padding:6px 3px;text-align:center}
+.jcal-nav{width:30px;height:30px;flex-shrink:0;border-radius:8px;border:1.5px solid #ecdfd2;background:#f7efe6;color:#b0517a;cursor:pointer;font-size:0.8rem}
+.jcal-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:0.68rem;color:#8a7a6c;font-weight:700;margin-bottom:4px}
+.jcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.jcal-grid span{display:block}
+.jcal-day{background:none;border:none;border-radius:8px;padding:7px 0;font-size:0.76rem;color:#3a2e29;cursor:pointer;font-family:'Vazirmatn',sans-serif}
+.jcal-day:hover{background:#f7efe6}
+.jcal-day.today{border:1.5px solid #d4789a}
+.jcal-day.sel{background:#d4789a;color:#fff}
+.jcal-today{width:100%;margin-top:8px;padding:8px;border-radius:8px;border:1.5px dashed #d4789a;background:none;color:#b0517a;font-family:'Vazirmatn',sans-serif;font-size:0.74rem;cursor:pointer}
 .info-page.open{display:block}
 .info-page-head{position:sticky;top:0;background:#ffffff;border-bottom:1px solid #ecdfd2;padding:14px 16px;display:flex;align-items:center;gap:10px;z-index:2}
 .info-page-body{padding:22px 18px;max-width:640px;margin:0 auto}
@@ -215,7 +239,12 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 <div class="side-drawer" id="SIDE_DRAWER">
   <div class="side-drawer-head"><span>منو</span><button class="side-drawer-x" onclick="closeDrawer()">✕</button></div>
   <a class="side-drawer-item" href="javascript:void(0)" onclick="goHome()">🏠 خانه</a>
-  <a class="side-drawer-item" href="javascript:void(0)" onclick="goProducts()">🛍️ محصولات</a>
+  <div class="side-drawer-acc">
+    <div class="side-drawer-item side-drawer-acc-head" onclick="toggleProductsAcc()">
+      <span>🛍️ محصولات</span><span class="side-drawer-acc-chev" id="PROD_ACC_CHEV">▾</span>
+    </div>
+    <div class="side-drawer-acc-body" id="PROD_ACC_BODY"></div>
+  </div>
   <a class="side-drawer-item" href="javascript:void(0)" onclick="silentCloseDrawer();openMagazine()">📰 مجله رُزاوی</a>
   <a class="side-drawer-item" href="javascript:void(0)" onclick="openInfoPanel('درباره ما','به رُزاوی خوش آمدید.\n\nدر این مسیر، تلاش می‌کنیم ترکیبی از طراحی دقیق، انتخاب پارچه‌های باکیفیت و تنوع سایز را در اختیار شما قرار دهیم؛ تا مشتریان شما، با هر سایز، فرم بدن و سلیقه‌ای، بتوانند چیزی پیدا کنند که واقعاً مناسب خودشان باشد.\n\nهدف ما ارائه‌ی محصولاتی با متریال عالی، دوخت دقیق و طراحی‌های به‌روز است؛ کالایی که مشتریان شما هر روز با لذت آن را بپوشند.\n\nما به این باور داریم که زیبایی محدود به یک سایز، یک فرم یا یک رنگ نیست؛ از این رو، همواره در مسیر تنوع بیشتر حرکت می‌کنیم.\n\nاز انتخاب رنگ و مدل تا دریافت و پس دادن کالا، سرویس‌دهی بی‌نقصی را فراهم کرده‌ایم؛ تجربه‌ای ساده، سریع و مطمئن.\n\nبابت وقتی که گذاشتید، سپاسگزاریم. امیدواریم همکاری با ما، هر روز شما را پرفروش‌تر و موفق‌تر کند. اگر سؤالی دارید یا به راهنمایی نیاز دارید، با ما تماس بگیرید؛ خوشحال می‌شویم کمکتان کنیم.\n\nبا احترام،\nتیم رُزاوی')">ℹ️ درباره ما</a>
   <a class="side-drawer-item" href="javascript:void(0)" onclick="silentCloseDrawer();openSupport()">📞 تماس با ما</a>
@@ -245,6 +274,22 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
   </div>
   <div class="info-page-body" id="MAG_BODY"></div>
 </div>
+
+<div class="jcal-overlay" id="JCALOV" onclick="closeJalaliCal()"></div>
+<div class="jcal-popup" id="JCALPOP">
+  <div class="jcal-head">
+    <button type="button" class="jcal-nav" onclick="jcalNav(-1)">◀</button>
+    <div class="jcal-sels">
+      <select class="jcal-sel" id="JCAL_MSEL" onchange="jcalSetMonth(this.value)"></select>
+      <select class="jcal-sel" id="JCAL_YSEL" onchange="jcalSetYear(this.value)"></select>
+    </div>
+    <button type="button" class="jcal-nav" onclick="jcalNav(1)">▶</button>
+  </div>
+  <div class="jcal-week"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div>
+  <div class="jcal-grid" id="JCAL_GRID"></div>
+  <button type="button" class="jcal-today" onclick="jcalToday()">امروز</button>
+</div>
+
 <div class="banner-wrap">
   <div class="banner-viewport">
     <div class="banner-track" id="BANNER_TRACK"></div>
@@ -417,6 +462,7 @@ function hideAllModals(){
   var io=document.getElementById('INFO_OV');if(io)io.classList.remove('open');
   var ao=document.getElementById('ACCOUNT_OV');if(ao)ao.classList.remove('open');
   var mo=document.getElementById('MAG_OV');if(mo)mo.classList.remove('open');
+  closeJalaliCal();
 }
 function closeTopModal(){
   if(RV_MODAL_DEPTH>0){history.back();}
@@ -461,6 +507,27 @@ function closeDrawer(){closeTopModal();}
 function silentCloseDrawer(){document.getElementById('SIDE_DRAWER').classList.remove('open');document.getElementById('DRAWER_OV').classList.remove('open');}
 function goHome(){silentCloseDrawer();window.scrollTo({top:0,behavior:'smooth'});CUR_CAT='all';document.getElementById('SQ').value='';renderChips();renderGrid();}
 function goProducts(){silentCloseDrawer();document.getElementById('GRID').scrollIntoView({behavior:'smooth',block:'start'});}
+function toggleProductsAcc(){
+  var body=document.getElementById('PROD_ACC_BODY');
+  var chev=document.getElementById('PROD_ACC_CHEV');
+  if(!body.innerHTML)renderProductsAccList();
+  var willOpen=!body.classList.contains('open');
+  body.classList.toggle('open',willOpen);
+  chev.classList.toggle('open',willOpen);
+}
+function renderProductsAccList(){
+  var body=document.getElementById('PROD_ACC_BODY');
+  body.innerHTML=CATS.map(function(c){
+    return '<div class="side-drawer-sub-item" onclick="selectDrawerCat(\''+c.v+'\')">'+c.l+'</div>';
+  }).join('');
+}
+function selectDrawerCat(catValue){
+  silentCloseDrawer();
+  CUR_CAT=catValue;
+  renderChips();
+  renderGrid();
+  document.getElementById('GRID').scrollIntoView({behavior:'smooth',block:'start'});
+}
 function openInfoPanel(title,text){silentCloseDrawer();document.getElementById('INFO_TITLE').textContent=title;document.getElementById('INFO_TEXT').textContent=text;document.getElementById('INFO_OV').classList.add('open');pushModalState();}
 function closeInfoPanel(){closeTopModal();}
 function openAccount(){
@@ -507,6 +574,107 @@ function fillCityOptions(selectedCity){
   var h='<option value="">انتخاب شهر</option>';
   cities.forEach(function(c){h+='<option value="'+c+'"'+(c===selectedCity?' selected':'')+'>'+c+'</option>';});
   citySel.innerHTML=h;
+}
+// ── تقویم شمسی (برای تاریخ تولد) ──
+function jdiv(a,b){return ~~(a/b);}
+function g2j(gy,gm,gd){
+  var g_d_m=[0,31,59,90,120,151,181,212,243,273,304,334];
+  var jy;
+  if(gy<=1600){jy=0;gy-=621;}else{jy=979;gy-=1600;}
+  var gy2=(gm>2)?(gy+1):gy;
+  var days=(365*gy)+(jdiv((gy2+3),4))-(jdiv((gy2+99),100))+(jdiv((gy2+399),400))-80+gd+g_d_m[gm-1];
+  jy+=33*(jdiv(days,12053));days%=12053;
+  jy+=4*(jdiv(days,1461));days%=1461;
+  if(days>365){jy+=jdiv((days-1),365);days=(days-1)%365;}
+  var jm,jd;
+  if(days<186){jm=1+jdiv(days,31);jd=1+(days%31);}
+  else{jm=7+jdiv((days-186),30);jd=1+((days-186)%30);}
+  return [jy,jm,jd];
+}
+function j2g(jy,jm,jd){
+  var gy;
+  if(jy<=979){gy=621;jy+=1600;}else{gy=1600;jy-=979;}
+  var days=(365*jy)+(jdiv(jy,33)*8)+(jdiv(((jy%33)+3),4))+78+jd+((jm<7)?(jm-1)*31:(((jm-7)*30)+186));
+  gy+=400*(jdiv(days,146097));days%=146097;
+  if(days>36524){gy+=100*(jdiv(--days,36524));days%=36524;if(days>=365)days++;}
+  gy+=4*(jdiv(days,1461));days%=1461;
+  if(days>365){gy+=jdiv((days-1),365);days=(days-1)%365;}
+  var gd=days+1;
+  var sal_a=[0,31,((gy%4===0&&gy%100!==0)||(gy%400===0))?29:28,31,30,31,30,31,31,30,31,30,31];
+  var gm;
+  for(gm=0;gm<13;gm++){var v=sal_a[gm];if(gd<=v)break;gd-=v;}
+  return [gy,gm,gd];
+}
+var JMONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+function pad2(n){return n<10?'0'+n:''+n;}
+function toFaDigits(s){var fa=['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];return String(s).replace(/[0-9]/g,function(d){return fa[d];});}
+function jalaliMonthLength(jy,jm){
+  if(jm<=6)return 31;
+  if(jm<=11)return 30;
+  var g=j2g(jy,12,30);var back=g2j(g[0],g[1],g[2]);
+  return (back[0]===jy&&back[1]===12&&back[2]===30)?30:29;
+}
+var JCAL_TARGET_DISPLAY=null,JCAL_TARGET_HIDDEN=null,JCAL_VY=1403,JCAL_VM=1,JCAL_SEL_ISO=null;
+function openJalaliCal(displayId,hiddenId,anchorEl){
+  JCAL_TARGET_DISPLAY=displayId;JCAL_TARGET_HIDDEN=hiddenId;
+  var hiddenEl=document.getElementById(hiddenId);
+  var iso=hiddenEl?hiddenEl.value:'';
+  var base=iso?new Date(iso+'T00:00:00'):new Date();
+  var j=g2j(base.getFullYear(),base.getMonth()+1,base.getDate());
+  JCAL_VY=j[0];JCAL_VM=j[1];JCAL_SEL_ISO=iso||null;
+  renderJalaliCal();
+  document.getElementById('JCALOV').classList.add('open');
+  var pop=document.getElementById('JCALPOP');pop.classList.add('open');
+}
+function closeJalaliCal(){document.getElementById('JCALOV').classList.remove('open');document.getElementById('JCALPOP').classList.remove('open');}
+function jcalNav(dir){JCAL_VM+=dir;if(JCAL_VM<1){JCAL_VM=12;JCAL_VY--;}if(JCAL_VM>12){JCAL_VM=1;JCAL_VY++;}renderJalaliCal();}
+function jcalToday(){var t=new Date();var j=g2j(t.getFullYear(),t.getMonth()+1,t.getDate());JCAL_VY=j[0];JCAL_VM=j[1];renderJalaliCal();jcalPick(j[2]);}
+function jcalSetMonth(m){JCAL_VM=Number(m);renderJalaliCal();}
+function jcalSetYear(y){JCAL_VY=Number(y);renderJalaliCal();}
+function renderJalaliCal(){
+  var msel=document.getElementById('JCAL_MSEL');
+  var ysel=document.getElementById('JCAL_YSEL');
+  if(!msel.options.length){
+    JMONTHS.forEach(function(m,i){var o=document.createElement('option');o.value=i+1;o.textContent=m;msel.appendChild(o);});
+  }
+  if(!ysel.options.length){
+    var t=new Date();var curY=g2j(t.getFullYear(),t.getMonth()+1,t.getDate())[0];
+    for(var y=curY;y>=curY-90;y--){var o=document.createElement('option');o.value=y;o.textContent=toFaDigits(y);ysel.appendChild(o);}
+  }
+  msel.value=JCAL_VM;
+  ysel.value=JCAL_VY;
+  var g1=j2g(JCAL_VY,JCAL_VM,1);
+  var firstDate=new Date(g1[0],g1[1]-1,g1[2]);
+  var startOffset=(firstDate.getDay()+1)%7;
+  var len=jalaliMonthLength(JCAL_VY,JCAL_VM);
+  var t=new Date();var todayJ=g2j(t.getFullYear(),t.getMonth()+1,t.getDate());
+  var html='';
+  for(var i=0;i<startOffset;i++)html+='<span></span>';
+  for(var d=1;d<=len;d++){
+    var cls='jcal-day';
+    var g=j2g(JCAL_VY,JCAL_VM,d);
+    var iso=g[0]+'-'+pad2(g[1])+'-'+pad2(g[2]);
+    if(iso===JCAL_SEL_ISO)cls+=' sel';
+    if(todayJ[0]===JCAL_VY&&todayJ[1]===JCAL_VM&&todayJ[2]===d)cls+=' today';
+    html+='<button type="button" class="'+cls+'" onclick="jcalPick('+d+')">'+toFaDigits(d)+'</button>';
+  }
+  document.getElementById('JCAL_GRID').innerHTML=html;
+}
+function jcalPick(d){
+  var g=j2g(JCAL_VY,JCAL_VM,d);
+  var iso=g[0]+'-'+pad2(g[1])+'-'+pad2(g[2]);
+  JCAL_SEL_ISO=iso;
+  var hiddenEl=document.getElementById(JCAL_TARGET_HIDDEN);
+  var dispEl=document.getElementById(JCAL_TARGET_DISPLAY);
+  if(hiddenEl)hiddenEl.value=iso;
+  if(dispEl)dispEl.value=toFaDigits(JCAL_VY)+'/'+toFaDigits(pad2(JCAL_VM))+'/'+toFaDigits(pad2(d));
+  closeJalaliCal();
+}
+function isoToJalaliDisp(iso){
+  if(!iso)return '';
+  var parts=iso.split('-');if(parts.length<3)return '';
+  var j=g2j(Number(parts[0]),Number(parts[1]),Number(parts[2]));
+  return toFaDigits(j[0])+'/'+toFaDigits(pad2(j[1]))+'/'+toFaDigits(pad2(j[2]));
 }
 function saveProfileDetails(){
   var user=fbAuth&&fbAuth.currentUser;
@@ -636,7 +804,9 @@ function renderAccountView(){
         '<div class="form-field"><label>شهر</label><select id="PF_CITY"></select></div>'+
         '<div class="form-field"><label>آدرس پستی</label><textarea id="PF_ADDR" placeholder="نام خیابان، کوچه و پلاک">'+addr+'</textarea></div>'+
         '<div class="form-field"><label>کدپستی</label><input id="PF_POSTAL" type="text" value="'+postal+'" style="direction:ltr;text-align:left"></div>'+
-        '<div class="form-field"><label>تاریخ تولد</label><input id="PF_BDAY" type="date" value="'+bday+'" style="direction:ltr"><div style="font-size:0.7rem;color:#b0517a;margin-top:5px">🎂 روز تولدتون یه تخفیف ویژه از طرف رُزاوی براتون داریم!</div></div>'+
+        '<div class="form-field"><label>تاریخ تولد (شمسی)</label>'+
+          '<input id="PF_BDAY" type="hidden" value="'+bday+'"><input id="PF_BDAY_DISP" type="text" readonly style="cursor:pointer;background:#fff" value="'+(isoToJalaliDisp(bday)||'انتخاب تاریخ')+'" onclick="openJalaliCal(&#39;PF_BDAY_DISP&#39;,&#39;PF_BDAY&#39;,this)">'+
+          '<div style="font-size:0.7rem;color:#b0517a;margin-top:5px">🎂 روز تولدتون یه تخفیف ویژه از طرف رُزاوی براتون داریم!</div></div>'+
         '<div class="form-field"><label>شماره موبایل <span style="color:#2a9d5c">✔ تأیید شده</span></label><div class="phone-verified">'+ph+'</div></div>'+
         '<div class="acc-err" id="PF_ERR"></div>'+
         '<button class="acc-btn" onclick="saveProfileDetails()">ثبت اطلاعات</button>';
