@@ -43,6 +43,7 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .banner-dots span.on{background:#fff;width:16px;border-radius:3px;transition:width 0.25s}
 /* صفحه‌ی اطلاعات تمام‌صفحه (درباره ما/تماس با ما/مجله/حساب کاربری) */
 .info-page{display:none;position:fixed;inset:0;background:#faf6f1;z-index:4200;overflow-y:auto}
+#INFO_OV{z-index:4300}
 .info-page.open{display:block}
 .info-page-head{position:sticky;top:0;background:#ffffff;border-bottom:1px solid #ecdfd2;padding:14px 16px;display:flex;align-items:center;gap:10px;z-index:2}
 .info-page-body{padding:22px 18px;max-width:640px;margin:0 auto}
@@ -515,12 +516,13 @@ function saveProfileDetails(){
   var city=document.getElementById('PF_CITY').value||'';
   var address=(document.getElementById('PF_ADDR').value||'').trim();
   var postal=(document.getElementById('PF_POSTAL').value||'').trim();
+  var birthdate=document.getElementById('PF_BDAY').value||'';
   var err=document.getElementById('PF_ERR');
   if(!name){err.textContent='لطفاً نام رو وارد کن';return;}
   err.textContent='';
-  db.collection('customers').doc(user.uid).set({name:name,province:province,city:city,address:address,postal:postal},{merge:true}).then(function(){
+  db.collection('customers').doc(user.uid).set({name:name,province:province,city:city,address:address,postal:postal,birthdate:birthdate},{merge:true}).then(function(){
     CUR_CUSTOMER=CUR_CUSTOMER||{};
-    CUR_CUSTOMER.name=name;CUR_CUSTOMER.province=province;CUR_CUSTOMER.city=city;CUR_CUSTOMER.address=address;CUR_CUSTOMER.postal=postal;
+    CUR_CUSTOMER.name=name;CUR_CUSTOMER.province=province;CUR_CUSTOMER.city=city;CUR_CUSTOMER.address=address;CUR_CUSTOMER.postal=postal;CUR_CUSTOMER.birthdate=birthdate;
     err.style.color='#2a9d5c';err.textContent='✅ اطلاعات ذخیره شد';
   }).catch(function(e){
     err.style.color='#c0304a';err.textContent='خطا در ذخیره: '+(e&&e.message?e.message:e);
@@ -614,6 +616,7 @@ function renderAccountView(){
       var ct=(CUR_CUSTOMER&&CUR_CUSTOMER.city)||'';
       var addr=(CUR_CUSTOMER&&CUR_CUSTOMER.address)||'';
       var postal=(CUR_CUSTOMER&&CUR_CUSTOMER.postal)||'';
+      var bday=(CUR_CUSTOMER&&CUR_CUSTOMER.birthdate)||'';
       var termsAt=(CUR_CUSTOMER&&CUR_CUSTOMER.termsAcceptedAt)?CUR_CUSTOMER.termsAcceptedAt.toLocaleDateString('fa-IR'):'';
       var termsLine=(CUR_CUSTOMER&&CUR_CUSTOMER.termsAccepted)?
         ('<div style="text-align:center;font-size:0.72rem;color:#2a9d5c;margin-top:8px">✔ قوانین و مقررات را پذیرفته‌اید'+(termsAt?' ('+termsAt+')':'')+' — <span onclick="openTermsPage()" style="text-decoration:underline;cursor:pointer;color:#8a7a6c">مشاهده</span></div>')
@@ -633,6 +636,7 @@ function renderAccountView(){
         '<div class="form-field"><label>شهر</label><select id="PF_CITY"></select></div>'+
         '<div class="form-field"><label>آدرس پستی</label><textarea id="PF_ADDR" placeholder="نام خیابان، کوچه و پلاک">'+addr+'</textarea></div>'+
         '<div class="form-field"><label>کدپستی</label><input id="PF_POSTAL" type="text" value="'+postal+'" style="direction:ltr;text-align:left"></div>'+
+        '<div class="form-field"><label>تاریخ تولد</label><input id="PF_BDAY" type="date" value="'+bday+'" style="direction:ltr"><div style="font-size:0.7rem;color:#b0517a;margin-top:5px">🎂 روز تولدتون یه تخفیف ویژه از طرف رُزاوی براتون داریم!</div></div>'+
         '<div class="form-field"><label>شماره موبایل <span style="color:#2a9d5c">✔ تأیید شده</span></label><div class="phone-verified">'+ph+'</div></div>'+
         '<div class="acc-err" id="PF_ERR"></div>'+
         '<button class="acc-btn" onclick="saveProfileDetails()">ثبت اطلاعات</button>';
@@ -659,7 +663,7 @@ function renderAccountView(){
          '<div class="form-field"><label>رمز عبور (حداقل ۶ رقم)</label><input id="AC_PASS" type="password"></div>'+
          '<div class="form-field"><label>تکرار رمز عبور</label><input id="AC_PASS2" type="password"></div>'+
          '<div class="acc-terms-row"><input type="checkbox" id="AC_TERMS"><label for="AC_TERMS">'+
-           '<span onclick="event.preventDefault();openTermsPage()" style="text-decoration:underline;color:#b0517a">قوانین و مقررات</span> را خوانده‌ام و می‌پذیرم</label></div>'+
+           '<span onclick="event.preventDefault();event.stopPropagation();openTermsPage()" style="text-decoration:underline;color:#b0517a">قوانین و مقررات</span> را خوانده‌ام و می‌پذیرم</label></div>'+
          '<div class="acc-err" id="AC_ERR"></div>'+
          '<button class="acc-btn" id="AC_BTN" onclick="doSignup()">ثبت‌نام</button>')
       );
@@ -739,7 +743,7 @@ function loadCustomerProfile(uid){
     if(doc.exists){
       var d=doc.data();
       var acceptedAt=(d.termsAcceptedAt&&d.termsAcceptedAt.toDate)?d.termsAcceptedAt.toDate():null;
-      CUR_CUSTOMER={uid:uid,name:d.name||'',phone:d.phone||'',province:d.province||'',city:d.city||'',address:d.address||'',postal:d.postal||'',termsAccepted:!!d.termsAccepted,termsAcceptedAt:acceptedAt};
+      CUR_CUSTOMER={uid:uid,name:d.name||'',phone:d.phone||'',province:d.province||'',city:d.city||'',address:d.address||'',postal:d.postal||'',birthdate:d.birthdate||'',termsAccepted:!!d.termsAccepted,termsAcceptedAt:acceptedAt};
     }
   }).catch(function(){});
 }

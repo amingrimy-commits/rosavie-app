@@ -586,7 +586,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-04 14:20 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-05 07:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -850,6 +850,7 @@ function startOrdersListener(){
         if(ch.type==='added'&&!ORDERS_SEEN_IDS[ch.doc.id]){
           var d=ch.doc.data();
           addNotif('🛒 سفارش جدید از '+(d.customerName||'مشتری')+' — '+fmtP(d.total)+' (کد '+d.orderNo+')');
+          linkOrderToCustomerClub(d);
         }
       });
     }
@@ -897,10 +898,58 @@ function startCustomersListener(){
     CUSTOMERS2=[];
     snap.forEach(function(doc){CUSTOMERS2.push(Object.assign({_id:doc.id},doc.data()));});
     renderCustomers2();
+    mergeWebsiteCustomersIntoClub(CUSTOMERS2);
   },function(err){
     var el=document.getElementById('CUSTOMERS2_LIST');
     if(el)el.innerHTML='خطا در دریافت مشتریان: '+(err&&err.message?err.message:err);
   });
+}
+function normPhone(p){return String(p||'').replace(/\D/g,'');}
+function findLocalCustomerByPhone(phone){
+  var np=normPhone(phone);
+  if(!np)return null;
+  for(var i=0;i<CUSTOMERS.length;i++){if(normPhone(CUSTOMERS[i].phone)===np)return CUSTOMERS[i];}
+  return null;
+}
+function linkOrderToCustomerClub(order){
+  if(!order||!order.customerPhone)return;
+  var today=new Date().toISOString().slice(0,10);
+  var cust=findLocalCustomerByPhone(order.customerPhone);
+  if(!cust){
+    cust={id:custUid(),name:order.customerName||'مشتری سایت',phone:order.customerPhone,birthdate:'',discountCode:'',loyaltyPoints:0,
+      address:'',postalCode:'',province:'',neighborhood:'',notes:'ثبت‌نام خودکار از سفارش سایت',
+      location:null,createdAt:today,updatedAt:today,purchases:[]};
+    CUSTOMERS.unshift(cust);
+  }
+  var already=(cust.purchases||[]).some(function(p){return p.invoiceNumber===order.orderNo;});
+  if(already)return;
+  var itemsSummary=(order.items||[]).map(function(it){return it.title+' ×'+it.qty;}).join('، ');
+  cust.purchases=cust.purchases||[];
+  cust.purchases.unshift({id:custUid(),date:today,invoiceNumber:order.orderNo,itemsSummary:itemsSummary,total:order.total||0});
+  cust.updatedAt=today;
+  saveCustomers();
+  if(typeof renderCustomerList==='function')renderCustomerList();
+  autoSyncCustomerChannel();
+}
+function mergeWebsiteCustomersIntoClub(webCustomers){
+  var added=0;
+  var today=new Date().toISOString().slice(0,10);
+  webCustomers.forEach(function(wc){
+    if(!wc.phone)return;
+    if(findLocalCustomerByPhone(wc.phone))return;
+    var nc={id:custUid(),name:wc.name||'مشتری سایت',phone:wc.phone,birthdate:wc.birthdate||'',discountCode:'',loyaltyPoints:0,
+      address:wc.address||'',postalCode:wc.postal||'',province:wc.province||'',neighborhood:wc.city||'',
+      notes:'ثبت‌نام خودکار از سایت'+(wc.termsAccepted?' (قوانین پذیرفته شده)':''),
+      location:null,createdAt:today,updatedAt:today,purchases:[],siteUid:wc._id};
+    CUSTOMERS.unshift(nc);
+    added++;
+  });
+  if(added>0){
+    saveCustomers();
+    if(typeof renderCustomerList==='function')renderCustomerList();
+    autoSyncCustomerChannel();
+    addNotif('👥 '+added+' مشتری جدید از سایت به باشگاه مشتریان اضافه شد');
+  }
 }
 setTimeout(startCustomersListener,1400);
 
