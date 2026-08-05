@@ -224,12 +224,12 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .support-panel-list a{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;text-decoration:none;font-size:0.82rem;font-weight:700;margin-bottom:8px}
 /* بنر */
 /* پیشنهاد ویژه (VIP) */
-.vip-title{max-width:960px;margin:6px auto 0;padding:0 16px;font-size:0.85rem;font-weight:900;color:#3a2e29;display:flex;align-items:center;gap:6px}
-.vip-title-ico{width:20px;height:20px;object-fit:contain}
-.vip-title span{color:#d4789a}
-.vip-scroll{display:flex;gap:10px;overflow-x:auto;max-width:960px;margin:0 auto;padding:8px 14px 16px;scrollbar-width:none}
+.vip-outer{background:linear-gradient(135deg,#c4607a,#d4789a,#e8a0b0);border-radius:18px;max-width:960px;margin:14px auto 0;padding:14px 0 6px}
+.vip-title{padding:0 16px;font-size:1.28rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px}
+.vip-title-ico{width:30px;height:30px;object-fit:contain;filter:brightness(0) invert(1)}
+.vip-scroll{display:flex;gap:10px;overflow-x:auto;padding:10px 14px 10px;scrollbar-width:none}
 .vip-scroll::-webkit-scrollbar{display:none}
-.vip-card{flex-shrink:0;width:150px;background:#f7efe6;border:1.5px solid #ecdfd2;border-radius:16px;overflow:hidden;cursor:pointer;position:relative}
+.vip-card{flex-shrink:0;width:150px;background:#fff;border:1.5px solid #ecdfd2;border-radius:16px;overflow:hidden;cursor:pointer;position:relative}
 .vip-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
 .vip-card-ph{width:100%;aspect-ratio:1;background:#f3e9de;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
 .vip-card-body{padding:9px 10px 11px}
@@ -237,7 +237,7 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .vip-price-old{font-size:0.66rem;color:#a89686;text-decoration:line-through;margin-top:6px}
 .vip-price-new{font-size:0.86rem;color:#e0447a;font-weight:900;margin-top:2px}
 .vip-discount-badge{position:absolute;top:7px;left:7px;background:#e0304f;color:#fff;font-size:0.6rem;font-weight:900;padding:2px 7px;border-radius:7px;z-index:2}
-.vip-pct-badge{position:absolute;top:7px;left:7px;background:#c25a80;color:#fff;font-size:0.66rem;font-weight:900;padding:3px 8px;border-radius:8px;z-index:2}
+.vip-pct-badge{position:absolute;top:7px;left:7px;background:#ff1744;color:#fff;font-size:0.66rem;font-weight:900;padding:3px 8px;border-radius:8px;z-index:2;box-shadow:0 2px 6px rgba(255,23,68,0.4)}
 .vip-countdown{margin-top:6px;font-size:0.66rem;font-weight:800;color:#b0517a;background:#fbe8ee;padding:3px 7px;border-radius:7px;display:inline-block;direction:ltr}
 </style>
 </head>
@@ -1269,7 +1269,7 @@ function renderVip(vip){
     var safeCode=(v.code||'').replace(/'/g,"\\'");
     return '<div class="vip-card" onclick="openByCode(\''+safeCode+'\')">'+pctBadge+img+'<div class="vip-card-body"><div class="vip-card-name">'+(v.title||v.code)+'</div>'+priceHTML+timerHTML+'</div></div>';
   }).join('');
-  sec.innerHTML='<div class="vip-title"><img class="vip-title-ico" src="'+DISCOUNT_TAG_ICON+'"> شگفت‌انگیز</div><div class="vip-scroll">'+cardsHTML+'</div>';
+  sec.innerHTML='<div class="vip-outer"><div class="vip-title"><img class="vip-title-ico" src="'+DISCOUNT_TAG_ICON+'"> شگفت‌انگیز</div><div class="vip-scroll">'+cardsHTML+'</div></div>';
 }
 setInterval(function(){
   var hasTimer=LAST_VIP_DATA.some(function(v){return v&&v.expiresAt;});
