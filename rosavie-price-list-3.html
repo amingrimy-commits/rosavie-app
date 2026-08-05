@@ -190,6 +190,12 @@ input[type=file]{display:none}
 .vip-price{font-size:0.74rem;color:#9a6e3a;margin-top:2px}
 .vip-del{width:28px;height:28px;background:#fde8e8;border:1px solid #f5b8b8;border-radius:6px;color:#c04040;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .vip-badge{font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:8px;background:#ffd700;color:#5a3d10;margin-top:3px;display:inline-block}
+.vip-timer-remain{font-size:0.68rem;font-weight:700;color:#c0392b;background:#fde8e8;padding:3px 8px;border-radius:7px;display:inline-block;margin-top:5px}
+.vip-timer-btns{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.vip-timer-btn{padding:4px 9px;border-radius:7px;border:1px solid #e2cdb0;background:#f9f0e8;color:#9a6e3a;font-size:0.66rem;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif}
+.vip-timer-custom{display:flex;gap:4px;margin-top:5px;align-items:center}
+.vip-timer-custom input{width:48px;padding:4px 5px;border-radius:6px;border:1px solid #e2cdb0;font-size:0.68rem;text-align:center;font-family:'Vazirmatn',sans-serif}
+.vip-timer-custom button{padding:4px 8px;border-radius:6px;border:1px solid #e2cdb0;font-size:0.66rem;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif}
 .cust-row{background:#fff;border:1.5px solid #e2cdb0;border-radius:10px;padding:11px;display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer}
 .cust-row:active{background:#f9f0e8}
 .cust-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d4a87a,#9a6e3a);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;flex-shrink:0}
@@ -586,7 +592,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-05 07:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-05 12:15 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1009,6 +1015,7 @@ function collectSiteData(productImgMap){
       code:v.code||'',title:v.title||'',price:v.price||'',
       discountPrice:v.discountPrice||'',
       brandName:v.brandName||'',
+      expiresAt:v.expiresAt||null,
       img:(productImgMap&&productImgMap[v.code])||v.img||null
     };
   });
@@ -2831,7 +2838,20 @@ function renderVipList(){
       html+='<div class="vip-price">'+fmtP(p.price)+'</div>';
     }
     html+='<div style="margin-top:6px;display:flex;align-items:center;gap:6px"><span style="font-size:0.7rem;color:#9a6e3a">قیمت با تخفیف:</span><input class="fi" type="text" style="padding:5px 8px;font-size:0.74rem;max-width:120px" placeholder="خالی = بدون تخفیف" value="'+(p.discountPrice||'')+'" onchange="setVipDiscount(this,&#39;'+safeCode+'&#39;)"></div>';
-    html+='<span class="vip-badge">&#11088; پیشنهاد ویژه</span></div>';
+    html+='<span class="vip-badge">&#11088; پیشنهاد ویژه</span>';
+    if(p.expiresAt&&p.expiresAt>Date.now()){
+      html+='<div class="vip-timer-remain" id="VIPTIMER_'+i+'">&#9201; '+vipTimeRemainingStr(p.expiresAt)+'</div>';
+    }
+    html+='<div class="vip-timer-btns">'+
+      '<button type="button" class="vip-timer-btn" onclick="setVipTimer(&#39;'+safeCode+'&#39;,6)">۶ ساعت</button>'+
+      '<button type="button" class="vip-timer-btn" onclick="setVipTimer(&#39;'+safeCode+'&#39;,12)">۱۲ ساعت</button>'+
+      '<button type="button" class="vip-timer-btn" onclick="setVipTimer(&#39;'+safeCode+'&#39;,24)">۲۴ ساعت</button>'+
+      '<button type="button" class="vip-timer-btn" onclick="setVipTimer(&#39;'+safeCode+'&#39;,48)">۴۸ ساعت</button>'+
+      '<button type="button" class="vip-timer-btn" onclick="setVipTimer(&#39;'+safeCode+'&#39;,72)">۷۲ ساعت</button>'+
+      (p.expiresAt?'<button type="button" class="vip-timer-btn" style="background:#fde8e8;color:#c0392b" onclick="clearVipTimer(&#39;'+safeCode+'&#39;)">حذف تایمر</button>':'')+
+      '</div>';
+    html+='<div class="vip-timer-custom"><input type="number" min="0" placeholder="ساعت" id="VIPH_'+i+'"><input type="number" min="0" max="59" placeholder="دقیقه" id="VIPM_'+i+'"><button type="button" onclick="setVipTimerCustom(&#39;'+safeCode+'&#39;,'+i+')">تنظیم/تمدید</button></div>';
+    html+='</div>';
     html+='<div style="display:flex;flex-direction:column;gap:4px">';
     if(i>0)html+='<button class="vip-del" style="background:#e8f5ee;color:#1a6a3a;border-color:#a8d8b8" onclick="vipAct(this,&#39;up&#39;)">&#8593;</button>';
     else html+='<div style="width:28px"></div>';
@@ -2849,6 +2869,64 @@ function setVipDiscount(inp,code){
   p.discountPrice=val;
   save();
   renderVipList();
+}
+
+// ── تایمر تخفیف پیشنهاد ویژه ──
+function vipTimeRemainingStr(expiresAt){
+  var ms=expiresAt-Date.now();
+  if(ms<=0)return 'تمام شد';
+  var totalMin=Math.floor(ms/60000);
+  var h=Math.floor(totalMin/60),m=totalMin%60;
+  if(h>24){var d=Math.floor(h/24);var rh=h%24;return toF(d)+' روز و '+toF(rh)+' ساعت مانده';}
+  return toF(h)+' ساعت و '+toF(m)+' دقیقه مانده';
+}
+function setVipTimer(code,hours){
+  var p=VIP_PRODUCTS.find(function(x){return x.code===code;});
+  if(!p)return;
+  p.expiresAt=Date.now()+hours*3600000;
+  save();renderVipList();resyncSiteDataOnly();
+}
+function setVipTimerCustom(code,idx){
+  var p=VIP_PRODUCTS.find(function(x){return x.code===code;});
+  if(!p)return;
+  var hEl=document.getElementById('VIPH_'+idx),mEl=document.getElementById('VIPM_'+idx);
+  var h=Number(toEnDigits(hEl?hEl.value:'0'))||0;
+  var m=Number(toEnDigits(mEl?mEl.value:'0'))||0;
+  if(h<=0&&m<=0){alert('لطفاً ساعت یا دقیقه رو وارد کن');return;}
+  p.expiresAt=Date.now()+(h*3600000+m*60000);
+  save();renderVipList();resyncSiteDataOnly();
+}
+function clearVipTimer(code){
+  var p=VIP_PRODUCTS.find(function(x){return x.code===code;});
+  if(!p)return;
+  delete p.expiresAt;
+  save();renderVipList();resyncSiteDataOnly();
+}
+function vipExpiryCleanupTick(){
+  var before=VIP_PRODUCTS.length;
+  VIP_PRODUCTS=VIP_PRODUCTS.filter(function(p){return !p.expiresAt||p.expiresAt>Date.now();});
+  if(VIP_PRODUCTS.length!==before){
+    save();renderVipList();resyncSiteDataOnly();
+    addNotif('⏱️ '+(before-VIP_PRODUCTS.length)+' محصول پیشنهاد ویژه با اتمام تایمر حذف شد');
+  } else {
+    // فقط رفرش نمایش زمان باقیمانده، بدون سینک مجدد
+    var anyTimer=VIP_PRODUCTS.some(function(p){return p.expiresAt;});
+    if(anyTimer&&document.getElementById('VIP_LIST'))renderVipList();
+  }
+}
+setInterval(vipExpiryCleanupTick,30000);
+function resyncSiteDataOnly(){
+  if(!initFirebase())return;
+  var vip=(VIP_PRODUCTS||[]).map(function(v){
+    return {
+      code:v.code||'',title:v.title||'',price:v.price||'',
+      discountPrice:v.discountPrice||'',
+      brandName:v.brandName||'',
+      expiresAt:v.expiresAt||null,
+      img:v.img||null
+    };
+  });
+  fbDb.collection('siteData').doc('homepage').set({vip:vip},{merge:true}).catch(function(e){console.error('resyncSiteDataOnly error',e);});
 }
 
 // ── INVOICE CREATOR ──
