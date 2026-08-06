@@ -179,6 +179,16 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 .variant-switch-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px}
 .variant-chip{padding:7px 13px;border-radius:16px;border:1.5px solid #e0d0c0;background:#fff;color:#5a4d45;font-size:0.76rem;font-weight:700;cursor:pointer}
 .variant-chip.on{border-color:#d4789a;background:#fbe8ee;color:#b0517a}
+.pdp-tabs{display:flex;gap:8px;margin-top:18px;border-bottom:1px solid #ecdfd2;padding-bottom:2px}
+.pdp-tab{padding:9px 16px;border-radius:14px 14px 0 0;font-size:0.8rem;font-weight:800;color:#8a7a6c;cursor:pointer}
+.pdp-tab.on{background:#fbe8ee;color:#b0517a}
+.pdp-desc p{color:#3a2e29;font-size:0.82rem;line-height:2;margin:12px 0}
+.review-loading,.review-empty{text-align:center;color:#a89686;font-size:0.8rem;padding:16px 0}
+.review-item{background:#f7efe6;border-radius:11px;padding:11px 13px;margin-bottom:9px}
+.review-name{font-size:0.8rem;font-weight:900;color:#2e2320}
+.review-text{font-size:0.8rem;color:#3a2e29;margin-top:4px;line-height:1.9}
+.review-reply{margin-top:8px;background:#fbe8ee;border-radius:9px;padding:8px 10px;font-size:0.76rem;color:#5a4d45;line-height:1.8}
+.review-reply b{color:#b0517a}
 .modal-row span:first-child{color:#9c8a7c}
 .modal-row span:last-child{color:#3a2e29;font-weight:700}
 .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
@@ -266,7 +276,6 @@ body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-hei
 <div class="side-drawer-ov" id="DRAWER_OV" onclick="closeDrawer()"></div>
 <div class="side-drawer" id="SIDE_DRAWER">
   <div class="side-drawer-head"><span>منو</span><button class="side-drawer-x" onclick="closeDrawer()">✕</button></div>
-  <a class="side-drawer-item" href="javascript:void(0)" onclick="goHome()"><img class="side-drawer-ico" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAFUklEQVR42u1Z3WsUVxQ/59752ll3xp3dJEvcnY1gvnZZTSLUxmKCUkhLzQp9EWpKKSrFDwhBfOmLjy1YQf0bSl/6FLVpad+CiC/StLGVUiEQ6AfUWpvKfs7c05e7YQyxpibZNTI/uCyze++d+5vfPb9z7ixAiBAhQoQIESJEiBAhQoQIAdiiezL5KWQLgskWhA8A9LI8YP6yKswBwFcUBXbt2vV2qVRKDgwM3Lh27dqvAKA01C4UCgXf918lIkFEqKqqZ9v29M2bN/+S690SSisAAKdOnYonEokbqqoSY4xM0/w9n8+PyT465xzS6fQM55w458QYI03TqFAonAjOsyXI7tu3r9+yrLtSoSoAVACAdF33s9nsacYYEBG6rvsVANTl72XGWH1oaOjMViCMjQX29vaORSKRPxpkGWOkKArJ67qiKJRIJC7rug6u604DACGiBwB1zjkNDQ2d3ijCbJPIMgBAxpjnuu7ZhYWFmXK5nAQAT1VVzXGcj7q7u183TXMJABTP86oPHz6cTCQSnyHi9hZmkOc2J1AUBVKp1BWpZF1uX0qn0+/funUrsn///t4jR45kYrHYj4hIAFBBxKDytBkKb5o5OY5znTFGAFAGADJN8+/+/v4Dx48f77Asa94wDHJdd4KIVMdxZjjnjdgWW4WwAgBw6NChnG3bP0jVyohIlmXdO3r0aCaXy71imuYDScZXVZVSqdTHmqZBW1vbJamuHyg06pxzGhwcPBv0hBfGnHK53BuRSORPudgyY4xs275ORGpnZ+d7uq431POkkh7nnOLx+DQRKa7rntA0jQJ9GoTflffSWk2WAQBjjEE2mz0dIFSTzntJVVVIJpMXpXoioN7ytkVE2rZt291jx46ls9nssGEYjwLpS8Tj8W8mJye3t3pbMwAAIsJUKnVZVdVlczIMg7q6uk4SkWrbdiOW6yvi8wnSMs4f9fT0vFYsFjtt2/4pQJosy/p+dHS0r1WkMWBOX0hCFQCgSCTyqFAoHDh8+LAbjUbvyViuP4VosHkAQJqmUSaT+YCIdMdxvpRm1pj7QT6fH0PEzUypq+fY4eHhvkDlVJIK3S0Wi51dXV2jhmEsBdVbY/MbZpZIJK7qug5tbW2fyHCoydTm7dy580wzSXMAgIGBgTelwVQ55+Q4zgwRael0+swK46H/2UQjrm3b/npubi66Y8eOk7quL8+XTCY/Z4w19aTFEREymcyHkUiEUqnUVSLC9vb2K6ukludtdUSkWCy2MDEx0Z7P58dM01yyLOu78+fPx2RYNbUaQ8YYjIyMDAIATE1NOdFotLYGsmKV9rS+FcYY7dmzZwoAYGRkpHt8fLxjPaXnetyOhBAwOzv7LQCwvr4+pijKEgAkEJGIaCPO4BwRhaIoFQDgs7OzPwfmoGYTfuJgbxgGPctEOOdC07RK4GGQEEKt1Wr/VVAwIkK5a7SACUKrCIs19PEBgFuWNXfu3LninTt3sFqtcsuy6rdv335ncXHxohDCW8N6xHrfeDQ1gRNR9cKFC7/4vr/8XUdHx4OmV0vNNDrP85gMA02WpWrTTzjNhKZpIpBS1r1FW63wpixelqcvlsKVSgWJSAlUV7jCtBoFyUoyQo7xVpnWIyImhFBeNMJ48ODBfxDxN8ZYLxGBrHWfuA8ixlcZG0FEBRFXW4uiqirUarWfNmoHbVRphgBAu3fv7imVSm8xxnQhBKBkTUQCEblpmovz8/OfCiGWY3jv3r2Fx48fj/u+7yMiCzg6yXr53v3796flmC35d0vLX89s+BuQZ5iavwFjQoQIESJEiBAhQoQIESJEiPXgX4rxKXdSGuvLAAAAAElFTkSuQmCC"> خانه</a>
   <div class="side-drawer-acc">
     <div class="side-drawer-item side-drawer-acc-head" onclick="toggleProductsAcc()">
       <span style="display:flex;align-items:center;gap:10px"><img class="side-drawer-ico" src="data:image/png;base64,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"> محصولات</span><svg class="chev-svg" id="PROD_ACC_CHEV" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -566,6 +575,7 @@ function renderModalContent(){
   var group=window._CURGROUP;
   var p=group[window._CURVARIANT];
   window._CURP=p;
+  window._PDP_TAB='spec';
   var nm=p.title||p.typeLabel||p.code;
   var isSleep=(p.tab==='p4');
   var mainLink=p.tgLink||(isSleep?TEL_SLEEPWEAR:TEL_UNDERWEAR);
@@ -577,25 +587,113 @@ function renderModalContent(){
         return '<div class="variant-chip'+(idx===window._CURVARIANT?' on':'')+'" onclick="switchVariant('+idx+')">'+(v.colors||('گزینه '+(idx+1)))+'</div>';
       }).join('')+'</div>';
   }
+  var hasDesc=!!(p.fullDesc||p.desc1||p.desc2);
   var html='<button class="modal-close" onclick="closeModal()">✕</button><div style="clear:both"></div>'+
     (p.img?'<img class="modal-img" src="'+p.img+'">':'')+
     '<div class="modal-name">'+nm+'</div>'+
     (p.brand?'<div class="modal-brand">'+p.brand+'</div>':'')+
     '<div class="modal-price">'+fmtP(p.price)+'</div>'+
     variantHTML+
-    (p.code?'<div class="modal-row"><span>کد محصول</span><span>'+p.code+'</span></div>':'')+
-    (p.sizes?'<div class="modal-row"><span>سایزبندی</span><span>'+p.sizes+'</span></div>':'')+
-    (group.length<=1&&p.colors?'<div class="modal-row"><span>رنگبندی</span><span>'+p.colors+'</span></div>':'')+
-    (p.minOrder?'<div class="modal-row"><span>حداقل سفارش</span><span>'+p.minOrder+' عدد</span></div>':'')+
-    (p.material?'<div class="modal-row"><span>جنس</span><span>'+p.material+'</span></div>':'')+
-    (p.desc1?'<div class="modal-row"><span>توضیحات</span><span>'+p.desc1+'</span></div>':'')+
     (canOrder?('<div class="qty-box"><button class="qty-btn" onclick="chQty(-1)">−</button><span class="qty-val" id="MQTY">1</span><button class="qty-btn" onclick="chQty(1)">+</button></div>'+
     '<div class="form-field"><label>توضیح یا سایز مدنظر (اختیاری)</label><input id="MCOLOR" type="text" placeholder="مثلاً: سایز L لطفاً"></div>'+
     '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>')+
     '<div class="modal-actions">'+
       '<a class="act-main" href="'+mainLink+'" target="_blank">🎥 مشاهده عکس و فیلم بیشتر در کانال</a>'+
-    '</div>';
+    '</div>'+
+    '<div class="pdp-tabs">'+
+      '<div class="pdp-tab on" id="PDP_TAB_SPEC" onclick="switchPdpTab(\'spec\')">مشخصات</div>'+
+      (hasDesc?'<div class="pdp-tab" id="PDP_TAB_DESC" onclick="switchPdpTab(\'desc\')">توضیحات محصول</div>':'')+
+      '<div class="pdp-tab" id="PDP_TAB_REVIEWS" onclick="switchPdpTab(\'reviews\')">نظرات کاربران</div>'+
+    '</div>'+
+    '<div id="PDP_TAB_CONTENT"></div>';
   document.getElementById('MODAL_BODY').innerHTML=html;
+  renderPdpTabContent();
+}
+function switchPdpTab(tab){
+  window._PDP_TAB=tab;
+  var specEl=document.getElementById('PDP_TAB_SPEC'),descEl=document.getElementById('PDP_TAB_DESC'),revEl=document.getElementById('PDP_TAB_REVIEWS');
+  if(specEl)specEl.classList.toggle('on',tab==='spec');
+  if(descEl)descEl.classList.toggle('on',tab==='desc');
+  if(revEl)revEl.classList.toggle('on',tab==='reviews');
+  renderPdpTabContent();
+}
+function renderPdpTabContent(){
+  var p=window._CURP;
+  var group=window._CURGROUP;
+  var el=document.getElementById('PDP_TAB_CONTENT');
+  if(!el||!p)return;
+  if(window._PDP_TAB==='desc'){
+    var paras=p.fullDesc?[p.fullDesc]:[p.desc1,p.desc2].filter(Boolean);
+    var html=paras.map(function(t){return '<p>'+t+'</p>';}).join('');
+    el.innerHTML='<div class="pdp-desc">'+(html||'<p style="color:#a89686">توضیحی ثبت نشده.</p>')+'</div>';
+  }else if(window._PDP_TAB==='reviews'){
+    el.innerHTML='<div class="review-loading">در حال دریافت نظرات...</div>';
+    loadProductReviews(p.code);
+  }else{
+    el.innerHTML=
+      (p.code?'<div class="modal-row"><span>کد محصول</span><span>'+p.code+'</span></div>':'')+
+      (p.sizes?'<div class="modal-row"><span>سایزبندی</span><span>'+p.sizes+'</span></div>':'')+
+      (group.length<=1&&p.colors?'<div class="modal-row"><span>رنگبندی</span><span>'+p.colors+'</span></div>':'')+
+      (p.minOrder?'<div class="modal-row"><span>حداقل سفارش</span><span>'+p.minOrder+' عدد</span></div>':'')+
+      (p.material?'<div class="modal-row"><span>جنس</span><span>'+p.material+'</span></div>':'');
+  }
+}
+// ── نظرات کاربران ──
+function loadProductReviews(code){
+  db.collection('reviews').where('productCode','==',code).get().then(function(snap){
+    var list=[];
+    snap.forEach(function(doc){list.push(Object.assign({_id:doc.id},doc.data()));});
+    list.sort(function(a,b){
+      var ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;
+      var tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;
+      return tb-ta;
+    });
+    if(window._PDP_TAB==='reviews')renderReviewsList(code,list);
+  }).catch(function(err){
+    var el=document.getElementById('PDP_TAB_CONTENT');
+    if(el&&window._PDP_TAB==='reviews')el.innerHTML='<p style="color:#c0304a">خطا در دریافت نظرات</p>';
+  });
+}
+function renderReviewsList(code,list){
+  var el=document.getElementById('PDP_TAB_CONTENT');
+  if(!el||window._PDP_TAB!=='reviews')return;
+  var pfName=(CUR_CUSTOMER&&CUR_CUSTOMER.name)||'';
+  var itemsHTML=list.length?list.map(function(r){
+    return '<div class="review-item"><div class="review-name">'+(r.customerName||'کاربر')+'</div>'+
+      '<div class="review-text">'+r.text+'</div>'+
+      (r.adminReply?('<div class="review-reply"><b>پاسخ رُزاوی:</b> '+r.adminReply+'</div>'):'')+
+      '</div>';
+  }).join(''):'<div class="review-empty">هنوز نظری برای این محصول ثبت نشده. اولین نفر باش!</div>';
+  el.innerHTML='<div id="REVIEWS_LIST">'+itemsHTML+'</div>'+
+    '<div class="acc-section-title" style="margin-top:18px">نظرت رو بنویس</div>'+
+    '<div class="form-field"><label>نام</label><input id="RV_NAME" type="text" value="'+pfName+'" placeholder="اختیاری"></div>'+
+    '<div class="form-field"><label>متن نظر</label><textarea id="RV_TEXT" placeholder="نظرت درباره این محصول..."></textarea></div>'+
+    '<div class="acc-err" id="RV_ERR"></div>'+
+    '<button class="acc-btn" id="RV_BTN" onclick="submitReview(\''+code+'\')">ثبت نظر</button>';
+}
+function submitReview(code){
+  var name=(document.getElementById('RV_NAME').value||'').trim();
+  var text=(document.getElementById('RV_TEXT').value||'').trim();
+  var err=document.getElementById('RV_ERR');
+  if(!text){err.textContent='لطفاً متن نظرت رو بنویس';return;}
+  err.textContent='';
+  var btn=document.getElementById('RV_BTN');btn.disabled=true;btn.textContent='در حال ثبت...';
+  db.collection('reviews').add({
+    productCode:code,
+    customerName:name||'کاربر',
+    customerUid:(CUR_CUSTOMER&&CUR_CUSTOMER.uid)||null,
+    text:text,
+    adminReply:null,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    btn.disabled=false;btn.textContent='ثبت نظر';
+    document.getElementById('RV_TEXT').value='';
+    showToast('نظرت ثبت شد، ممنون! 🌸');
+    loadProductReviews(code);
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='ثبت نظر';
+    err.textContent='خطا در ثبت نظر: '+(e&&e.message?e.message:e);
+  });
 }
 function chQty(d){
   window._CURQTY=Math.max(1,(window._CURQTY||1)+d);
