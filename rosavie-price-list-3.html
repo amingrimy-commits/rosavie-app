@@ -252,23 +252,11 @@ input[type=file]{display:none}
 <div class="adm-drawer-overlay" id="ADMOV" onclick="closeAdmDrawer()"></div>
 <div class="adm-drawer" id="ADMDR">
   <div class="adm-drawer-head"><span>منو</span><button class="adm-drawer-x" onclick="closeAdmDrawer()">✕</button></div>
-  <button class="tab on" onclick="showTab('pf',this);closeAdmDrawer()">فاکتور</button>
-  <button class="tab" onclick="showTab('pcust',this);closeAdmDrawer()">👥 باشگاه مشتریان</button>
-  <button class="tab" onclick="showTab('pc',this);closeAdmDrawer()">تولید محتوا</button>
-  <button class="tab" onclick="showTab('pcat',this);closeAdmDrawer()">فایل جستجو</button>
-  <button class="tab" onclick="showTab('ppdf',this);closeAdmDrawer()">PDF</button>
-  <button class="tab" onclick="showTab('p1',this);closeAdmDrawer()">سوتین+ست</button>
-  <button class="tab" onclick="showTab('p2',this);closeAdmDrawer()">نیمتنه+ست</button>
-  <button class="tab" onclick="showTab('p3',this);closeAdmDrawer()">شورت</button>
-  <button class="tab" onclick="showTab('p4',this);closeAdmDrawer()">لباس خواب</button>
-  <button class="tab" onclick="showTab('p5',this);closeAdmDrawer()">لوازم جانبی</button>
-  <button class="tab" onclick="showTab('p6',this);closeAdmDrawer()">مایو</button>
-  <button class="tab" onclick="showTab('p7',this);closeAdmDrawer()">کراپ</button>
-  <button class="tab" onclick="showTab('p8',this);closeAdmDrawer()">تاپ</button>
-  <button class="tab" onclick="showTab('p9',this);closeAdmDrawer()">بادی</button>
-  <button class="tab" onclick="showTab('ps',this);closeAdmDrawer()">جستجو</button>
-  <button class="tab" onclick="showTab('pa',this);closeAdmDrawer()">آرشیو</button>
-  <button class="tab" onclick="showTab('psettings',this);closeAdmDrawer()">تنظیمات کانال‌ها</button>
+  <button class="tab on" onclick="hideSubNav();showTab('pf',this);closeAdmDrawer()">فاکتور</button>
+  <button class="tab" onclick="hideSubNav();showTab('pcust',this);closeAdmDrawer()">👥 باشگاه مشتریان</button>
+  <button class="tab" onclick="hideSubNav();showTab('pc',this);closeAdmDrawer()">تولید محتوا</button>
+  <button class="tab" onclick="openProductsGroup();closeAdmDrawer()">🛍️ محصولات</button>
+  <button class="tab" onclick="openSiteGroup();closeAdmDrawer()">🌐 سایت</button>
 </div>
 <div class="notif-overlay" id="NOTIFOV" onclick="closeNotifPanel()"></div>
 <div class="notif-panel" id="NOTIFPANEL">
@@ -356,6 +344,7 @@ input[type=file]{display:none}
 </div>
 
 
+<div class="tabs" id="SUBNAV" style="display:none"></div>
 <div class="pg on" id="pf">
   <div class="card"><div class="ctitle">🧾 نوشتن فاکتور جدید</div>
     <div class="g1" style="background:#fbf6ee;border-radius:10px;padding:9px;border:1.5px dashed #d4a87a">
@@ -502,6 +491,10 @@ input[type=file]{display:none}
       <input type="checkbox" id="CG_FULLDESC_TO_SITE" style="width:17px;height:17px" checked>
       این توضیحات کامل توی سایت ذخیره بشه (اگه خالی باشه، توضیحات دیگر اول/دوم به‌جاش استفاده می‌شه)
     </label>
+    <div class="g1"><span class="lbl">لینک مستقیم پست تلگرام (اختیاری — فقط اگه لینک خودکار کار نکرد یا محصول قدیمیه)</span>
+      <input class="fi" type="text" id="CG_TGLINK" style="direction:ltr;text-align:left" placeholder="مثال: https://t.me/rozavie_underwear/123">
+      <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">این رو خالی بذار — وقتی از همین‌جا محصول رو به تلگرام بفرستی، خودش لینک پست رو پیدا و ذخیره می‌کنه. فقط اگه محصول قدیمیه یا خواستی دستی لینک یه پست خاص رو بذاری، اینجا پیستش کن.</p>
+    </div>
     <button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="generateCaption()">👁️ فقط پیش‌نمایش کپشن</button>
   </div>
 
@@ -599,7 +592,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-05 13:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 10:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1713,6 +1706,28 @@ function showTab(id,btn){
   if(id==='pf'){renderInvItems();renderReport(CUR_REPORT_PERIOD);updateLastReportInfo();}
   if(id==='pcust'){renderCustomerList();}
 }
+function hideSubNav(){var el=document.getElementById('SUBNAV');if(el)el.style.display='none';}
+var PRODUCTS_GROUP_TABS=[
+  {id:'p1',l:'سوتین+ست'},{id:'p2',l:'نیمتنه+ست'},{id:'p3',l:'شورت'},
+  {id:'p4',l:'لباس خواب'},{id:'p5',l:'لوازم جانبی'},{id:'p6',l:'مایو'},
+  {id:'p7',l:'کراپ'},{id:'p8',l:'تاپ'},{id:'p9',l:'بادی'},
+  {id:'ppdf',l:'PDF'},{id:'ps',l:'جستجو'},{id:'pa',l:'آرشیو'}
+];
+var SITE_GROUP_TABS=[
+  {id:'pcat',l:'فایل جستجو'},{id:'psettings',l:'تنظیمات کانال‌ها'}
+];
+function renderSubNavAndOpen(list,defaultId){
+  var el=document.getElementById('SUBNAV');
+  el.innerHTML=list.map(function(t){
+    return '<button type="button" class="tab" onclick="showTab(\''+t.id+'\',this)">'+t.l+'</button>';
+  }).join('');
+  el.style.display='flex';
+  var defBtn=el.querySelector('button');
+  list.forEach(function(t,i){if(t.id===defaultId)defBtn=el.children[i];});
+  showTab(defaultId,defBtn);
+}
+function openProductsGroup(){renderSubNavAndOpen(PRODUCTS_GROUP_TABS,'p1');}
+function openSiteGroup(){renderSubNavAndOpen(SITE_GROUP_TABS,'pcat');}
 
 // ── منوی همبرگری (تب‌ها) ──
 function openAdmDrawer(){document.getElementById('ADMDR').classList.add('open');document.getElementById('ADMOV').classList.add('open');document.body.style.overflow='hidden';}
@@ -4511,7 +4526,7 @@ function setCgCountry(val,btn){
 function buildCaptionData(){
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
       sizeRange=V('CG_SIZE_RANGE'), priceRaw=V('CG_PRICE'), minOrder=V('CG_MINORDER'), material=V('CG_MATERIAL'),
-      desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC');
+      desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK');
   var price=expandPriceShorthand(priceRaw);
   var showPriceInCaption=!!(document.getElementById('CG_SHOWPRICE_CAPTION')&&document.getElementById('CG_SHOWPRICE_CAPTION').checked);
 
@@ -4574,7 +4589,7 @@ function buildCaptionData(){
 
   return {text:fullCaption,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
-    country:CG_COUNTRY,desc1:desc1,desc2:desc2,
+    country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
     fullDesc:(document.getElementById('CG_FULLDESC_TO_SITE')&&document.getElementById('CG_FULLDESC_TO_SITE').checked)?fullDesc:''};
 }
 function showCaptionPreview(data){
@@ -4659,6 +4674,7 @@ function loadProductForEdit(el){
   document.getElementById('CG_DESC1').value=p.desc1||'';
   document.getElementById('CG_DESC2').value=p.desc2||'';
   document.getElementById('CG_FULLDESC').value=p.fulldesc||'';
+  document.getElementById('CG_TGLINK').value=p.tglink||'';
 
   var sizeVal=(p.sizes&&p.sizes!=='--')?p.sizes:'';
   var cupMatch=sizeVal.match(/\s*کاپ\s*([A-D])$/);
@@ -4718,6 +4734,7 @@ function updateExistingProduct(rid,data){
     row.dataset.desc1=data.desc1||'';
     row.dataset.desc2=data.desc2||'';
     row.dataset.fulldesc=data.fullDesc||'';
+    if(data.manualTgLink)row.dataset.tglink=data.manualTgLink;
   }
   var tiEl=document.getElementById('TI'+rid);if(tiEl)tiEl.value=data.title||'';
 
@@ -4762,7 +4779,7 @@ function saveProductFromCaption(data){
     var bnEl=document.getElementById('BN'+bl.id.slice(1));
     if(bnEl&&bnEl.value.trim()===data.brand.trim())bid=bl.id.slice(1);
   });
-  var extraInfo={material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,fulldesc:data.fullDesc};
+  var extraInfo={material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,fulldesc:data.fullDesc,tglink:data.manualTgLink||''};
   var newImgId=null;
   var primaryImg=SEND_MEDIA.find(function(m){return m.primary&&m.type==='image';});
   var otherImgs=SEND_MEDIA.filter(function(m){return !m.primary&&m.type==='image'&&m.croppedDataUrl;});
@@ -4781,7 +4798,7 @@ function saveProductFromCaption(data){
   if(bid){
     addRow(bid,data.category,data.type,data.code,data.finalSize,data.color,data.minOrder,data.price,'in',newImgId,null,data.title,extraInfo);
   } else {
-    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds}]);
+    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||''}]);
   }
   save();
   return true;
