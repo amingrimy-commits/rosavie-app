@@ -592,7 +592,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-05 12:15 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-05 13:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -612,6 +612,12 @@ input[type=file]{display:none}
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">مشتری‌هایی که توی سایت shop.html حساب کاربری ساختن، با شماره و آدرسشون اینجا نشون داده می‌شن.</p>
     <div class="g1"><input class="fi" type="text" id="CUST2_SEARCH" placeholder="جستجو با نام، شماره، استان یا شهر..." oninput="renderCustomers2()"></div>
     <div id="CUSTOMERS2_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px">در حال اتصال...</div>
+  </div>
+  <div class="card" style="border:2px solid #e0304f"><div class="ctitle">✉️ پیام‌های پشتیبانی از سایت</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">پیام‌هایی که مشتری‌ها از فرم «ارتباط با ما» توی سایت می‌فرستن، اینجا زنده نشون داده می‌شه.</p>
+    <div id="SUPPORTMSG_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
+    <button class="sbig" style="margin-top:8px;background:#eee2d0;color:#3d2b1f" onclick="toggleDoneSupportMsgs()" id="SUPPORTMSG_TOGGLE_BTN">📋 مشاهده پیام‌های جواب‌داده‌شده</button>
+    <div id="SUPPORTMSG_DONE_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
   </div>
   <div class="card" style="border:2px solid #d4a87a"><div class="ctitle">📦 پشتیبان‌گیری کامل (برای مهاجرت به میزبانی جدید)</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">وقتی اپ رو جای دیگه (مثل GitHub Pages) باز کنی، چون آدرس فرق می‌کنه، همه‌ی محصولات و عکس‌ها خالی نشون داده میشن. برای انتقال بدون از دست دادن هیچی:</p>
@@ -869,6 +875,102 @@ function startOrdersListener(){
 }
 setTimeout(startOrdersListener,1200);
 
+// ── پیام‌های پشتیبانی (زنده از Firestore) ──
+var SUPPORTMSG_SEEN_IDS={},SUPPORTMSG_FIRST_LOAD=true;
+function renderSupportMsgList(list){
+  var el=document.getElementById('SUPPORTMSG_LIST');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div style="color:#9a6e3a">پیام جدیدی نیست.</div>';return;}
+  el.innerHTML=list.map(function(m){
+    return '<div style="background:#fff;border:1px solid #f0b8c4;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
+      '<div style="font-weight:900;color:#3d2b1f">'+(m.name||'بدون نام')+'</div>'+
+      '<div style="color:#3d2b1f;font-size:0.78rem;margin-top:5px">'+m.message+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:8px">'+
+        '<a href="tel:'+(m.phone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.72rem">☎️ '+(m.phone||'')+'</a>'+
+        '<button onclick="markSupportMsgDone(\''+m._id+'\')" style="flex:1;background:#2a9d5c;color:#fff;border:none;border-radius:8px;font-size:0.72rem;cursor:pointer">✅ جواب داده شد</button>'+
+      '</div></div>';
+  }).join('');
+}
+function markSupportMsgDone(id){
+  if(!fbDb)return;
+  fbDb.collection('supportMessages').doc(id).update({status:'done'}).catch(function(err){console.error('markSupportMsgDone error',err);});
+}
+function markSupportMsgNew(id){
+  if(!fbDb)return;
+  fbDb.collection('supportMessages').doc(id).update({status:'new'}).then(function(){if(DONE_SUPPORTMSG_OPEN)refreshDoneSupportMsgs();}).catch(function(err){console.error('markSupportMsgNew error',err);});
+}
+var DONE_SUPPORTMSG_OPEN=false;
+function toggleDoneSupportMsgs(){
+  var box=document.getElementById('SUPPORTMSG_DONE_LIST');
+  var btn=document.getElementById('SUPPORTMSG_TOGGLE_BTN');
+  DONE_SUPPORTMSG_OPEN=!DONE_SUPPORTMSG_OPEN;
+  if(!DONE_SUPPORTMSG_OPEN){box.style.display='none';btn.textContent='📋 مشاهده پیام‌های جواب‌داده‌شده';return;}
+  refreshDoneSupportMsgs();
+}
+function refreshDoneSupportMsgs(){
+  var box=document.getElementById('SUPPORTMSG_DONE_LIST');
+  var btn=document.getElementById('SUPPORTMSG_TOGGLE_BTN');
+  btn.textContent='در حال دریافت...';
+  if(!initFirebase()){box.innerHTML='خطا: Firebase بارگذاری نشد';box.style.display='block';btn.textContent='📋 مشاهده پیام‌های جواب‌داده‌شده';return;}
+  fbDb.collection('supportMessages').where('status','==','done').get().then(function(snap){
+    var list=[];
+    snap.forEach(function(doc){list.push(Object.assign({_id:doc.id},doc.data()));});
+    list.sort(function(a,b){
+      var ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;
+      var tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;
+      return tb-ta;
+    });
+    if(!list.length){box.innerHTML='<div style="color:#9a6e3a">هنوز پیام جواب‌داده‌شده‌ای نیست.</div>';}
+    else{
+      box.innerHTML=list.map(function(m){
+        return '<div style="background:#f5efe3;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px;opacity:0.85">'+
+          '<div style="font-weight:900;color:#3d2b1f">'+(m.name||'بدون نام')+'</div>'+
+          '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+m.message+'</div>'+
+          '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">'+(m.phone||'')+'</div>'+
+          '<button onclick="markSupportMsgNew(\''+m._id+'\')" style="margin-top:8px;background:#9a6e3a;color:#fff;border:none;border-radius:8px;font-size:0.7rem;padding:6px 10px;cursor:pointer">↩️ بازگردانی به جدید</button>'+
+          '</div>';
+      }).join('');
+    }
+    box.style.display='block';
+    btn.textContent='📋 پنهان کردن پیام‌های جواب‌داده‌شده';
+  }).catch(function(err){
+    box.innerHTML='خطا: '+(err&&err.message?err.message:err);
+    box.style.display='block';
+    btn.textContent='📋 مشاهده پیام‌های جواب‌داده‌شده';
+  });
+}
+function startSupportMsgListener(){
+  if(!initFirebase()){
+    var el=document.getElementById('SUPPORTMSG_LIST');
+    if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
+    return;
+  }
+  fbDb.collection('supportMessages').where('status','==','new').onSnapshot(function(snap){
+    var list=[];
+    snap.forEach(function(doc){list.push(Object.assign({_id:doc.id},doc.data()));});
+    list.sort(function(a,b){
+      var ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;
+      var tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;
+      return tb-ta;
+    });
+    renderSupportMsgList(list);
+    if(!SUPPORTMSG_FIRST_LOAD){
+      snap.docChanges().forEach(function(ch){
+        if(ch.type==='added'&&!SUPPORTMSG_SEEN_IDS[ch.doc.id]){
+          var d=ch.doc.data();
+          addNotif('✉️ پیام پشتیبانی جدید از '+(d.name||d.phone||'مشتری'));
+        }
+      });
+    }
+    snap.forEach(function(doc){SUPPORTMSG_SEEN_IDS[doc.id]=true;});
+    SUPPORTMSG_FIRST_LOAD=false;
+  },function(err){
+    var el=document.getElementById('SUPPORTMSG_LIST');
+    if(el)el.innerHTML='خطا در دریافت پیام‌ها: '+(err&&err.message?err.message:err);
+  });
+}
+setTimeout(startSupportMsgListener,1600);
+
 // ── مشتریان ثبت‌نام‌شده (زنده از Firestore) ──
 var CUSTOMERS2=[];
 function renderCustomers2(){
@@ -968,6 +1070,7 @@ function sanitizeDocId(s){
 }
 function collectAllProducts(){
   var out=[];
+  var codeCount={};
   TABS.forEach(function(tab){
     document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
       var bid=bl.id.slice(1);
@@ -982,8 +1085,12 @@ function collectAllProducts(){
         var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
         var type=ttEl?ttEl.dataset.t:defType;
         var code=cdEl.value;
+        var baseId=tab+'__'+sanitizeDocId(code);
+        var seen=codeCount[baseId]||0;
+        codeCount[baseId]=seen+1;
+        var docId=seen===0?baseId:(baseId+'-v'+(seen+1));
         out.push({
-          id:tab+'__'+sanitizeDocId(code),
+          id:docId,
           tab:tab,tabLabel:TABLBL_FA[tab]||tab,
           brand:brand,
           type:type,typeLabel:TLBL[type]||'',
