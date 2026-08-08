@@ -453,7 +453,16 @@ input[type=file]{display:none}
       <div><span class="lbl">۴. رنگ</span><input class="fi" type="text" id="CG_COLOR" placeholder="مثال: مشکی قرمز طوسی"></div>
     </div>
 
-    <div class="g1"><span class="lbl">۵. سایز (بازه یا تک عدد؛ مثال: 75 الی 90)</span><input class="fi" type="text" id="CG_SIZE_RANGE" placeholder="مثال: 75 الی 90  یا  L الی XL"></div>
+    <div class="g1" id="CG_SIZE_WRAP"><span class="lbl">۵. سایز (بازه یا تک عدد؛ مثال: 75 الی 90)</span><input class="fi" type="text" id="CG_SIZE_RANGE" placeholder="مثال: 75 الی 90  یا  L الی XL"></div>
+    <div class="g1" id="CG_SLEEP_SIZE_WRAP" style="display:none"><span class="lbl">سایز پیشنهادی لباس خواب</span>
+      <div class="chips">
+        <button type="button" class="chip" onclick="setCgSleepSize('L')">L</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('XL')">XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('2XL')">2XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('سایز بزرگ')">سایز بزرگ</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('F')">F (فری‌سایز)</button>
+      </div>
+    </div>
     <div class="g1" id="CG_CUP_WRAP" style="display:none"><span class="lbl">کاپ‌بندی (فقط سوتین و ست سوتین)</span>
       <div class="chips" id="CG_CUP_CHIPS">
         <button class="chip" onclick="setCgCup('',this)">هیچکدام</button>
@@ -501,6 +510,7 @@ input[type=file]{display:none}
   <div class="card" id="CG_RESULT_CARD" style="display:none">
     <div class="ctitle">📋 کپشن آماده</div>
     <textarea class="fi" id="CG_RESULT" rows="16" style="font-size:0.78rem;line-height:1.9;direction:rtl" readonly></textarea>
+    <div id="CG_CHARCOUNT" style="font-size:0.72rem;margin-top:6px;font-weight:700"></div>
     <button class="sbig stg2" onclick="copyGeneratedCaption()">📋 کپی کپشن</button>
     <div class="stat" id="CG_STAT"></div>
   </div>
@@ -592,7 +602,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 10:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 14:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -601,6 +611,10 @@ input[type=file]{display:none}
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">با زدن این دکمه، همه‌ی محصولات (کد، قیمت، سایز، رنگ، موجودی، عکس و...) از این اپ به سرور فرستاده می‌شه. محصولاتی که از اپ حذف کرده باشی هم از سرور حذف می‌شن.</p>
     <button class="sbig stg" onclick="syncProductsToFirestore()">🔄 همگام‌سازی محصولات الان</button>
     <div class="stat" id="SYNCSTAT"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin-top:10px;cursor:pointer">
+      <input type="checkbox" id="AUTOSYNC_CHK" style="width:17px;height:17px" onchange="toggleAutoSync(this.checked)">
+      همگام‌سازی خودکار — هر محصولی که اضافه/ویرایش/حذف کنم، فقط همون یکی خودش سریع با سایت همگام بشه
+    </label>
   </div>
   <div class="card" style="border:2px solid #2a9d5c"><div class="ctitle">🛒 سفارش‌های آنلاین جدید</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">سفارش‌هایی که مشتری‌ها از توی سایت shop.html ثبت می‌کنن، اینجا زنده نشون داده می‌شه و اعلانش هم میاد. با زدن «انجام شد» سفارش از این لیست میره و توی لیست انجام‌شده‌ها قابل مشاهده‌ست.</p>
@@ -1136,6 +1150,79 @@ function sanitizeDocId(s){
   var out=String(s).trim().replace(/[\/\s]+/g,'-').replace(/[^\w\-.\u0600-\u06FF]/g,'');
   return out.slice(0,120)||('x'+Date.now());
 }
+function collectSingleProduct(targetRid){
+  var result=null;
+  var codeCount={};
+  for(var ti=0;ti<TABS.length;ti++){
+    var tab=TABS[ti];
+    var brandEls=document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]');
+    for(var bi=0;bi<brandEls.length;bi++){
+      var bl=brandEls[bi];
+      var bid=bl.id.slice(1);
+      var bnEl=document.getElementById('BN'+bid);
+      var brand=bnEl?bnEl.value:'';
+      var rows=bl.querySelectorAll(':scope .wt-row,:scope .nt-row,:scope .t5-row');
+      for(var ri=0;ri<rows.length;ri++){
+        var row=rows[ri];
+        var rid=row.id.slice(1);
+        var cdEl=document.getElementById('CD'+rid);
+        if(!cdEl||!cdEl.value)continue;
+        var code=cdEl.value;
+        var baseId=tab+'__'+sanitizeDocId(code);
+        var seen=codeCount[baseId]||0;
+        codeCount[baseId]=seen+1;
+        var docId=seen===0?baseId:(baseId+'-v'+(seen+1));
+        if(rid===targetRid){
+          var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
+          var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
+          var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
+          var type=ttEl?ttEl.dataset.t:defType;
+          result={
+            id:docId,rid:rid,
+            tab:tab,tabLabel:TABLBL_FA[tab]||tab,brand:brand,
+            type:type,typeLabel:TLBL[type]||'',
+            title:(tiEl?tiEl.value:''),code:code,
+            sizes:V('SZ'+rid),colors:V('CL'+rid),
+            minOrder:V('MO'+rid),price:V('PR'+rid),
+            stock:stk,
+            material:row.dataset.material||'',country:row.dataset.country||'',
+            desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',
+            tgLink:row.dataset.tglink||'',fullDesc:row.dataset.fulldesc||'',
+            img:null
+          };
+        }
+      }
+    }
+  }
+  return result;
+}
+function autoSyncSingleProduct(rid){
+  if(!AUTO_SYNC_ENABLED)return;
+  if(!initFirebase())return;
+  var prod=collectSingleProduct(rid);
+  if(!prod||!prod.code)return;
+  function pushIt(imgData){
+    prod.img=imgData;
+    delete prod.rid;
+    fbDb.collection('products').doc(prod.id).set(Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()})).then(function(){
+      addNotif('🔄 «'+(prod.title||prod.code)+'» خودکار با سایت همگام شد');
+    }).catch(function(e){console.error('autoSyncSingleProduct error',e);});
+  }
+  if(CATALOG_IMG_CACHE[rid]){
+    pushIt(CATALOG_IMG_CACHE[rid]);
+  }else if(IMAGES[rid]){
+    resizeDataUrl(IMAGES[rid],640,0.85,function(small){CATALOG_IMG_CACHE[rid]=small;pushIt(small);});
+  }else{
+    pushIt(null);
+  }
+}
+function autoSyncDeleteProduct(docId){
+  if(!AUTO_SYNC_ENABLED)return;
+  if(!initFirebase())return;
+  fbDb.collection('products').doc(docId).delete().then(function(){
+    addNotif('🗑️ محصول از سایت هم حذف شد');
+  }).catch(function(e){console.error('autoSyncDeleteProduct error',e);});
+}
 function collectAllProducts(){
   var out=[];
   var codeCount={};
@@ -1267,12 +1354,12 @@ var BANNERS=[null,null,null,null],BANNER_IDS=[null,null,null,null];
 var ARCHIVE_MS=4*24*60*60*1000;
 var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9'];
 var TSEQ={p1:['set','bra'],p2:['tset','top'],p3:['panty'],
-  p4:['twopiece','robe','fantasy','costume','silk','cotton','topshort','onepiece','pajama','nightgown','mask','game','whip','buttplug','hat'],
+  p4:['twopiece','robe','fantasy','costume','silk','cotton','topshort','onepiece','pajama','nightgownset','nightgown','babydoll','mask','game','whip','buttplug','hat'],
   p5:['accessory'],p6:['sleep2p','bikini','swimcover','sleep3p','skirted'],p7:['crop'],p8:['topw'],p9:['bodycotton','bodysilk']};
 var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شورت',
   twopiece:'دو تیکه',robe:'روبدوشام',fantasy:'بادی فانتزی',costume:'کاستوم',
   silk:'بادی حریر',cotton:'بادی نخی',topshort:'تاپ شورتک',onepiece:'سرهمی',
-  pajama:'پیژامه',nightgown:'نایتگان',mask:'نقاب',game:'بازی',whip:'شلاق',buttplug:'بات\u200cپلاگ',hat:'کلاه',
+  pajama:'پیژامه',nightgownset:'ست نایتگان',nightgown:'نایتگان',babydoll:'بیبی‌دال',mask:'نقاب',game:'بازی',whip:'شلاق',buttplug:'بات\u200cپلاگ',hat:'کلاه',
   accessory:'لوازم جانبی',
   sleep2p:'اسلیپ دوتیکه',bikini:'بیکینی',swimcover:'کاورمایو',sleep3p:'سه تیکه',skirted:'دامن\u200cدار',
   crop:'کراپ',topw:'تاپ',
@@ -1280,7 +1367,7 @@ var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شو
 var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',
   panty:'tbtn t-bra',twopiece:'tbtn t-set',robe:'tbtn t-bra',fantasy:'tbtn t-c1',
   costume:'tbtn t-c2',silk:'tbtn t-c3',cotton:'tbtn t-c4',topshort:'tbtn t-c5',
-  onepiece:'tbtn t-c6',pajama:'tbtn t-c1',nightgown:'tbtn t-c3',
+  onepiece:'tbtn t-c6',pajama:'tbtn t-c1',nightgownset:'tbtn t-c6',nightgown:'tbtn t-c3',babydoll:'tbtn t-c5',
   mask:'tbtn t-c2',game:'tbtn t-c5',whip:'tbtn t-c6',buttplug:'tbtn t-c4',hat:'tbtn t-c1',
   accessory:'tbtn t-c2',
   sleep2p:'tbtn t-set',bikini:'tbtn t-bra',swimcover:'tbtn t-c1',sleep3p:'tbtn t-c2',skirted:'tbtn t-c3',
@@ -1908,7 +1995,7 @@ function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressSquare(f,400,0
 function togT(rid,tab){var btn=document.getElementById('TT'+rid);if(!btn)return;var seq=TSEQ[tab]||[];var i=seq.indexOf(btn.dataset.t);var nxt=seq[(i+1)%seq.length];btn.dataset.t=nxt;btn.className=TCLS[nxt];btn.textContent=TLBL[nxt];var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,tab);save();}
 function togSleeve(rid){var btn=document.getElementById('TS'+rid);if(!btn)return;var i=SLEEVE_SEQ.indexOf(btn.dataset.s);var nxt=SLEEVE_SEQ[(i+1)%SLEEVE_SEQ.length];btn.dataset.s=nxt;btn.className=SLEEVE_CLS[nxt];btn.textContent=SLEEVE_LBL[nxt];var row=document.getElementById('R'+rid);if(row)row.dataset.sleeve=nxt;save();}
 function togS(rid){var btn=document.getElementById('ST'+rid);if(!btn)return;if(btn.classList.contains('s-in')){btn.classList.replace('s-in','s-call');btn.textContent='تماس بگیرید';delete OUT_SINCE[rid];}else if(btn.classList.contains('s-call')){btn.classList.replace('s-call','s-out');btn.textContent='ناموجود';OUT_SINCE[rid]=Date.now();}else{btn.classList.replace('s-out','s-in');btn.textContent='موجود';delete OUT_SINCE[rid];}var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,row.dataset.tab);save();}
-function delR(rid){var el=document.getElementById('R'+rid);if(el){el.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];save();}}
+function delR(rid){var el=document.getElementById('R'+rid);if(el){var _delProd=AUTO_SYNC_ENABLED?collectSingleProduct(rid):null;el.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];save();if(_delProd&&_delProd.id)autoSyncDeleteProduct(_delProd.id);}}
 
 // ── GET DATA ──
 function getBrands(tab){
@@ -2975,6 +3062,8 @@ function delBanner(i){BANNERS[i]=null;BANNER_IDS[i]=null;initBanners();save();}
 
 // ── VIP ──
 var VIP_PRODUCTS=[];
+var AUTO_SYNC_ENABLED=false;
+function toggleAutoSync(checked){AUTO_SYNC_ENABLED=checked;save();}
 
 function vipSearch(q){
   var el=document.getElementById('VSRCH_RES');if(!el)return;
@@ -4469,6 +4558,7 @@ function renderCgTypeChips(){
     typeWrapEl.style.display='none';
     CG_TYPE=seq[0]||'';
     wrap.innerHTML='';
+    updateSizeFieldVisibility();
     return;
   }
   typeWrapEl.style.display='block';
@@ -4476,11 +4566,32 @@ function renderCgTypeChips(){
   wrap.innerHTML=seq.map(function(t,i){
     return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+TLBL[t]+'</button>';
   }).join('');
+  updateSizeFieldVisibility();
 }
 function setCgType(type,btn){
   CG_TYPE=type;
   document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
   btn.classList.add('on');
+  updateSizeFieldVisibility();
+}
+var CG_NO_SIZE_TYPES=['mask','game','whip','buttplug','hat'];
+function updateSizeFieldVisibility(){
+  var sizeWrap=document.getElementById('CG_SIZE_WRAP');
+  var sleepWrap=document.getElementById('CG_SLEEP_SIZE_WRAP');
+  if(CG_NO_SIZE_TYPES.indexOf(CG_TYPE)>-1){
+    sizeWrap.style.display='none';
+    sleepWrap.style.display='none';
+    document.getElementById('CG_SIZE_RANGE').value='';
+  }else if(CG_CATEGORY==='p4'){
+    sizeWrap.style.display='block';
+    sleepWrap.style.display='block';
+  }else{
+    sizeWrap.style.display='block';
+    sleepWrap.style.display='none';
+  }
+}
+function setCgSleepSize(val){
+  document.getElementById('CG_SIZE_RANGE').value=val;
 }
 function setCgCat(cat,btn){
   CG_CATEGORY=cat;
@@ -4597,6 +4708,17 @@ function showCaptionPreview(data){
   document.getElementById('CG_RESULT_CARD').style.display='block';
   var sendCapEl=document.getElementById('SEND_CAPTION');
   if(sendCapEl)sendCapEl.value=data.text;
+  var len=(data.text||'').length;
+  var cc=document.getElementById('CG_CHARCOUNT');
+  if(cc){
+    if(len>1024){
+      cc.style.color='#c04040';
+      cc.textContent='⚠️ '+len+' کاراکتر — از محدودیت تلگرام (۱۰۲۴ کاراکتر برای کپشن عکس) '+(len-1024)+' تا بیشتره! باید کوتاهش کنی وگرنه ارسال ناموفق می‌شه.';
+    }else{
+      cc.style.color='#2a9d5c';
+      cc.textContent='✅ '+len+' از ۱۰۲۴ کاراکتر مجاز تلگرام';
+    }
+  }
 }
 function generateCaption(){
   var data=buildCaptionData();
@@ -4770,6 +4892,10 @@ function updateExistingProduct(rid,data){
   save();
   EDITING_RID=null;
   document.getElementById('EDIT_BANNER').style.display='none';
+  if(AUTO_SYNC_ENABLED){
+    delete CATALOG_IMG_CACHE[rid];
+    setTimeout(function(){autoSyncSingleProduct(rid);},600);
+  }
   return true;
 }
 function saveProductFromCaption(data){
@@ -4801,6 +4927,10 @@ function saveProductFromCaption(data){
     addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||''}]);
   }
   save();
+  if(AUTO_SYNC_ENABLED){
+    var _newRid=findRowIdByCode(data.code);
+    if(_newRid)setTimeout(function(){autoSyncSingleProduct(_newRid);},1200);
+  }
   return true;
 }
 function saveProductWithDuplicateCheck(data,onResolved){
@@ -4900,14 +5030,30 @@ function sendPhotoTo(baseUrl,token,chatId,blob,caption,cb){
   xhr.ontimeout=function(){cb('زمان تمام شد');};
   xhr.send(fd);
 }
+var TG_CAPTION_LIMIT=1024;
+function sendPlainTextTo(baseUrl,token,chatId,text,cb){
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST',baseUrl+token+'/sendMessage',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.timeout=60000;
+  xhr.onload=function(){
+    try{var r=JSON.parse(xhr.responseText);cb(r.ok?null:(r.description||'خطا'));}
+    catch(e){cb('خطا در پاسخ');}
+  };
+  xhr.onerror=function(){cb('خطا در اتصال');};
+  xhr.ontimeout=function(){cb('زمان تمام شد');};
+  xhr.send(JSON.stringify({chat_id:chatId,text:text}));
+}
 function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
+  var needsFollowup=!!(caption&&caption.length>TG_CAPTION_LIMIT);
+  var useCaption=needsFollowup?'':caption;
   var fd=new FormData();
   fd.append('chat_id',chatId);
   var mediaArr=mediaList.map(function(m,i){
     var fieldName='file'+i;
     fd.append(fieldName,m.blob,fieldName+(m.type==='video'?'.mp4':'.jpg'));
     var obj={type:(m.type==='video'?'video':'photo'),media:'attach://'+fieldName};
-    if(i===0&&caption)obj.caption=caption;
+    if(i===0&&useCaption)obj.caption=useCaption;
     return obj;
   });
   fd.append('media',JSON.stringify(mediaArr));
@@ -4919,7 +5065,8 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
       var r=JSON.parse(xhr.responseText);
       if(r.ok){
         var msgId=(r.result&&r.result[0]&&r.result[0].message_id)||null;
-        cb(null,msgId);
+        if(needsFollowup)sendPlainTextTo(baseUrl,token,chatId,caption,function(){cb(null,msgId);});
+        else cb(null,msgId);
       } else cb(r.description||'خطا');
     }catch(e){cb('خطا در پاسخ');}
   };
@@ -4928,12 +5075,14 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
   xhr.send(fd);
 }
 function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
+  var needsFollowup=!!(caption&&caption.length>TG_CAPTION_LIMIT);
+  var useCaption=needsFollowup?'':caption;
   var fd=new FormData();
   fd.append('chat_id',chatId);
   var method=item.type==='video'?'sendVideo':'sendPhoto';
   var field=item.type==='video'?'video':'photo';
   fd.append(field,item.blob,field+(item.type==='video'?'.mp4':'.jpg'));
-  if(caption)fd.append('caption',caption);
+  if(useCaption)fd.append('caption',useCaption);
   var xhr=new XMLHttpRequest();
   xhr.open('POST',baseUrl+token+'/'+method,true);
   xhr.timeout=120000;
@@ -4942,7 +5091,8 @@ function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
       var r=JSON.parse(xhr.responseText);
       if(r.ok){
         var msgId=(r.result&&r.result.message_id)||null;
-        cb(null,msgId);
+        if(needsFollowup)sendPlainTextTo(baseUrl,token,chatId,caption,function(){cb(null,msgId);});
+        else cb(null,msgId);
       } else cb(r.description||'خطا');
     }catch(e){cb('خطا در پاسخ');}
   };
@@ -4968,6 +5118,11 @@ function sendToChannels(){
   if(!data.text){stat.textContent='لطفاً حداقل یکی از فیلدهای محصول را پر کن';stat.className='stat serr';return;}
   showCaptionPreview(data);
   var caption=data.text;
+  if(caption.length>1024){
+    stat.textContent='⚠️ کپشن '+caption.length+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(caption.length-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
+    stat.className='stat serr';
+    return;
+  }
 
   var ordered=SEND_MEDIA.slice().sort(function(a,b){return (b.primary?1:0)-(a.primary?1:0);});
 
@@ -5124,7 +5279,7 @@ function save(){
   if(_loading)return;
   try{
     var sel={};[1,2,3,4,5,6,7,8,9].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
-    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE};
+    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,autoSync:AUTO_SYNC_ENABLED};
     TABS.forEach(function(tab){
       var brands=[];
       document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
@@ -5166,6 +5321,8 @@ function load(){
     if(d.sel){Object.keys(d.sel).forEach(function(k){var cb=document.getElementById('S'+k[0]+'C'+k[1]);if(cb)cb.checked=!!d.sel[k];});}
     if(d.arch&&Array.isArray(d.arch))ARCHIVE=d.arch;
     if(d.vip&&Array.isArray(d.vip))VIP_PRODUCTS=d.vip;
+    AUTO_SYNC_ENABLED=!!d.autoSync;
+    var _asChk=document.getElementById('AUTOSYNC_CHK');if(_asChk)_asChk.checked=AUTO_SYNC_ENABLED;
     if(d.bannerProdCodes&&Array.isArray(d.bannerProdCodes))BANNER_PRODUCT_CODE=d.bannerProdCodes;
     if(d.bannerIds&&Array.isArray(d.bannerIds)){
       BANNER_IDS=d.bannerIds;
@@ -5257,6 +5414,8 @@ loadNotifs();
 loadInvoiceLog();
 loadCustomers();
 renderCgTypeChips();
+var _cgPriceEl=document.getElementById('CG_PRICE');
+if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});
 load();
 setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);},600);
 </script>

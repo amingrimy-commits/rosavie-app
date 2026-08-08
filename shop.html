@@ -10,6 +10,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Vazirmatn',sans-serif;background:#faf6f1;color:#3a2e29;min-height:100vh}
 body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+#INIT_LOADER{position:fixed;inset:0;z-index:9999;background:#faf6f1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.init-spinner{width:42px;height:42px;border-radius:50%;border:4px solid #f3e0e8;border-top-color:#d4789a;animation:initspin 0.9s linear infinite}
+@keyframes initspin{to{transform:rotate(360deg)}}
+.init-loader-text{font-size:0.85rem;color:#8a7a6c;font-weight:700}
 .hdr{background:linear-gradient(135deg,#c4607a,#d4789a,#e8a0b0);padding:12px 14px 20px;text-align:center;position:relative}
 .hdr h1{font-family:'Bodoni Moda',serif;font-size:1.85rem;font-weight:800;letter-spacing:5px;color:#fff}
 .hdr p{font-size:0.72rem;color:rgba(255,255,255,0.85);letter-spacing:4px;margin-top:3px}
@@ -148,8 +152,8 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .rescount{max-width:960px;margin:10px auto 0;padding:0 16px;font-size:0.72rem;color:#a89686}
 .grid{max-width:960px;margin:10px auto 30px;padding:0 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .card{background:#f7efe6;border-radius:12px;overflow:hidden;border:1px solid #ecdfd2;cursor:pointer;position:relative}
-.card-img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f3e9de}
-.card-img-ph{width:100%;aspect-ratio:1;background:#f3e9de;display:flex;align-items:center;justify-content:center;font-size:2.2rem}
+.card-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#f3e9de}
+.card-img-ph{width:100%;aspect-ratio:3/4;background:#f3e9de;display:flex;align-items:center;justify-content:center;font-size:2.2rem}
 .cat-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);color:#3a2e29;font-size:0.6rem;padding:3px 8px;border-radius:8px}
 .card-body{padding:10px 11px 12px}
 .card-name{font-size:0.78rem;font-weight:700;color:#2e2320;line-height:1.4}
@@ -171,7 +175,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .modal{background:#ffffff;border-radius:18px 18px 0 0;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:20px 18px}
 @media(min-width:640px){.modal-ov{align-items:center}.modal{border-radius:16px}}
 .modal-close{width:32px;height:32px;border-radius:50%;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;font-size:1rem;float:left;cursor:pointer}
-.modal-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;margin-top:8px;background:#f3e9de}
+.modal-img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;margin-top:8px;background:#f3e9de}
 .modal-name{font-size:1.05rem;font-weight:900;color:#2e2320;margin-top:6px}
 .modal-brand{font-size:0.75rem;color:#9c8a7c;margin-top:2px}
 .modal-price{font-size:1.2rem;color:#c25a80;font-weight:900;margin-top:12px}
@@ -248,8 +252,8 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .vip-scroll{display:flex;gap:10px;overflow-x:auto;padding:10px 14px 10px;scrollbar-width:none}
 .vip-scroll::-webkit-scrollbar{display:none}
 .vip-card{flex-shrink:0;width:150px;background:#fff;border:1.5px solid #ecdfd2;border-radius:16px;overflow:hidden;cursor:pointer;position:relative}
-.vip-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-.vip-card-ph{width:100%;aspect-ratio:1;background:#f3e9de;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+.vip-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.vip-card-ph{width:100%;aspect-ratio:3/4;background:#f3e9de;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
 .vip-card-body{padding:9px 10px 11px}
 .vip-card-name{font-size:0.72rem;font-weight:700;color:#2e2320;line-height:1.4}
 .vip-price-old{font-size:0.66rem;color:#a89686;text-decoration:line-through;margin-top:6px}
@@ -260,6 +264,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 </style>
 </head>
 <body>
+<div id="INIT_LOADER"><div class="init-spinner"></div><div class="init-loader-text">سایت در حال بارگذاری است، لطفاً صبر کنید...</div></div>
 <div class="hdr">
   <h1>ROSA VIE</h1><p>under wear</p>
   <div class="topnav">
@@ -388,6 +393,9 @@ var CATS=[
   {v:'p2-top',l:'نیم‌تنه تک',tab:'p2',type:'top'},
   {v:'p3',l:'شورت',tab:'p3',type:null},
   {v:'p4',l:'لباس خواب',tab:'p4',type:null},
+  {v:'p4-nightgownset',l:'ست نایتگان',tab:'p4',type:'nightgownset'},
+  {v:'p4-nightgown',l:'نایتگان',tab:'p4',type:'nightgown'},
+  {v:'p4-babydoll',l:'بیبی‌دال',tab:'p4',type:'babydoll'},
   {v:'p5',l:'لوازم جانبی',tab:'p5',type:null},
   {v:'p6',l:'مایو',tab:'p6',type:null},
   {v:'p7',l:'کراپ',tab:'p7',type:null},
@@ -879,7 +887,7 @@ function updateFab(){
 // ── نوار بالا: منو، هوم، حساب کاربری ──
 function openDrawer(){document.getElementById('SIDE_DRAWER').classList.add('open');document.getElementById('DRAWER_OV').classList.add('open');pushModalState();}
 function closeDrawer(){goBack();}
-function silentCloseDrawer(){document.getElementById('SIDE_DRAWER').classList.remove('open');document.getElementById('DRAWER_OV').classList.remove('open');}
+function silentCloseDrawer(){document.getElementById('SIDE_DRAWER').classList.remove('open');document.getElementById('DRAWER_OV').classList.remove('open');unlockBodyScroll();}
 function goHome(){silentCloseDrawer();window.scrollTo({top:0,behavior:'smooth'});CUR_CAT='all';CUR_BRAND='all';document.getElementById('SQ').value='';renderChips();renderGrid();}
 function goProducts(){silentCloseDrawer();document.getElementById('GRID').scrollIntoView({behavior:'smooth',block:'start'});}
 function toggleProductsAcc(){
@@ -1556,6 +1564,10 @@ function loadSiteData(){
   }).catch(function(err){console.error('loadSiteData error',err);});
 }
 
+function hideInitLoader(){
+  var el=document.getElementById('INIT_LOADER');
+  if(el)el.style.display='none';
+}
 function loadProducts(){
   db.collection('products').get().then(function(snap){
     PRODUCTS=[];
@@ -1564,8 +1576,10 @@ function loadProducts(){
     renderGrid();
     _ROUTING_READY=true;
     renderRoute();
+    hideInitLoader();
   }).catch(function(err){
     document.getElementById('GRID').innerHTML='<div class="nores">خطا در دریافت محصولات: '+(err&&err.message?err.message:err)+'</div>';
+    hideInitLoader();
   });
 }
 loadCart();
@@ -1573,6 +1587,7 @@ loadProducts();
 loadSiteData();
 watchAuthState();
 renderRoute();
+setTimeout(hideInitLoader,15000);
 </script>
 </body>
 </html>
