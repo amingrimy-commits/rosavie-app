@@ -475,7 +475,19 @@ input[type=file]{display:none}
 
     <div class="g2">
       <div><span class="lbl">۶. قیمت عمده هر عدد</span><input class="fi" type="text" id="CG_PRICE" placeholder="مثال: 780 یعنی ۷۸۰,۰۰۰ تومان"></div>
-      <div><span class="lbl">۷. حداقل سفارش</span><input class="fi" type="text" id="CG_MINORDER" placeholder="مثال: 2"></div>
+      <div><span class="lbl">۷. حداقل سفارش (برای رنگ‌های تکی)</span><input class="fi" type="text" id="CG_MINORDER" placeholder="مثال: 2"></div>
+    </div>
+    <div class="g1"><span class="lbl">رنگ‌های قابل‌انتخاب جدا (اختیاری — با ویرگول جدا کن، تا مشتری بتونه هرکدوم رو با تعداد دلخواه جدا سفارش بده)</span>
+      <input class="fi" type="text" id="CG_COLORLIST" placeholder="مثال: صورتی,قرمز,بنفش">
+      <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">اگه خالی بذاری، فقط همون فیلد «رنگ» بالا به‌عنوان توضیح نمایش داده می‌شه و مشتری نمی‌تونه رنگ جدا انتخاب کنه.</p>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
+      <input type="checkbox" id="CG_MIX_ENABLED" style="width:17px;height:17px" onchange="toggleCgMixWrap(this.checked)">
+      این محصول یه گزینه‌ی «بسته میکس رنگ» هم داره (رنگ‌ها ثابت و از قبل ترکیب‌شده‌ن، مشتری نمی‌تونه انتخاب کنه)
+    </label>
+    <div id="CG_MIX_WRAP" style="display:none">
+      <div class="g1"><span class="lbl">توضیح رنگ‌های داخل بسته میکس</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
+      <div class="g1"><span class="lbl">حداقل سفارش بسته میکس (می‌تونه با حداقل رنگ‌های تکی فرق کنه)</span><input class="fi" type="text" id="CG_MIX_MINORDER" placeholder="مثال: 6"></div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
       <input type="checkbox" id="CG_SHOWPRICE_CAPTION" style="width:17px;height:17px">
@@ -602,7 +614,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 14:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 16:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1188,6 +1200,10 @@ function collectSingleProduct(targetRid){
             material:row.dataset.material||'',country:row.dataset.country||'',
             desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',
             tgLink:row.dataset.tglink||'',fullDesc:row.dataset.fulldesc||'',
+            colorList:JSON.parse(row.dataset.colorlist||'[]'),
+            mixEnabled:!!row.dataset.mixenabled,
+            mixDesc:row.dataset.mixdesc||'',
+            mixMinOrder:row.dataset.mixminorder||'',
             img:null
           };
         }
@@ -1257,6 +1273,10 @@ function collectAllProducts(){
           desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',
           tgLink:row.dataset.tglink||'',
           fullDesc:row.dataset.fulldesc||'',
+          colorList:JSON.parse(row.dataset.colorlist||'[]'),
+          mixEnabled:!!row.dataset.mixenabled,
+          mixDesc:row.dataset.mixdesc||'',
+          mixMinOrder:row.dataset.mixminorder||'',
           img:CATALOG_IMG_CACHE[rid]||null
         });
       });
@@ -1909,7 +1929,7 @@ function addBrand(tab,nm,sRows,sLogoId,sLogo){
   document.getElementById('BN'+bid).oninput=save;
   if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
   else if(sLogoId){LOGO_IDS[bid]=sLogoId;idbGet(sLogoId,function(d){if(d){LOGOS[bid]=d;var lp2=document.getElementById('LP'+bid);if(lp2){lp2.src=d;lp2.style.display='block';}}});}
-  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',fulldesc:r.fulldesc||''});});}
+  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||''});});}
   else if(!sRows){addRow(bid,tab);}
   save();
 }
@@ -1938,6 +1958,10 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   div.className=rcls;div.id='R'+rid;div.dataset.bid=bid;div.dataset.tab=tab;
   div.dataset.material=extra.material||'';div.dataset.country=extra.country||'';div.dataset.desc1=extra.desc1||'';div.dataset.desc2=extra.desc2||'';div.dataset.sleeve=sleeveVal;
   div.dataset.fulldesc=extra.fulldesc||'';
+  div.dataset.colorlist=extra.colorlist||'[]';
+  div.dataset.mixenabled=extra.mixenabled||'';
+  div.dataset.mixdesc=extra.mixdesc||'';
+  div.dataset.mixminorder=extra.mixminorder||'';
   div.dataset.extraImgIds=extra.extraImgIds||'[]';
   div.dataset.tglink=extra.tglink||'';
   if(extra.extraImgIds&&extra.extraImgIds!=='[]'){
@@ -1991,7 +2015,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   save();
 }
 function pickImg(rid){openEditor('product_'+rid);}
-function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressSquare(f,400,0.85,function(d){var id=genId();IMAGES[rid]=d;IMG_IDS[rid]=id;idbPut(id,d);var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}save();});}
+function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressRatio(f,3,4,400,0.85,function(d){var id=genId();IMAGES[rid]=d;IMG_IDS[rid]=id;idbPut(id,d);var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}save();});}
 function togT(rid,tab){var btn=document.getElementById('TT'+rid);if(!btn)return;var seq=TSEQ[tab]||[];var i=seq.indexOf(btn.dataset.t);var nxt=seq[(i+1)%seq.length];btn.dataset.t=nxt;btn.className=TCLS[nxt];btn.textContent=TLBL[nxt];var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,tab);save();}
 function togSleeve(rid){var btn=document.getElementById('TS'+rid);if(!btn)return;var i=SLEEVE_SEQ.indexOf(btn.dataset.s);var nxt=SLEEVE_SEQ[(i+1)%SLEEVE_SEQ.length];btn.dataset.s=nxt;btn.className=SLEEVE_CLS[nxt];btn.textContent=SLEEVE_LBL[nxt];var row=document.getElementById('R'+rid);if(row)row.dataset.sleeve=nxt;save();}
 function togS(rid){var btn=document.getElementById('ST'+rid);if(!btn)return;if(btn.classList.contains('s-in')){btn.classList.replace('s-in','s-call');btn.textContent='تماس بگیرید';delete OUT_SINCE[rid];}else if(btn.classList.contains('s-call')){btn.classList.replace('s-call','s-out');btn.textContent='ناموجود';OUT_SINCE[rid]=Date.now();}else{btn.classList.replace('s-out','s-in');btn.textContent='موجود';delete OUT_SINCE[rid];}var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,row.dataset.tab);save();}
@@ -2007,7 +2031,7 @@ function getBrands(tab){
       var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
       var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
       var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-      rows.push({rid:rid,type:ttEl?ttEl.dataset.t:defType,code:cdEl.value||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',price:V('PR'+rid)||'--',stock:stk,img:IMAGES[rid]||null,title:tiEl?tiEl.value:'',material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgs:EXTRA_IMAGES[rid]||[],extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||''});
+      rows.push({rid:rid,type:ttEl?ttEl.dataset.t:defType,code:cdEl.value||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',price:V('PR'+rid)||'--',stock:stk,img:IMAGES[rid]||null,title:tiEl?tiEl.value:'',material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgs:EXTRA_IMAGES[rid]||[],extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||''});
     });
     var bnEl=document.getElementById('BN'+bid);
     res.push({name:bnEl?bnEl.value.trim():'',logo:LOGOS[bid]||null,rows:rows,bid:bid});
@@ -4568,6 +4592,9 @@ function renderCgTypeChips(){
   }).join('');
   updateSizeFieldVisibility();
 }
+function toggleCgMixWrap(checked){
+  document.getElementById('CG_MIX_WRAP').style.display=checked?'block':'none';
+}
 function setCgType(type,btn){
   CG_TYPE=type;
   document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
@@ -4637,7 +4664,11 @@ function setCgCountry(val,btn){
 function buildCaptionData(){
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
       sizeRange=V('CG_SIZE_RANGE'), priceRaw=V('CG_PRICE'), minOrder=V('CG_MINORDER'), material=V('CG_MATERIAL'),
-      desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK');
+      desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK'),
+      colorListRaw=V('CG_COLORLIST'),
+      mixEnabled=!!(document.getElementById('CG_MIX_ENABLED')&&document.getElementById('CG_MIX_ENABLED').checked),
+      mixDesc=V('CG_MIX_DESC'), mixMinOrder=V('CG_MIX_MINORDER');
+  var colorList=colorListRaw?colorListRaw.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
   var price=expandPriceShorthand(priceRaw);
   var showPriceInCaption=!!(document.getElementById('CG_SHOWPRICE_CAPTION')&&document.getElementById('CG_SHOWPRICE_CAPTION').checked);
 
@@ -4701,6 +4732,7 @@ function buildCaptionData(){
   return {text:fullCaption,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
+    colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:mixEnabled?mixMinOrder:'',
     fullDesc:(document.getElementById('CG_FULLDESC_TO_SITE')&&document.getElementById('CG_FULLDESC_TO_SITE').checked)?fullDesc:''};
 }
 function showCaptionPreview(data){
@@ -4797,6 +4829,13 @@ function loadProductForEdit(el){
   document.getElementById('CG_DESC2').value=p.desc2||'';
   document.getElementById('CG_FULLDESC').value=p.fulldesc||'';
   document.getElementById('CG_TGLINK').value=p.tglink||'';
+  var _pColorList=[];try{_pColorList=JSON.parse(p.colorlist||'[]');}catch(e){}
+  document.getElementById('CG_COLORLIST').value=_pColorList.join(',');
+  var _mixChk=document.getElementById('CG_MIX_ENABLED');
+  _mixChk.checked=!!p.mixenabled;
+  toggleCgMixWrap(_mixChk.checked);
+  document.getElementById('CG_MIX_DESC').value=p.mixdesc||'';
+  document.getElementById('CG_MIX_MINORDER').value=p.mixminorder||'';
 
   var sizeVal=(p.sizes&&p.sizes!=='--')?p.sizes:'';
   var cupMatch=sizeVal.match(/\s*کاپ\s*([A-D])$/);
@@ -4856,6 +4895,10 @@ function updateExistingProduct(rid,data){
     row.dataset.desc1=data.desc1||'';
     row.dataset.desc2=data.desc2||'';
     row.dataset.fulldesc=data.fullDesc||'';
+    row.dataset.colorlist=JSON.stringify(data.colorList||[]);
+    row.dataset.mixenabled=data.mixEnabled?'1':'';
+    row.dataset.mixdesc=data.mixEnabled?(data.mixDesc||''):'';
+    row.dataset.mixminorder=data.mixEnabled?(data.mixMinOrder||''):'';
     if(data.manualTgLink)row.dataset.tglink=data.manualTgLink;
   }
   var tiEl=document.getElementById('TI'+rid);if(tiEl)tiEl.value=data.title||'';
@@ -4895,6 +4938,8 @@ function updateExistingProduct(rid,data){
   if(AUTO_SYNC_ENABLED){
     delete CATALOG_IMG_CACHE[rid];
     setTimeout(function(){autoSyncSingleProduct(rid);},600);
+  }else{
+    addNotif('ℹ️ همگام‌سازی خودکار خاموشه — این ویرایش فقط توی اپ ذخیره شد');
   }
   return true;
 }
@@ -4905,7 +4950,8 @@ function saveProductFromCaption(data){
     var bnEl=document.getElementById('BN'+bl.id.slice(1));
     if(bnEl&&bnEl.value.trim()===data.brand.trim())bid=bl.id.slice(1);
   });
-  var extraInfo={material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,fulldesc:data.fullDesc,tglink:data.manualTgLink||''};
+  var extraInfo={material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',
+    colorlist:JSON.stringify(data.colorList||[]),mixenabled:data.mixEnabled?'1':'',mixdesc:data.mixDesc||'',mixminorder:data.mixMinOrder||''};
   var newImgId=null;
   var primaryImg=SEND_MEDIA.find(function(m){return m.primary&&m.type==='image';});
   var otherImgs=SEND_MEDIA.filter(function(m){return !m.primary&&m.type==='image'&&m.croppedDataUrl;});
@@ -4924,12 +4970,14 @@ function saveProductFromCaption(data){
   if(bid){
     addRow(bid,data.category,data.type,data.code,data.finalSize,data.color,data.minOrder,data.price,'in',newImgId,null,data.title,extraInfo);
   } else {
-    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||''}]);
+    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder}]);
   }
   save();
   if(AUTO_SYNC_ENABLED){
     var _newRid=findRowIdByCode(data.code);
     if(_newRid)setTimeout(function(){autoSyncSingleProduct(_newRid);},1200);
+  }else{
+    addNotif('ℹ️ همگام‌سازی خودکار خاموشه — این محصول فقط توی اپ ذخیره شد، برای رفتن به سایت باید همگام‌سازی کامل رو بزنی یا تیک «همگام‌سازی خودکار» رو روشن کنی');
   }
   return true;
 }
@@ -4982,7 +5030,7 @@ function addSendMediaFiles(fileList){
       if(!SEND_MEDIA.some(function(m){return m.primary;}))item.primary=true;
       renderSendMediaList();
       // نسخه مربعی (۱:۱) جدا فقط برای ذخیره در لیست قیمت میسازیم؛ خود فایل اصلی دست‌نخورده برای ارسال میمونه
-      compressSquare(f,400,0.85,function(dataUrl){item.croppedDataUrl=dataUrl;});
+      compressRatio(f,3,4,400,0.85,function(dataUrl){item.croppedDataUrl=dataUrl;});
     }
   });
 }
@@ -5289,7 +5337,7 @@ function save(){
           var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
           var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
           var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||''});
+          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||''});
         });
         var bnEl=document.getElementById('BN'+bid);
         brands.push({name:bnEl?bnEl.value:'',logoId:LOGO_IDS[bid]||null,rows:rows});
