@@ -614,7 +614,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 17:15 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 17:45 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -5098,6 +5098,9 @@ var SITE_BASE_URL='https://amingrimy-commits.github.io/rosavie-app/shop.html';
 function escapeHtmlCaption(text){
   return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+function tgDisplayLen(html){
+  return String(html).replace(/<a href="[^"]*">/g,'').replace(/<\/a>/g,'').length;
+}
 var TG_CAPTION_LIMIT=1024;
 function sendPlainTextTo(baseUrl,token,chatId,text,cb){
   var xhr=new XMLHttpRequest();
@@ -5113,7 +5116,7 @@ function sendPlainTextTo(baseUrl,token,chatId,text,cb){
   xhr.send(JSON.stringify({chat_id:chatId,text:text,parse_mode:'HTML'}));
 }
 function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
-  var needsFollowup=!!(caption&&caption.length>TG_CAPTION_LIMIT);
+  var needsFollowup=!!(caption&&tgDisplayLen(caption)>TG_CAPTION_LIMIT);
   var useCaption=needsFollowup?'':caption;
   var fd=new FormData();
   fd.append('chat_id',chatId);
@@ -5133,7 +5136,7 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
       var r=JSON.parse(xhr.responseText);
       if(r.ok){
         var msgId=(r.result&&r.result[0]&&r.result[0].message_id)||null;
-        if(needsFollowup)sendPlainTextTo(baseUrl,token,chatId,caption,function(){cb(null,msgId);});
+        if(needsFollowup)sendPlainTextTo(baseUrl,token,chatId,caption,function(err2){cb(err2?('عکس رفت ولی متن کپشن نرفت: '+err2):null,msgId);});
         else cb(null,msgId);
       } else cb(r.description||'خطا');
     }catch(e){cb('خطا در پاسخ');}
@@ -5143,7 +5146,7 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
   xhr.send(fd);
 }
 function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
-  var needsFollowup=!!(caption&&caption.length>TG_CAPTION_LIMIT);
+  var needsFollowup=!!(caption&&tgDisplayLen(caption)>TG_CAPTION_LIMIT);
   var useCaption=needsFollowup?'':caption;
   var fd=new FormData();
   fd.append('chat_id',chatId);
@@ -5159,7 +5162,7 @@ function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
       var r=JSON.parse(xhr.responseText);
       if(r.ok){
         var msgId=(r.result&&r.result.message_id)||null;
-        if(needsFollowup)sendPlainTextTo(baseUrl,token,chatId,caption,function(){cb(null,msgId);});
+        if(needsFollowup)sendPlainTextTo(baseUrl,token,chatId,caption,function(err2){cb(err2?('عکس رفت ولی متن کپشن نرفت: '+err2):null,msgId);});
         else cb(null,msgId);
       } else cb(r.description||'خطا');
     }catch(e){cb('خطا در پاسخ');}
