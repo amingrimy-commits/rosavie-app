@@ -614,7 +614,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 16:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 17:15 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -3063,16 +3063,16 @@ function linkBannerBrand(i,el){
   var brand=el.getAttribute('data-brand'),tab=el.getAttribute('data-tab');
   if(!brand)return;
   BANNER_PRODUCT_CODE[i]={type:'brand',value:brand,tab:tab};
-  initBanners();save();
+  initBanners();save();autoSyncBanners();
 }
 function linkBannerProduct(i,el){
   var code=el.getAttribute('data-code');if(!code)return;
   BANNER_PRODUCT_CODE[i]=code;
-  initBanners();save();
+  initBanners();save();autoSyncBanners();
 }
 function unlinkBannerProduct(i){
   BANNER_PRODUCT_CODE[i]=null;
-  initBanners();save();
+  initBanners();save();autoSyncBanners();
 }
 
 function pickBanner(i){openEditor('banner_'+i);}
@@ -3080,9 +3080,25 @@ function loadBanner(i,inp){
   var f=inp.files[0];if(!f)return;
   compressRatio(f,3,4,900,0.88,function(d){
     var id=genId();BANNERS[i]=d;BANNER_IDS[i]=id;idbPut(id,d);initBanners();save();
+    autoSyncBanners();
   });
 }
-function delBanner(i){BANNERS[i]=null;BANNER_IDS[i]=null;initBanners();save();}
+function delBanner(i){BANNERS[i]=null;BANNER_IDS[i]=null;initBanners();save();autoSyncBanners();}
+function autoSyncBanners(){
+  if(!AUTO_SYNC_ENABLED)return;
+  if(!initFirebase())return;
+  var banners=BANNERS.map(function(b,i){
+    if(!b)return null;
+    var link=BANNER_PRODUCT_CODE[i];
+    var linkObj=null;
+    if(typeof link==='string')linkObj={type:'code',value:link};
+    else if(link&&link.type)linkObj=link;
+    return {img:b,link:linkObj};
+  });
+  fbDb.collection('siteData').doc('homepage').set({banners:banners},{merge:true}).then(function(){
+    addNotif('🖼️ بنرها خودکار با سایت همگام شدن');
+  }).catch(function(e){console.error('autoSyncBanners error',e);});
+}
 
 // ── VIP ──
 var VIP_PRODUCTS=[];
@@ -5078,6 +5094,10 @@ function sendPhotoTo(baseUrl,token,chatId,blob,caption,cb){
   xhr.ontimeout=function(){cb('زمان تمام شد');};
   xhr.send(fd);
 }
+var SITE_BASE_URL='https://amingrimy-commits.github.io/rosavie-app/shop.html';
+function escapeHtmlCaption(text){
+  return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 var TG_CAPTION_LIMIT=1024;
 function sendPlainTextTo(baseUrl,token,chatId,text,cb){
   var xhr=new XMLHttpRequest();
@@ -5090,7 +5110,7 @@ function sendPlainTextTo(baseUrl,token,chatId,text,cb){
   };
   xhr.onerror=function(){cb('خطا در اتصال');};
   xhr.ontimeout=function(){cb('زمان تمام شد');};
-  xhr.send(JSON.stringify({chat_id:chatId,text:text}));
+  xhr.send(JSON.stringify({chat_id:chatId,text:text,parse_mode:'HTML'}));
 }
 function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
   var needsFollowup=!!(caption&&caption.length>TG_CAPTION_LIMIT);
@@ -5101,7 +5121,7 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
     var fieldName='file'+i;
     fd.append(fieldName,m.blob,fieldName+(m.type==='video'?'.mp4':'.jpg'));
     var obj={type:(m.type==='video'?'video':'photo'),media:'attach://'+fieldName};
-    if(i===0&&useCaption)obj.caption=useCaption;
+    if(i===0&&useCaption){obj.caption=useCaption;obj.parse_mode='HTML';}
     return obj;
   });
   fd.append('media',JSON.stringify(mediaArr));
@@ -5130,7 +5150,7 @@ function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
   var method=item.type==='video'?'sendVideo':'sendPhoto';
   var field=item.type==='video'?'video':'photo';
   fd.append(field,item.blob,field+(item.type==='video'?'.mp4':'.jpg'));
-  if(useCaption)fd.append('caption',useCaption);
+  if(useCaption){fd.append('caption',useCaption);fd.append('parse_mode','HTML');}
   var xhr=new XMLHttpRequest();
   xhr.open('POST',baseUrl+token+'/'+method,true);
   xhr.timeout=120000;
@@ -5166,10 +5186,18 @@ function sendToChannels(){
   if(!data.text){stat.textContent='لطفاً حداقل یکی از فیلدهای محصول را پر کن';stat.className='stat serr';return;}
   showCaptionPreview(data);
   var caption=data.text;
-  if(caption.length>1024){
-    stat.textContent='⚠️ کپشن '+caption.length+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(caption.length-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
+  var siteLinkText='«برای خرید و بازدید در سایت کلیک کن»';
+  var displayLen=caption.length+(data.code?('\n\n'+siteLinkText).length:0);
+  if(displayLen>1024){
+    stat.textContent='⚠️ کپشن '+displayLen+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(displayLen-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
     stat.className='stat serr';
     return;
+  }
+  if(data.code){
+    var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
+    caption=escapeHtmlCaption(caption)+'\n\n<a href="'+siteUrl+'">'+siteLinkText+'</a>';
+  }else{
+    caption=escapeHtmlCaption(caption);
   }
 
   var ordered=SEND_MEDIA.slice().sort(function(a,b){return (b.primary?1:0)-(a.primary?1:0);});
