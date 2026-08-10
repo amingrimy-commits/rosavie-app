@@ -456,8 +456,7 @@ input[type=file]{display:none}
     <div class="g1" id="CG_SIZE_WRAP"><span class="lbl">۵. سایز (بازه یا تک عدد؛ مثال: 75 الی 90)</span><input class="fi" type="text" id="CG_SIZE_RANGE" placeholder="مثال: 75 الی 90  یا  L الی XL"></div>
     <div class="g1" id="CG_SLEEP_SIZE_WRAP" style="display:none"><span class="lbl">سایز پیشنهادی لباس خواب</span>
       <div class="chips">
-        <button type="button" class="chip" onclick="setCgSleepSize('L')">L</button>
-        <button type="button" class="chip" onclick="setCgSleepSize('XL')">XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('L, XL')">L, XL</button>
         <button type="button" class="chip" onclick="setCgSleepSize('2XL')">2XL</button>
         <button type="button" class="chip" onclick="setCgSleepSize('سایز بزرگ')">سایز بزرگ</button>
         <button type="button" class="chip" onclick="setCgSleepSize('F')">F (فری‌سایز)</button>
@@ -477,9 +476,13 @@ input[type=file]{display:none}
       <div><span class="lbl">۶. قیمت عمده هر عدد</span><input class="fi" type="text" id="CG_PRICE" placeholder="مثال: 780 یعنی ۷۸۰,۰۰۰ تومان"></div>
       <div><span class="lbl">۷. حداقل سفارش (برای رنگ‌های تکی)</span><input class="fi" type="text" id="CG_MINORDER" placeholder="مثال: 2"></div>
     </div>
-    <div class="g1"><span class="lbl">رنگ‌های قابل‌انتخاب جدا (اختیاری — با ویرگول جدا کن، تا مشتری بتونه هرکدوم رو با تعداد دلخواه جدا سفارش بده)</span>
-      <input class="fi" type="text" id="CG_COLORLIST" placeholder="مثال: صورتی,قرمز,بنفش">
-      <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">اگه خالی بذاری، فقط همون فیلد «رنگ» بالا به‌عنوان توضیح نمایش داده می‌شه و مشتری نمی‌تونه رنگ جدا انتخاب کنه.</p>
+    <div class="g1"><span class="lbl">رنگ‌های قابل‌انتخاب جدا (اختیاری — تا مشتری بتونه هرکدوم رو با تعداد دلخواه جدا سفارش بده، و بتونی هرکدوم رو موجود/ناموجود کنی)</span>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input class="fi" type="text" id="CG_CL_NAME" placeholder="نام رنگ (مثال: صورتی)" style="flex:1">
+        <button type="button" class="sbig" style="width:auto;padding:0 16px;background:#3d2b1f;color:#f9f0e8" onclick="addCgColorItem()">+ افزودن</button>
+      </div>
+      <div id="CG_COLORLIST_UI"></div>
+      <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">اگه هیچی اضافه نکنی، فقط همون فیلد «رنگ» بالا به‌عنوان توضیح نمایش داده می‌شه و مشتری نمی‌تونه رنگ جدا انتخاب کنه.</p>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
       <input type="checkbox" id="CG_MIX_ENABLED" style="width:17px;height:17px" onchange="toggleCgMixWrap(this.checked)">
@@ -488,6 +491,19 @@ input[type=file]{display:none}
     <div id="CG_MIX_WRAP" style="display:none">
       <div class="g1"><span class="lbl">توضیح رنگ‌های داخل بسته میکس</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
       <div class="g1"><span class="lbl">حداقل سفارش بسته میکس (می‌تونه با حداقل رنگ‌های تکی فرق کنه)</span><input class="fi" type="text" id="CG_MIX_MINORDER" placeholder="مثال: 6"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
+      <input type="checkbox" id="CG_SIZEPRICE_ENABLED" style="width:17px;height:17px" onchange="toggleCgSizePriceWrap(this.checked)">
+      هر سایز قیمت جدا داره (مثلاً بسته‌ی شورت که هر سایزش قیمت متفاوت داره — مشتری سایز رو جدا با قیمت خودش انتخاب می‌کنه)
+    </label>
+    <div id="CG_SIZEPRICE_WRAP" style="display:none">
+      <p style="font-size:0.68rem;color:#9a6e3a;margin:2px 0 8px">توجه: وقتی این روشنه، فیلد «۵. سایز» بالا و فیلد «۶. قیمت» دیگه استفاده نمی‌شن — به‌جاش سایز و قیمت هرکدوم رو اینجا جدا اضافه کن.</p>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input class="fi" type="text" id="CG_SP_SIZE" placeholder="سایز (مثال: L)" style="flex:1">
+        <input class="fi" type="text" id="CG_SP_PRICE" placeholder="قیمت (مثال: 2000)" style="flex:1">
+        <button type="button" class="sbig" style="width:auto;padding:0 16px;background:#3d2b1f;color:#f9f0e8" onclick="addCgSizePrice()">+ افزودن</button>
+      </div>
+      <div id="CG_SIZEPRICE_LIST"></div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
       <input type="checkbox" id="CG_SHOWPRICE_CAPTION" style="width:17px;height:17px">
@@ -614,7 +630,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 17:45 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 20:50 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -666,10 +682,10 @@ input[type=file]{display:none}
     <p style="font-size:0.7rem;color:#aaa;margin-top:8px;line-height:1.9">راهنما: یه کانال تلگرام جدید و پرایوت فقط برای پشتیبان‌گیری بساز، ربات رو با یوزرنیمش ادمین کانال کن، یه پیام توی کانال بفرست، بعد دکمه بالا رو بزن.</p>
   </div>
   <div class="card"><div class="ctitle">تنظیمات تلگرام</div>
-    <div class="g1"><span class="lbl">Token ربات (مشترک)</span><input class="fi" type="text" id="TGK" style="direction:ltr" value="8835510367:AAFQ0NgeCZO_twZGWbNqNNK6WrxRoeof3O8"></div>
+    <div class="g1"><span class="lbl">Token ربات (مشترک)</span><input class="fi" type="text" id="TGK" autocomplete="off" style="direction:ltr" value="8835510367:AAFQ0NgeCZO_twZGWbNqNNK6WrxRoeof3O8"></div>
     <div class="g2">
-      <div><span class="lbl">Chat ID کانال 1 (لباس زیر)</span><input class="fi" type="text" id="TGCID" style="direction:ltr" value="@rozavie_underwear"></div>
-      <div><span class="lbl">Chat ID کانال 2 (لباس خواب)</span><input class="fi" type="text" id="TGCID2" style="direction:ltr" value="@rozavie_sleepwear"></div>
+      <div><span class="lbl">Chat ID کانال 1 (لباس زیر)</span><input class="fi" type="text" id="TGCID" autocomplete="off" style="direction:ltr" value="@rozavie_underwear"></div>
+      <div><span class="lbl">Chat ID کانال 2 (لباس خواب)</span><input class="fi" type="text" id="TGCID2" autocomplete="off" style="direction:ltr" value="@rozavie_sleepwear"></div>
     </div>
   </div>
   <div class="card"><div class="ctitle">📥 دریافت سفارش مشتری</div>
@@ -1204,6 +1220,7 @@ function collectSingleProduct(targetRid){
             mixEnabled:!!row.dataset.mixenabled,
             mixDesc:row.dataset.mixdesc||'',
             mixMinOrder:row.dataset.mixminorder||'',
+            sizePriceList:JSON.parse(row.dataset.sizepricelist||'[]'),
             img:null
           };
         }
@@ -1277,6 +1294,7 @@ function collectAllProducts(){
           mixEnabled:!!row.dataset.mixenabled,
           mixDesc:row.dataset.mixdesc||'',
           mixMinOrder:row.dataset.mixminorder||'',
+          sizePriceList:JSON.parse(row.dataset.sizepricelist||'[]'),
           img:CATALOG_IMG_CACHE[rid]||null
         });
       });
@@ -1929,7 +1947,7 @@ function addBrand(tab,nm,sRows,sLogoId,sLogo){
   document.getElementById('BN'+bid).oninput=save;
   if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
   else if(sLogoId){LOGO_IDS[bid]=sLogoId;idbGet(sLogoId,function(d){if(d){LOGOS[bid]=d;var lp2=document.getElementById('LP'+bid);if(lp2){lp2.src=d;lp2.style.display='block';}}});}
-  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||''});});}
+  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]'});});}
   else if(!sRows){addRow(bid,tab);}
   save();
 }
@@ -1962,6 +1980,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   div.dataset.mixenabled=extra.mixenabled||'';
   div.dataset.mixdesc=extra.mixdesc||'';
   div.dataset.mixminorder=extra.mixminorder||'';
+  div.dataset.sizepricelist=extra.sizepricelist||'[]';
   div.dataset.extraImgIds=extra.extraImgIds||'[]';
   div.dataset.tglink=extra.tglink||'';
   if(extra.extraImgIds&&extra.extraImgIds!=='[]'){
@@ -2031,7 +2050,7 @@ function getBrands(tab){
       var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
       var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
       var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-      rows.push({rid:rid,type:ttEl?ttEl.dataset.t:defType,code:cdEl.value||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',price:V('PR'+rid)||'--',stock:stk,img:IMAGES[rid]||null,title:tiEl?tiEl.value:'',material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgs:EXTRA_IMAGES[rid]||[],extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||''});
+      rows.push({rid:rid,type:ttEl?ttEl.dataset.t:defType,code:cdEl.value||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',price:V('PR'+rid)||'--',stock:stk,img:IMAGES[rid]||null,title:tiEl?tiEl.value:'',material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgs:EXTRA_IMAGES[rid]||[],extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]'});
     });
     var bnEl=document.getElementById('BN'+bid);
     res.push({name:bnEl?bnEl.value.trim():'',logo:LOGOS[bid]||null,rows:rows,bid:bid});
@@ -4611,6 +4630,68 @@ function renderCgTypeChips(){
 function toggleCgMixWrap(checked){
   document.getElementById('CG_MIX_WRAP').style.display=checked?'block':'none';
 }
+var CG_COLORLIST_ITEMS=[];
+function addCgColorItem(){
+  var nm=(document.getElementById('CG_CL_NAME').value||'').trim();
+  if(!nm){alert('نام رنگ رو بنویس');return;}
+  CG_COLORLIST_ITEMS.push({name:nm,stock:'in'});
+  document.getElementById('CG_CL_NAME').value='';
+  renderCgColorListUI();
+}
+function delCgColorItem(idx){CG_COLORLIST_ITEMS.splice(idx,1);renderCgColorListUI();}
+function toggleCgColorStock(idx){
+  CG_COLORLIST_ITEMS[idx].stock=CG_COLORLIST_ITEMS[idx].stock==='in'?'out':'in';
+  renderCgColorListUI();
+}
+function renderCgColorListUI(){
+  var el=document.getElementById('CG_COLORLIST_UI');
+  if(!CG_COLORLIST_ITEMS.length){el.innerHTML='<p style="font-size:0.72rem;color:#bbb">هنوز رنگی اضافه نشده</p>';return;}
+  el.innerHTML=CG_COLORLIST_ITEMS.map(function(c,i){
+    var isOut=c.stock==='out';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2cdb0;border-radius:8px;padding:8px 10px;margin-bottom:6px'+(isOut?';opacity:0.6':'')+'">'+
+      '<span style="font-weight:900;color:#3d2b1f">'+c.name+(isOut?' (ناموجود)':'')+'</span>'+
+      '<div style="display:flex;gap:6px">'+
+      '<button type="button" onclick="toggleCgColorStock('+i+')" style="background:'+(isOut?'#e8f5ee':'#fde8e8')+';color:'+(isOut?'#1a6a3a':'#c04040')+';border:1px solid '+(isOut?'#a8d8b8':'#f5b8b8')+';border-radius:6px;padding:0 10px;height:26px;cursor:pointer;font-size:0.68rem">'+(isOut?'برگردون موجود':'ناموجود کن')+'</button>'+
+      '<button type="button" onclick="delCgColorItem('+i+')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:6px;width:26px;height:26px;cursor:pointer">✕</button>'+
+      '</div></div>';
+  }).join('');
+}
+var CG_SIZEPRICE_LIST=[];
+function toggleCgSizePriceWrap(checked){
+  document.getElementById('CG_SIZEPRICE_WRAP').style.display=checked?'block':'none';
+  if(!checked){CG_SIZEPRICE_LIST=[];renderCgSizePriceList();}
+}
+function addCgSizePrice(){
+  var sz=(document.getElementById('CG_SP_SIZE').value||'').trim();
+  var pr=toEnDigits(document.getElementById('CG_SP_PRICE').value||'').trim();
+  if(!sz||!pr){alert('سایز و قیمت رو پر کن');return;}
+  pr=expandPriceShorthand(pr);
+  CG_SIZEPRICE_LIST.push({size:sz,price:pr,stock:'in'});
+  document.getElementById('CG_SP_SIZE').value='';
+  document.getElementById('CG_SP_PRICE').value='';
+  renderCgSizePriceList();
+}
+function delCgSizePrice(idx){
+  CG_SIZEPRICE_LIST.splice(idx,1);
+  renderCgSizePriceList();
+}
+function toggleCgSizeStock(idx){
+  CG_SIZEPRICE_LIST[idx].stock=CG_SIZEPRICE_LIST[idx].stock==='in'?'out':'in';
+  renderCgSizePriceList();
+}
+function renderCgSizePriceList(){
+  var el=document.getElementById('CG_SIZEPRICE_LIST');
+  if(!CG_SIZEPRICE_LIST.length){el.innerHTML='<p style="font-size:0.72rem;color:#bbb">هنوز سایزی اضافه نشده</p>';return;}
+  el.innerHTML=CG_SIZEPRICE_LIST.map(function(sp,i){
+    var isOut=sp.stock==='out';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2cdb0;border-radius:8px;padding:8px 10px;margin-bottom:6px'+(isOut?';opacity:0.6':'')+'">'+
+      '<span style="font-weight:900;color:#3d2b1f">'+sp.size+' — '+fmtP(sp.price)+(isOut?' (ناموجود)':'')+'</span>'+
+      '<div style="display:flex;gap:6px">'+
+      '<button type="button" onclick="toggleCgSizeStock('+i+')" style="background:'+(isOut?'#e8f5ee':'#fde8e8')+';color:'+(isOut?'#1a6a3a':'#c04040')+';border:1px solid '+(isOut?'#a8d8b8':'#f5b8b8')+';border-radius:6px;padding:0 10px;height:26px;cursor:pointer;font-size:0.68rem">'+(isOut?'برگردون موجود':'ناموجود کن')+'</button>'+
+      '<button type="button" onclick="delCgSizePrice('+i+')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:6px;width:26px;height:26px;cursor:pointer">✕</button>'+
+      '</div></div>';
+  }).join('');
+}
 function setCgType(type,btn){
   CG_TYPE=type;
   document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
@@ -4681,10 +4762,9 @@ function buildCaptionData(){
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
       sizeRange=V('CG_SIZE_RANGE'), priceRaw=V('CG_PRICE'), minOrder=V('CG_MINORDER'), material=V('CG_MATERIAL'),
       desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK'),
-      colorListRaw=V('CG_COLORLIST'),
       mixEnabled=!!(document.getElementById('CG_MIX_ENABLED')&&document.getElementById('CG_MIX_ENABLED').checked),
       mixDesc=V('CG_MIX_DESC'), mixMinOrder=V('CG_MIX_MINORDER');
-  var colorList=colorListRaw?colorListRaw.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
+  var colorList=CG_COLORLIST_ITEMS.slice();
   var price=expandPriceShorthand(priceRaw);
   var showPriceInCaption=!!(document.getElementById('CG_SHOWPRICE_CAPTION')&&document.getElementById('CG_SHOWPRICE_CAPTION').checked);
 
@@ -4699,10 +4779,18 @@ function buildCaptionData(){
   if(brand)lines.push('⭐برند '+brand+'⭐');
   if(code)lines.push('🔖 کد: #'+code);
   if(color)lines.push('🎨 رنگ: '+color);
-  if(finalSize)lines.push('📏 سایز: '+finalSize);
-  if(price){
-    if(showPriceInCaption)lines.push('💰 قیمت عمده: '+Math.round(Number(price)/1000)+'t');
-    else lines.push('💰 قیمت عمده: استعلام بگیرید');
+  var sizePriceEnabled=!!(document.getElementById('CG_SIZEPRICE_ENABLED')&&document.getElementById('CG_SIZEPRICE_ENABLED').checked);
+  if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
+    lines.push('📏 سایز و قیمت هر سایز:');
+    CG_SIZEPRICE_LIST.forEach(function(sp){
+      lines.push(sp.size+' → '+(showPriceInCaption?(Math.round(Number(sp.price)/1000)+'t'):'استعلام بگیرید'));
+    });
+  }else{
+    if(finalSize)lines.push('📏 سایز: '+finalSize);
+    if(price){
+      if(showPriceInCaption)lines.push('💰 قیمت عمده: '+Math.round(Number(price)/1000)+'t');
+      else lines.push('💰 قیمت عمده: استعلام بگیرید');
+    }
   }
   if(minOrder)lines.push('🛒 حداقل سفارش: '+minOrder+' عدد');
   if(material)lines.push('🌿 پارچه و کش '+material);
@@ -4745,10 +4833,11 @@ function buildCaptionData(){
 
   var fullCaption=topSection+(topSection?'\n':'')+fixedBottom;
 
-  return {text:fullCaption,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
+  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
     colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:mixEnabled?mixMinOrder:'',
+    sizePriceList:sizePriceEnabled?CG_SIZEPRICE_LIST.slice():[],
     fullDesc:(document.getElementById('CG_FULLDESC_TO_SITE')&&document.getElementById('CG_FULLDESC_TO_SITE').checked)?fullDesc:''};
 }
 function showCaptionPreview(data){
@@ -4846,12 +4935,21 @@ function loadProductForEdit(el){
   document.getElementById('CG_FULLDESC').value=p.fulldesc||'';
   document.getElementById('CG_TGLINK').value=p.tglink||'';
   var _pColorList=[];try{_pColorList=JSON.parse(p.colorlist||'[]');}catch(e){}
-  document.getElementById('CG_COLORLIST').value=_pColorList.join(',');
+  CG_COLORLIST_ITEMS=_pColorList.map(function(c){
+    return (typeof c==='string')?{name:c,stock:'in'}:{name:c.name,stock:c.stock||'in'};
+  });
+  renderCgColorListUI();
   var _mixChk=document.getElementById('CG_MIX_ENABLED');
   _mixChk.checked=!!p.mixenabled;
   toggleCgMixWrap(_mixChk.checked);
   document.getElementById('CG_MIX_DESC').value=p.mixdesc||'';
   document.getElementById('CG_MIX_MINORDER').value=p.mixminorder||'';
+  var _pSizePrice=[];try{_pSizePrice=JSON.parse(p.sizepricelist||'[]');}catch(e){}
+  CG_SIZEPRICE_LIST=_pSizePrice.map(function(s){return {size:s.size,price:s.price,stock:s.stock||'in'};});
+  var _spChk=document.getElementById('CG_SIZEPRICE_ENABLED');
+  _spChk.checked=!!_pSizePrice.length;
+  toggleCgSizePriceWrap(_spChk.checked);
+  renderCgSizePriceList();
 
   var sizeVal=(p.sizes&&p.sizes!=='--')?p.sizes:'';
   var cupMatch=sizeVal.match(/\s*کاپ\s*([A-D])$/);
@@ -4915,6 +5013,7 @@ function updateExistingProduct(rid,data){
     row.dataset.mixenabled=data.mixEnabled?'1':'';
     row.dataset.mixdesc=data.mixEnabled?(data.mixDesc||''):'';
     row.dataset.mixminorder=data.mixEnabled?(data.mixMinOrder||''):'';
+    row.dataset.sizepricelist=JSON.stringify(data.sizePriceList||[]);
     if(data.manualTgLink)row.dataset.tglink=data.manualTgLink;
   }
   var tiEl=document.getElementById('TI'+rid);if(tiEl)tiEl.value=data.title||'';
@@ -4967,7 +5066,8 @@ function saveProductFromCaption(data){
     if(bnEl&&bnEl.value.trim()===data.brand.trim())bid=bl.id.slice(1);
   });
   var extraInfo={material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',
-    colorlist:JSON.stringify(data.colorList||[]),mixenabled:data.mixEnabled?'1':'',mixdesc:data.mixDesc||'',mixminorder:data.mixMinOrder||''};
+    colorlist:JSON.stringify(data.colorList||[]),mixenabled:data.mixEnabled?'1':'',mixdesc:data.mixDesc||'',mixminorder:data.mixMinOrder||'',
+    sizepricelist:JSON.stringify(data.sizePriceList||[])};
   var newImgId=null;
   var primaryImg=SEND_MEDIA.find(function(m){return m.primary&&m.type==='image';});
   var otherImgs=SEND_MEDIA.filter(function(m){return !m.primary&&m.type==='image'&&m.croppedDataUrl;});
@@ -4986,7 +5086,7 @@ function saveProductFromCaption(data){
   if(bid){
     addRow(bid,data.category,data.type,data.code,data.finalSize,data.color,data.minOrder,data.price,'in',newImgId,null,data.title,extraInfo);
   } else {
-    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder}]);
+    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder,sizepricelist:extraInfo.sizepricelist}]);
   }
   save();
   if(AUTO_SYNC_ENABLED){
@@ -5189,7 +5289,7 @@ function sendToChannels(){
   if(!data.text){stat.textContent='لطفاً حداقل یکی از فیلدهای محصول را پر کن';stat.className='stat serr';return;}
   showCaptionPreview(data);
   var caption=data.text;
-  var siteLinkText='«برای خرید و بازدید در سایت کلیک کن»';
+  var siteLinkText='👉🛍️ «برای خرید و بازدید در سایت کلیک کن» 🛍️👈';
   var displayLen=caption.length+(data.code?('\n\n'+siteLinkText).length:0);
   if(displayLen>1024){
     stat.textContent='⚠️ کپشن '+displayLen+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(displayLen-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
@@ -5198,7 +5298,8 @@ function sendToChannels(){
   }
   if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
-    caption=escapeHtmlCaption(caption)+'\n\n<a href="'+siteUrl+'">'+siteLinkText+'</a>';
+    var linkLine='<a href="'+siteUrl+'">'+siteLinkText+'</a>';
+    caption=escapeHtmlCaption(data.topSection)+'\n\n'+linkLine+'\n\n'+escapeHtmlCaption(data.fixedBottom);
   }else{
     caption=escapeHtmlCaption(caption);
   }
@@ -5354,6 +5455,32 @@ function triggerShare(ordered,caption,cb){
 }
 
 // ── SAVE / LOAD ──
+function looksLikeBotToken(v){
+  return /^\d{6,12}:[A-Za-z0-9_-]{30,}$/.test((v||'').trim());
+}
+function validateChatIdField(id,label){
+  var el=document.getElementById(id);
+  if(!el)return;
+  var v=el.value.trim();
+  var warnId='WARN_'+id;
+  var warnEl=document.getElementById(warnId);
+  if(!warnEl){
+    warnEl=document.createElement('div');
+    warnEl.id=warnId;
+    warnEl.style.cssText='background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:0.74rem;display:none';
+    el.parentNode.insertBefore(warnEl,el.nextSibling);
+  }
+  if(v&&looksLikeBotToken(v)){
+    warnEl.textContent='⚠️ این یه توکن رباته، نه شناسه‌ی کانال! انگار اشتباهی توکن رو اینجا پیست کردی. شناسه‌ی کانال باید با @ شروع بشه (مثلاً @rozavie_sleepwear) یا یه عدد باشه.';
+    warnEl.style.display='block';
+  }else{
+    warnEl.style.display='none';
+  }
+}
+['TGCID','TGCID2'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el)el.addEventListener('blur',function(){validateChatIdField(id);});
+});
 function save(){
   if(_loading)return;
   try{
@@ -5368,7 +5495,7 @@ function save(){
           var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
           var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
           var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||''});
+          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]'});
         });
         var bnEl=document.getElementById('BN'+bid);
         brands.push({name:bnEl?bnEl.value:'',logoId:LOGO_IDS[bid]||null,rows:rows});
@@ -5392,6 +5519,16 @@ function load(){
     if(d.tgk)document.getElementById('TGK').value=d.tgk;
     if(d.tgcid)document.getElementById('TGCID').value=d.tgcid;
     if(d.tgcid2)document.getElementById('TGCID2').value=d.tgcid2;
+    setTimeout(function(){
+      var bad=[];
+      if(looksLikeBotToken(d.tgcid))bad.push('کانال ۱');
+      if(looksLikeBotToken(d.tgcid2))bad.push('کانال ۲');
+      if(bad.length){
+        addNotif('🚨 توی شناسه‌ی '+bad.join(' و ')+' یه چیزی شبیه توکن رباته، نه شناسه‌ی کانال! برو تب سایت → تنظیمات کانال‌ها و درستش کن، وگرنه ارسال پست fail می‌شه.');
+      }
+      validateChatIdField('TGCID');
+      validateChatIdField('TGCID2');
+    },500);
     if(d.orderCid)document.getElementById('ORDERCID').value=d.orderCid;
     if(d.orderCid2)document.getElementById('ORDERCID2').value=d.orderCid2;
     if(d.reportCid)document.getElementById('REPORTCID').value=d.reportCid;
