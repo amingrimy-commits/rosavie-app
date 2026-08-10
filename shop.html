@@ -424,6 +424,16 @@ var INSTAGRAM_LINK='https://www.instagram.com/rozavie_underwear';
 var SUPPORT_TG='https://t.me/amin_beik_mohammady';
 var PHONE_NUM='09190134599';
 
+function productDisplayName(p){
+  if(p.title)return p.title;
+  var parts=[];
+  if(p.brand)parts.push(p.brand);
+  if(p.typeLabel)parts.push(p.typeLabel);
+  else if(p.tabLabel)parts.push(p.tabLabel);
+  if(p.colors)parts.push(p.colors);
+  var joined=parts.filter(Boolean).join(' ');
+  return joined||p.code||'';
+}
 function fmtP(v){
   var n=parseInt(String(v).replace(/[^\d]/g,''),10);
   if(!n)return v||'--';
@@ -529,7 +539,7 @@ function setCat(v){CUR_CAT=v;CUR_BRAND='all';renderChips();renderGrid();}
 
 function productCardHTML(p,clickExpr,groupCount){
   var st=p.stock==='in'?'<span class="badge-in">موجود</span>':p.stock==='call'?'<span class="badge-call">تماس بگیرید</span>':'<span class="badge-out">ناموجود</span>';
-  var nm=p.title||p.typeLabel||p.code;
+  var nm=productDisplayName(p);
   var imgHTML=p.img?'<img class="card-img" src="'+p.img+'" loading="lazy">':'<div class="card-img-ph">👗</div>';
   var colorTag=(groupCount&&groupCount>1)?('<span class="card-tag card-tag-color">'+groupCount+' رنگ</span>'):(p.colors?'<span class="card-tag">'+p.colors+'</span>':'');
   return '<div class="card" onclick="'+clickExpr+'">'+imgHTML+'<span class="cat-badge">'+(p.tabLabel||'')+'</span>'+
@@ -576,7 +586,6 @@ function openModalForGroupInternal(group){
   if(!group||!group.length)return;
   window._CURGROUP=group;
   window._CURVARIANT=0;
-  window._CURQTY=1;
   renderModalContent();
 }
 function openModalForProduct(p){
@@ -585,15 +594,15 @@ function openModalForProduct(p){
 }
 function switchVariant(idx){
   window._CURVARIANT=idx;
-  window._CURQTY=1;
   renderModalContent();
 }
 function renderModalContent(){
   var group=window._CURGROUP;
   var p=group[window._CURVARIANT];
   window._CURP=p;
+  window._CURQTY=Number(p.minOrder)||1;
   window._PDP_TAB='spec';
-  var nm=p.title||p.typeLabel||p.code;
+  var nm=productDisplayName(p);
   var isSleep=(p.tab==='p4');
   var mainLink=p.tgLink||(isSleep?TEL_SLEEPWEAR:TEL_UNDERWEAR);
   var canOrder=p.stock!=='out';
@@ -605,16 +614,46 @@ function renderModalContent(){
       }).join('')+'</div>';
   }
   var hasDesc=!!(p.fullDesc||p.desc1||p.desc2);
-  var hasColorPicker=canOrder&&(((p.colorList&&p.colorList.length)||p.mixEnabled));
+  var hasSizePicker=canOrder&&p.sizePriceList&&p.sizePriceList.length;
+  var hasColorPicker=!hasSizePicker&&canOrder&&(((p.colorList&&p.colorList.length)||p.mixEnabled));
   var orderSectionHTML;
-  if(hasColorPicker){
+  if(hasSizePicker){
     window._COLOR_QTYS={};
-    var rowsHTML=(p.colorList||[]).map(function(c){
-      window._COLOR_QTYS[c]=0;
-      return '<div class="color-qty-row"><span class="color-qty-name">'+c+'</span>'+
-        '<div class="qty-box qty-box-sm"><button class="qty-btn" onclick="changeColorQty(\''+c.replace(/'/g,"\\'")+'\',-1,'+(p.minOrder||1)+')">−</button>'+
-        '<span class="qty-val" id="CQTY_'+c.replace(/[^a-zA-Z0-9آ-ی]/g,'_')+'">0</span>'+
-        '<button class="qty-btn" onclick="changeColorQty(\''+c.replace(/'/g,"\\'")+'\',1,'+(p.minOrder||1)+')">+</button></div></div>';
+    window._SIZE_PRICES={};
+    var szRowsHTML=p.sizePriceList.map(function(s){
+      var key='sz:'+s.size;
+      window._COLOR_QTYS[key]=0;
+      window._SIZE_PRICES[key]=s.price;
+      var isOut=s.stock==='out';
+      var safeKey=key.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
+      if(isOut){
+        return '<div class="color-qty-row" style="opacity:0.55"><span class="color-qty-name">'+s.size+' — '+fmtP(s.price)+' <b style="color:#c0304a">(ناموجود)</b></span></div>';
+      }
+      return '<div class="color-qty-row"><span class="color-qty-name">'+s.size+' — '+fmtP(s.price)+'</span>'+
+        '<div class="qty-box qty-box-sm"><button class="qty-btn" onclick="changeColorQty(\''+key.replace(/'/g,"\\'")+'\',-1,'+(p.minOrder||1)+')">−</button>'+
+        '<span class="qty-val" id="CQTY_'+safeKey+'">0</span>'+
+        '<button class="qty-btn" onclick="changeColorQty(\''+key.replace(/'/g,"\\'")+'\',1,'+(p.minOrder||1)+')">+</button></div></div>';
+    }).join('');
+    orderSectionHTML='<div class="color-qty-label">سایز و تعداد مدنظرت رو انتخاب کن:</div>'+
+      '<div class="color-qty-list">'+szRowsHTML+'</div>'+
+      (p.colors?('<div class="modal-row"><span>رنگبندی</span><span>'+p.colors+'</span></div>'):'')+
+      '<div class="acc-err" id="CQTY_ERR"></div>'+
+      '<button class="addcart-btn" onclick="addToCartMultiColor()">🛒 افزودن به سبد خرید</button>';
+  }else if(hasColorPicker){
+    window._COLOR_QTYS={};
+    window._SIZE_PRICES={};
+    var rowsHTML=(p.colorList||[]).map(function(cRaw){
+      var c=(typeof cRaw==='string')?{name:cRaw,stock:'in'}:cRaw;
+      var safeKey=c.name.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
+      if(c.stock==='out'){
+        window._COLOR_QTYS[c.name]=0;
+        return '<div class="color-qty-row" style="opacity:0.55"><span class="color-qty-name">'+c.name+' <b style="color:#c0304a">(ناموجود)</b></span></div>';
+      }
+      window._COLOR_QTYS[c.name]=0;
+      return '<div class="color-qty-row"><span class="color-qty-name">'+c.name+'</span>'+
+        '<div class="qty-box qty-box-sm"><button class="qty-btn" onclick="changeColorQty(\''+c.name.replace(/'/g,"\\'")+'\',-1,'+(p.minOrder||1)+')">−</button>'+
+        '<span class="qty-val" id="CQTY_'+safeKey+'">0</span>'+
+        '<button class="qty-btn" onclick="changeColorQty(\''+c.name.replace(/'/g,"\\'")+'\',1,'+(p.minOrder||1)+')">+</button></div></div>';
     }).join('');
     var mixHTML='';
     if(p.mixEnabled){
@@ -629,7 +668,8 @@ function renderModalContent(){
       '<div class="acc-err" id="CQTY_ERR"></div>'+
       '<button class="addcart-btn" onclick="addToCartMultiColor()">🛒 افزودن به سبد خرید</button>';
   }else{
-    orderSectionHTML=(canOrder?('<div class="qty-box"><button class="qty-btn" onclick="chQty(-1)">−</button><span class="qty-val" id="MQTY">1</span><button class="qty-btn" onclick="chQty(1)">+</button></div>'+
+    orderSectionHTML=(canOrder?('<div class="qty-box"><button class="qty-btn" onclick="chQty(-1,'+(p.minOrder||1)+')">−</button><span class="qty-val" id="MQTY">'+window._CURQTY+'</span><button class="qty-btn" onclick="chQty(1,'+(p.minOrder||1)+')">+</button></div>'+
+    (p.minOrder?('<div style="text-align:center;font-size:0.72rem;color:#8a7a6c;margin-top:-8px;margin-bottom:10px">حداقل سفارش: '+p.minOrder+' عدد (مضرب '+p.minOrder+')</div>'):'')+
     '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>');
   }
   var html='<button class="modal-close" onclick="closeModal()">✕</button><div style="clear:both"></div>'+
@@ -655,9 +695,9 @@ function changeColorQty(key,delta,minOrder){
   var cur=window._COLOR_QTYS[key]||0;
   var next;
   if(delta>0){
-    next=cur===0?minOrder:cur+1;
+    next=cur+minOrder;
   }else{
-    next=cur<=minOrder?0:cur-1;
+    next=cur<=minOrder?0:cur-minOrder;
   }
   window._COLOR_QTYS[key]=next;
   var elId=key==='__mix__'?'CQTY___mix__':('CQTY_'+key.replace(/[^a-zA-Z0-9آ-ی]/g,'_'));
@@ -670,18 +710,20 @@ function addToCartMultiColor(){
   if(!p)return;
   var err=document.getElementById('CQTY_ERR');
   var picked=Object.keys(window._COLOR_QTYS).filter(function(k){return window._COLOR_QTYS[k]>0;});
-  if(!picked.length){err.textContent='لطفاً حداقل یه رنگ رو با تعداد انتخاب کن';return;}
+  if(!picked.length){err.textContent='لطفاً حداقل یه گزینه رو با تعداد انتخاب کن';return;}
   picked.forEach(function(key){
     var qty=window._COLOR_QTYS[key];
     var isMix=(key==='__mix__');
-    var colorNote=isMix?('میکس'+(p.mixDesc?(' — '+p.mixDesc):'')):key;
+    var isSize=key.indexOf('sz:')===0;
+    var linePrice=isSize?(window._SIZE_PRICES[key]||p.price):p.price;
+    var colorNote=isMix?('میکس'+(p.mixDesc?(' — '+p.mixDesc):'')):(isSize?('سایز '+key.slice(3)):key);
     var cartKey=p.id+'::'+colorNote;
     var existing=CART.find(function(c){return c.key===cartKey;});
     if(existing)existing.qty+=qty;
-    else CART.push({key:cartKey,id:p.id,code:p.code,title:p.title||p.typeLabel||p.code,price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote});
+    else CART.push({key:cartKey,id:p.id,code:p.code,title:productDisplayName(p),price:linePrice,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote});
   });
   saveCart();updateFab();closeModal();
-  showToast((p.title||p.code)+' به سبد اضافه شد ✅');
+  showToast(productDisplayName(p)+' به سبد اضافه شد ✅');
 }
 function switchPdpTab(tab){
   window._PDP_TAB=tab;
@@ -769,8 +811,11 @@ function submitReview(code){
     err.textContent='خطا در ثبت نظر: '+(e&&e.message?e.message:e);
   });
 }
-function chQty(d){
-  window._CURQTY=Math.max(1,(window._CURQTY||1)+d);
+function chQty(d,minOrder){
+  var step=Number(minOrder)||1;
+  var cur=window._CURQTY||step;
+  var next=d>0?(cur+step):Math.max(step,cur-step);
+  window._CURQTY=next;
   var el=document.getElementById('MQTY');if(el)el.textContent=window._CURQTY;
 }
 function closeModal(){goBack();}
@@ -1394,9 +1439,9 @@ function addToCart(){
   var key=p.id+'::'+colorNote;
   var existing=CART.find(function(c){return c.key===key;});
   if(existing)existing.qty+=qty;
-  else CART.push({key:key,id:p.id,code:p.code,title:p.title||p.typeLabel||p.code,price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote});
+  else CART.push({key:key,id:p.id,code:p.code,title:productDisplayName(p),price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote});
   saveCart();updateFab();closeModal();
-  showToast((p.title||p.code)+' به سبد اضافه شد ✅');
+  showToast(productDisplayName(p)+' به سبد اضافه شد ✅');
 }
 function showToast(msg){
   var old=document.querySelector('.rv-toast');if(old)old.remove();
