@@ -4882,31 +4882,23 @@ function buildCaptionData(){
   var topSection=lines.join('\n');
 
   var fixedBottom=[
-    '🎀🩱👙💕',
     '➡️ جهت ثبت سفارش و اطلاع از قیمت محصولات در خدمتتون هستیم 👇😊',
-    '👤 ادمین:',
-    '@amin_beik_mohammady',
-    '🌸💗👙🎀',
-    '☎️ تماس:',
-    '09190134599',
-    '💋🩱✨🎁',
-    '📸 اینستاگرام:',
-    'https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA==',
-    '💝🌺👗💫',
-    '📢 کانال تلگرام:',
-    'https://t.me/rozavie_underwear',
-    '🎀💕👙🌸',
-    '📢 کانال بله:',
-    'https://ble.ir/rozavie_underwear',
-    'کانال لباس خواب ',
-    'https://t.me/lebasziryammi_sleepware',
-    '🎀💕👙🌸',
+    '👤 ادمین: @amin_beik_mohammady',
+    '☎️ تماس: 09190134599',
+    '📸 اینستاگرام | 📢 کانال لباس زیر | 📢 کانال لباس خواب | 📢 کانال بله',
+    '#لباس_زیر #ست_لباس_زیر #لباس_زیر_زنانه #لباس_زیر_عمده #خرید_لباس_زیر #لباس_زیر_برند #ست_زنانه #لباس_زیر_فانتزی #عمده_فروشی_لباس #لباس_زیر_اورجینال'
+  ].join('\n');
+  var fixedBottomHtml=[
+    '➡️ جهت ثبت سفارش و اطلاع از قیمت محصولات در خدمتتون هستیم 👇😊',
+    '👤 ادمین: <a href="https://t.me/amin_beik_mohammady">@amin_beik_mohammady</a>',
+    '☎️ تماس: 09190134599',
+    '<a href="https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA==">📸 اینستاگرام</a> | <a href="https://t.me/rozavie_underwear">📢 کانال لباس زیر</a> | <a href="https://t.me/lebasziryammi_sleepware">📢 کانال لباس خواب</a> | <a href="https://ble.ir/rozavie_underwear">📢 کانال بله</a>',
     '#لباس_زیر #ست_لباس_زیر #لباس_زیر_زنانه #لباس_زیر_عمده #خرید_لباس_زیر #لباس_زیر_برند #ست_زنانه #لباس_زیر_فانتزی #عمده_فروشی_لباس #لباس_زیر_اورجینال'
   ].join('\n');
 
   var fullCaption=topSection+(topSection?'\n':'')+fixedBottom;
 
-  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
+  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,fixedBottomHtml:fixedBottomHtml,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
     colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:mixEnabled?mixMinOrder:'',
@@ -5393,9 +5385,9 @@ function sendToChannels(){
   if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
     var linkLine='<a href="'+siteUrl+'">'+siteLinkText+'</a>';
-    caption=escapeHtmlCaption(data.topSection)+'\n\n'+linkLine+'\n\n'+escapeHtmlCaption(data.fixedBottom);
+    caption=escapeHtmlCaption(data.topSection)+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml;
   }else{
-    caption=escapeHtmlCaption(caption);
+    caption=escapeHtmlCaption(data.topSection)+(data.topSection?'\n\n':'')+data.fixedBottomHtml;
   }
 
   var ordered=SEND_MEDIA.slice().sort(function(a,b){return (b.primary?1:0)-(a.primary?1:0);});
