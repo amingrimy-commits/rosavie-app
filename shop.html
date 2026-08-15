@@ -39,6 +39,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .side-drawer-acc-body{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
 .side-drawer-acc-body.open{max-height:900px}
 .side-drawer-sub-item{display:block;padding:10px 10px 10px 10px;margin-right:14px;border-right:2px solid #ecdfd2;color:#5a4d45;font-size:0.8rem;font-weight:600;cursor:pointer}
+.side-drawer-subsub-item{margin-right:26px;font-size:0.76rem;color:#8a7a6c}
 .side-drawer-sub-item:active{color:#b0517a}
 .side-drawer-item:active{background:#f7efe6}
 /* بنر متحرک ۴:۳ */
@@ -134,6 +135,9 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .home-prod-acc-body{max-width:960px;margin:0 auto;padding:0 14px;max-height:0;overflow:hidden;transition:max-height 0.3s ease}
 .home-prod-acc-body.open{max-height:340px;margin-top:8px;overflow-y:auto}
 .home-prod-item{display:block;padding:11px 14px;margin-bottom:6px;border-radius:10px;background:#fff;border:1px solid #ecdfd2;color:#3a2e29;font-size:0.8rem;font-weight:700;cursor:pointer}
+.home-prod-subgroup{max-height:0;overflow:hidden;transition:max-height 0.25s ease}
+.home-prod-subgroup.open{max-height:500px}
+.home-prod-subitem{margin-right:14px;background:#fbf5ec;font-size:0.76rem;font-weight:600;color:#7a6a5c}
 .home-prod-item.on{background:#fbe8ee;border-color:#d4789a;color:#b0517a}
 .brand-filter-row{max-width:960px;margin:0 auto;padding:0 14px;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
 .brand-filter-row::-webkit-scrollbar{display:none}
@@ -216,7 +220,8 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .color-qty-list{margin-bottom:6px}
 .color-qty-row{display:flex;align-items:center;justify-content:space-between;background:#f7efe6;border:1px solid #ecdfd2;border-radius:11px;padding:9px 12px;margin-bottom:8px}
 .color-qty-mix{background:#fbe8ee;border-color:#f0c8d4}
-.color-qty-name{font-size:0.82rem;font-weight:700;color:#3a2e29}
+.color-qty-name{font-size:0.82rem;font-weight:700;color:#3a2e29;display:inline-flex;align-items:center}
+.color-dot{display:inline-block;width:15px;height:15px;border-radius:50%;margin-left:7px;flex-shrink:0;vertical-align:middle}
 .qty-box-sm{gap:8px;margin:0}
 .qty-box-sm .qty-btn{width:30px;height:30px;font-size:1rem;border-radius:8px}
 .qty-box-sm .qty-val{font-size:0.9rem;min-width:20px}
@@ -366,6 +371,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 </div>
 <div class="home-prod-acc-body" id="HOME_PROD_ACC_BODY"></div>
 <div class="brand-filter-row" id="BRAND_FILTER_ROW"></div>
+<div class="brand-filter-row" id="FABRIC_FILTER_ROW"></div>
 <div class="rescount" id="RC"></div>
 <div class="grid" id="GRID"><div class="loading">در حال دریافت محصولات...</div></div>
 
@@ -383,7 +389,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
   <div class="modal" id="SUPPORT_BODY"></div>
 </div>
 
-<div class="footer-note">برای ثبت سفارش، محصول رو به سبد اضافه کن یا از دکمه‌ی تماس با ما استفاده کن.<br><span style="opacity:0.5">نسخه: 2026-08-07 14:00</span></div>
+<div class="footer-note">برای ثبت سفارش، محصول رو به سبد اضافه کن یا از دکمه‌ی تماس با ما استفاده کن.<br><span style="opacity:0.5">نسخه: 2026-08-07 18:30</span></div>
 
 <button class="fab-cart" id="FABCART" onclick="openCart()"><img class="nav-ico" style="width:38px;height:38px;filter:brightness(0) invert(1)" src="data:image/png;base64,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"><span class="fab-cart-badge" id="FABBADGE">0</span></button>
 <button class="fab-support2" id="FABSUPPORT" onclick="openSupport()"><img class="nav-ico" style="width:38px;height:38px;filter:brightness(0) invert(1)" src="data:image/png;base64,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"></button>
@@ -409,8 +415,19 @@ var db=firebase.firestore();
 
 var CATS=[
   {v:'all',l:'همه',tab:null,type:null},
-  {v:'p1-set',l:'ست سوتین',tab:'p1',type:'set'},
-  {v:'p1-bra',l:'سوتین تک',tab:'p1',type:'bra'},
+  {v:'p1',l:'سوتین و ست',tab:'p1',type:null},
+  {v:'p1-setpad_wire',l:'ست — اسفنجی فنردار',tab:'p1',type:'setpad_wire'},
+  {v:'p1-setpad_nowire',l:'ست — اسفنجی بدون فنر',tab:'p1',type:'setpad_nowire'},
+  {v:'p1-setnopad_wire',l:'ست — بدون اسفنج فنردار',tab:'p1',type:'setnopad_wire'},
+  {v:'p1-setnopad_nowire',l:'ست — بدون اسفنج بدون فنر',tab:'p1',type:'setnopad_nowire'},
+  {v:'p1-brapad_wire',l:'سوتین — اسفنجی فنردار',tab:'p1',type:'brapad_wire'},
+  {v:'p1-brapad_nowire',l:'سوتین — اسفنجی بدون فنر',tab:'p1',type:'brapad_nowire'},
+  {v:'p1-branopad_wire',l:'سوتین — بدون اسفنج فنردار',tab:'p1',type:'branopad_wire'},
+  {v:'p1-branopad_nowire',l:'سوتین — بدون اسفنج بدون فنر',tab:'p1',type:'branopad_nowire'},
+  {v:'p1-brajelly',l:'سوتین ژله‌ای',tab:'p1',type:'brajelly'},
+  {v:'p1-braplastic',l:'سوتین طلقی',tab:'p1',type:'braplastic'},
+  {v:'p1-brabutterfly',l:'سوتین پروانه‌ای',tab:'p1',type:'brabutterfly'},
+  {v:'p2',l:'نیم‌تنه',tab:'p2',type:null},
   {v:'p2-tset',l:'ست نیم‌تنه',tab:'p2',type:'tset'},
   {v:'p2-top',l:'نیم‌تنه تک',tab:'p2',type:'top'},
   {v:'p3',l:'شورت',tab:'p3',type:null},
@@ -448,6 +465,33 @@ function productDisplayName(p){
   var joined=parts.filter(Boolean).join(' ');
   return joined||p.code||'';
 }
+var COLOR_HEX_MAP={
+  'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
+  'مشکی':'#000000',
+  'قرمز':'#E53935','زرشکی':'#7B1E3A','شرابی':'#722F37',
+  'آبی':'#1E88E5','آبی آسمانی':'#87CEEB','آبی کاربنی':'#4A6FA5','آبی نفتی':'#1B4F72','سرمه‌ای':'#0B1F3A','سرمه ای':'#0B1F3A',
+  'زرد':'#FDD835','زرد لیمویی':'#E3F400','زرد فسفری':'#E8F500','طلایی':'#D4AF37',
+  'نارنجی':'#FB8C00','نارنجی تیره':'#C56000','نارنجی فسفری':'#FF6D00','هلویی':'#FFCBA4',
+  'صورتی':'#FF69B4','صورتی تیره':'#D6467C','صورتی پاستیلی':'#FFD1DC','سرخ‌آبی':'#C2185B','سرخ‌آبی تیره':'#8E1550',
+  'سبز':'#43A047','سبز صابونی':'#A8C686','سبز زمردی':'#009B77','سبز یشمی':'#00A86B','سبز فسفری':'#7FFF00',
+  'قهوه‌ای':'#6F4E37','قهوه ای':'#6F4E37','کرم':'#F5E6CA','نسکافه‌ای':'#A67B5B','نسکافه ای':'#A67B5B','شکلاتی':'#5C3317','قهوه‌ای خاکستری':'#7A6C5D','قهوه ای خاکستری':'#7A6C5D','فیلی':'#C4B7A6',
+  'طوسی روشن':'#D3D3D3','طوسی تیره':'#696969','خاکستری':'#808080','خاکستری تیره':'#4F4F4F','موشی':'#8B8589','دلفینی':'#8E9AAF'
+};
+function colorSwatchHTML(name){
+  var hex=COLOR_HEX_MAP[(name||'').trim()];
+  if(!hex)return '';
+  var border=(hex.toUpperCase()==='#FFFFFF'||hex.toUpperCase()==='#FFFDF5')?'1.5px solid #d8cfc2':'1px solid rgba(0,0,0,0.12)';
+  return '<span class="color-dot" style="background:'+hex+';border:'+border+'"></span>';
+}
+function colorNameWithSwatch(name){
+  return colorSwatchHTML(name)+(name||'');
+}
+function colorsTextWithSwatches(text){
+  if(!text)return '';
+  var parts=text.split(/[،,]/).map(function(s){return s.trim();}).filter(Boolean);
+  if(parts.length<=1)return colorNameWithSwatch(text);
+  return parts.map(function(p){return '<span style="display:inline-flex;align-items:center;margin-left:8px">'+colorNameWithSwatch(p)+'</span>';}).join('');
+}
 function fmtP(v){
   var n=parseInt(String(v).replace(/[^\d]/g,''),10);
   if(!n)return v||'--';
@@ -461,6 +505,7 @@ function renderChips(){
   var body=document.getElementById('HOME_PROD_ACC_BODY');
   if(body&&body.innerHTML)renderHomeProdAccList();
   renderBrandFilter();
+  renderFabricFilter();
 }
 var CUR_BRANDS_LIST=[];
 // ── بارگذاری صفحه‌بندی‌شده محصولات (۱۰ تا ۱۰ تا، به‌جای همه یکجا) ──
@@ -482,6 +527,7 @@ function mergeIntoGlobalProducts(items){
     if(!p.id||!known[p.id]){PRODUCTS.push(p);if(p.id)known[p.id]=true;}
   });
 }
+var _emptyCategories={};
 function ensureCategoryLoaded(catKey){
   if(!_catState[catKey])_catState[catKey]={items:[],lastDoc:null,hasMore:true,loading:false,startedLoad:false};
   var st=_catState[catKey];
@@ -493,6 +539,7 @@ function ensureCategoryLoaded(catKey){
     st.lastDoc=snap.docs.length?snap.docs[snap.docs.length-1]:null;
     st.hasMore=snap.docs.length===CAT_PAGE_SIZE;
     st.loading=false;
+    if(!st.items.length){_emptyCategories[catKey]=true;}
     mergeIntoGlobalProducts(st.items);
     renderChips();
     _ROUTING_READY=true;renderRoute();hideInitLoader();
@@ -545,6 +592,30 @@ function backgroundLoadAllForSearch(){
   }).catch(function(err){_bgSearchLoading=false;console.error('backgroundLoadAllForSearch error',err);});
 }
 
+var CUR_FABRIC_TAGS=[];
+function renderFabricFilter(){
+  var row=document.getElementById('FABRIC_FILTER_ROW');
+  if(!row)return;
+  var st=_catState[CUR_CAT];
+  var pool=st?st.items:[];
+  var tags=[];
+  pool.forEach(function(p){
+    (p.fabricTags||[]).forEach(function(t){if(tags.indexOf(t)===-1)tags.push(t);});
+  });
+  if(!tags.length){row.innerHTML='';row.className='brand-filter-row';CUR_FABRIC_TAGS=[];return;}
+  row.className='brand-filter-row show';
+  row.innerHTML='<div class="brand-chip'+(!CUR_FABRIC_TAGS.length?' on':'')+'" onclick="clearFabricFilter()">همه طرح‌ها</div>'+
+    tags.map(function(t){
+      return '<div class="brand-chip'+(CUR_FABRIC_TAGS.indexOf(t)>-1?' on':'')+'" onclick="toggleFabricFilter(\''+t+'\')">'+t+'</div>';
+    }).join('');
+}
+function toggleFabricFilter(tag){
+  var idx=CUR_FABRIC_TAGS.indexOf(tag);
+  if(idx>-1)CUR_FABRIC_TAGS.splice(idx,1);
+  else CUR_FABRIC_TAGS.push(tag);
+  renderFabricFilter();renderGrid();
+}
+function clearFabricFilter(){CUR_FABRIC_TAGS=[];renderFabricFilter();renderGrid();}
 function renderBrandFilter(){
   var row=document.getElementById('BRAND_FILTER_ROW');
   if(!row)return;
@@ -616,15 +687,54 @@ function toggleHomeProdAcc(){
   body.classList.toggle('open',willOpen);
   chev.classList.toggle('open',willOpen);
 }
+var _catAccOpen={};
+function buildCatGroups(){
+  var groups=[],byTab={};
+  CATS.forEach(function(c){
+    if(c.v==='all')return;
+    if(_emptyCategories[c.v]&&c.type)return;
+    if(!byTab[c.tab]){byTab[c.tab]={tab:c.tab,parent:null,children:[]};groups.push(byTab[c.tab]);}
+    if(!c.type)byTab[c.tab].parent=c;
+    else byTab[c.tab].children.push(c);
+  });
+  return groups;
+}
+function toggleCatGroup(tab){
+  _catAccOpen[tab]=!_catAccOpen[tab];
+  renderHomeProdAccList();renderProductsAccList();
+}
 function renderHomeProdAccList(){
   var body=document.getElementById('HOME_PROD_ACC_BODY');
-  body.innerHTML=CATS.map(function(c){
-    return '<div class="home-prod-item'+(CUR_CAT===c.v?' on':'')+'" onclick="setCatFromHome(\''+c.v+'\')">'+c.l+'</div>';
+  var groups=buildCatGroups();
+  body.innerHTML=groups.map(function(g){
+    var hasKids=g.children.length>0;
+    var isOpen=!!_catAccOpen[g.tab];
+    var kidsHTML=hasKids?('<div class="home-prod-subgroup'+(isOpen?' open':'')+'">'+g.children.map(function(c){
+      return '<div class="home-prod-item home-prod-subitem'+(CUR_CAT===c.v?' on':'')+'" onclick="setCatFromHome(\''+c.v+'\')">'+c.l+'</div>';
+    }).join('')+'</div>'):'';
+    return '<div class="home-prod-item'+(CUR_CAT===g.parent.v?' on':'')+'" onclick="'+(hasKids?('toggleCatGroup(\''+g.tab+'\');'):'')+'setCatFromHome(\''+g.parent.v+'\')" style="display:flex;justify-content:space-between;align-items:center">'+
+      '<span>'+g.parent.l+'</span>'+(hasKids?('<span style="font-size:0.7rem;transition:transform 0.2s;transform:rotate('+(isOpen?'180':'0')+'deg)">⌄</span>'):'')+
+      '</div>'+kidsHTML;
+  }).join('');
+}
+function renderProductsAccList(){
+  var body=document.getElementById('PROD_ACC_BODY');
+  var groups=buildCatGroups();
+  body.innerHTML=groups.map(function(g){
+    var hasKids=g.children.length>0;
+    var isOpen=!!_catAccOpen[g.tab];
+    var kidsHTML=hasKids?('<div class="home-prod-subgroup'+(isOpen?' open':'')+'">'+g.children.map(function(c){
+      return '<div class="side-drawer-sub-item side-drawer-subsub-item" onclick="selectDrawerCat(\''+c.v+'\')">'+c.l+'</div>';
+    }).join('')+'</div>'):'';
+    return '<div class="side-drawer-sub-item" onclick="'+(hasKids?('toggleCatGroup(\''+g.tab+'\');'):'')+'selectDrawerCat(\''+g.parent.v+'\')" style="display:flex;justify-content:space-between;align-items:center">'+
+      '<span>'+g.parent.l+'</span>'+(hasKids?('<span style="font-size:0.7rem;transition:transform 0.2s;transform:rotate('+(isOpen?'180':'0')+'deg)">⌄</span>'):'')+
+      '</div>'+kidsHTML;
   }).join('');
 }
 function setCatFromHome(v){
   CUR_CAT=v;
   CUR_BRAND='all';
+  CUR_FABRIC_TAGS=[];
   renderChips();
   renderGrid();
   var body=document.getElementById('HOME_PROD_ACC_BODY');
@@ -632,7 +742,7 @@ function setCatFromHome(v){
   body.classList.remove('open');
   chev.classList.remove('open');
 }
-function setCat(v){CUR_CAT=v;CUR_BRAND='all';renderChips();renderGrid();}
+function setCat(v){CUR_CAT=v;CUR_BRAND='all';CUR_FABRIC_TAGS=[];renderChips();renderGrid();}
 
 function productCardHTML(p,clickExpr,groupCount){
   var st=p.stock==='in'?'<span class="badge-in">موجود</span>':p.stock==='call'?'<span class="badge-call">تماس بگیرید</span>':'<span class="badge-out">ناموجود</span>';
@@ -670,7 +780,8 @@ function renderGrid(){
   }
   var items=pool.filter(function(p){
     var mb=CUR_BRAND==='all'||p.brand===CUR_BRAND;
-    return mb;
+    var mf=!CUR_FABRIC_TAGS.length||(p.fabricTags||[]).some(function(t){return CUR_FABRIC_TAGS.indexOf(t)>-1;});
+    return mb&&mf;
   });
   var groups=groupProductsByCode(items);
   document.getElementById('RC').textContent=groups.length+' محصول';
@@ -734,7 +845,7 @@ function renderModalContent(){
   if(group.length>1){
     variantHTML='<div class="variant-switch-label">رنگ مدنظرت رو انتخاب کن:</div><div class="variant-switch-row">'+
       group.map(function(v,idx){
-        return '<div class="variant-chip'+(idx===window._CURVARIANT?' on':'')+'" onclick="switchVariant('+idx+')">'+(v.colors||('گزینه '+(idx+1)))+'</div>';
+        return '<div class="variant-chip'+(idx===window._CURVARIANT?' on':'')+'" onclick="switchVariant('+idx+')">'+(v.colors?colorNameWithSwatch(v.colors):('گزینه '+(idx+1)))+'</div>';
       }).join('')+'</div>';
   }
   var hasDesc=!!(p.fullDesc||p.desc1||p.desc2);
@@ -760,7 +871,7 @@ function renderModalContent(){
     }).join('');
     orderSectionHTML='<div class="color-qty-label">سایز و تعداد مدنظرت رو انتخاب کن:</div>'+
       '<div class="color-qty-list">'+szRowsHTML+'</div>'+
-      (p.colors?('<div class="modal-row"><span>رنگبندی</span><span>'+p.colors+'</span></div>'):'')+
+      (p.colors?('<div class="modal-row"><span>رنگبندی</span><span>'+colorsTextWithSwatches(p.colors)+'</span></div>'):'')+
       '<div class="acc-err" id="CQTY_ERR"></div>'+
       '<button class="addcart-btn" onclick="addToCartMultiColor()">🛒 افزودن به سبد خرید</button>';
   }else if(hasColorPicker){
@@ -771,10 +882,10 @@ function renderModalContent(){
       var safeKey=c.name.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
       if(c.stock==='out'){
         window._COLOR_QTYS[c.name]=0;
-        return '<div class="color-qty-row" style="opacity:0.55"><span class="color-qty-name">'+c.name+' <b style="color:#c0304a">(ناموجود)</b></span></div>';
+        return '<div class="color-qty-row" style="opacity:0.55"><span class="color-qty-name">'+colorNameWithSwatch(c.name)+' <b style="color:#c0304a">(ناموجود)</b></span></div>';
       }
       window._COLOR_QTYS[c.name]=0;
-      return '<div class="color-qty-row"><span class="color-qty-name">'+c.name+'</span>'+
+      return '<div class="color-qty-row"><span class="color-qty-name">'+colorNameWithSwatch(c.name)+'</span>'+
         '<div class="qty-box qty-box-sm"><button class="qty-btn" onclick="changeColorQty(\''+c.name.replace(/'/g,"\\'")+'\',-1,'+(p.minOrder||1)+')">−</button>'+
         '<span class="qty-val" id="CQTY_'+safeKey+'">0</span>'+
         '<button class="qty-btn" onclick="changeColorQty(\''+c.name.replace(/'/g,"\\'")+'\',1,'+(p.minOrder||1)+')">+</button></div></div>';
@@ -873,9 +984,10 @@ function renderPdpTabContent(){
     el.innerHTML=
       (p.code?'<div class="modal-row"><span>کد محصول</span><span>'+p.code+'</span></div>':'')+
       (p.sizes?'<div class="modal-row"><span>سایزبندی</span><span>'+p.sizes+'</span></div>':'')+
-      (group.length<=1&&p.colors?'<div class="modal-row"><span>رنگبندی</span><span>'+p.colors+'</span></div>':'')+
+      (group.length<=1&&p.colors?'<div class="modal-row"><span>رنگبندی</span><span>'+colorsTextWithSwatches(p.colors)+'</span></div>':'')+
       (p.minOrder?'<div class="modal-row"><span>حداقل سفارش</span><span>'+p.minOrder+' عدد</span></div>':'')+
-      (p.material?'<div class="modal-row"><span>جنس</span><span>'+p.material+'</span></div>':'');
+      (p.material?'<div class="modal-row"><span>جنس</span><span>'+p.material+'</span></div>':'')+
+      (p.fabricTags&&p.fabricTags.length?'<div class="modal-row"><span>طرح</span><span>'+p.fabricTags.join('، ')+'</span></div>':'');
   }
 }
 // ── نظرات کاربران ──
@@ -1158,16 +1270,11 @@ function toggleProductsAcc(){
   body.classList.toggle('open',willOpen);
   chev.classList.toggle('open',willOpen);
 }
-function renderProductsAccList(){
-  var body=document.getElementById('PROD_ACC_BODY');
-  body.innerHTML=CATS.map(function(c){
-    return '<div class="side-drawer-sub-item" onclick="selectDrawerCat(\''+c.v+'\')">'+c.l+'</div>';
-  }).join('');
-}
 function selectDrawerCat(catValue){
   silentCloseDrawer();
   CUR_CAT=catValue;
   CUR_BRAND='all';
+  CUR_FABRIC_TAGS=[];
   renderChips();
   renderGrid();
   document.getElementById('GRID').scrollIntoView({behavior:'smooth',block:'start'});

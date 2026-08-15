@@ -462,14 +462,30 @@ input[type=file]{display:none}
         <button type="button" class="chip" onclick="setCgSleepSize('F')">F (فری‌سایز)</button>
       </div>
     </div>
-    <div class="g1" id="CG_CUP_WRAP" style="display:none"><span class="lbl">کاپ‌بندی (فقط سوتین و ست سوتین)</span>
-      <div class="chips" id="CG_CUP_CHIPS">
-        <button class="chip" onclick="setCgCup('',this)">هیچکدام</button>
-        <button class="chip" onclick="setCgCup('A',this)">A</button>
-        <button class="chip" onclick="setCgCup('B',this)">B</button>
-        <button class="chip" onclick="setCgCup('C',this)">C</button>
-        <button class="chip" onclick="setCgCup('D',this)">D</button>
+    <div class="g1" id="CG_BRA_SIZE_WRAP" style="display:none"><span class="lbl">سایزبندی پیشنهادی سوتین/ست</span>
+      <div class="chips">
+        <button type="button" class="chip" onclick="setCgBraSizePreset('75 تا 90',['A','B','C','D'])">75.80.85.90 | A B C D</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('80 تا 95',['A','B','C','D'])">80.85.90.95 | A B C D</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('80 تا 90',['A','B','C'])">80.85.90 | A B C</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('85 تا 100',['B','C','D'])">85.90.95.100 | B C D</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('90 تا 105',['B','C','D'])">90.95.100.105 | B C D</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('80 تا 85',['C','D'])">80.85 | C D</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('S,M,L,XL',['A','B'])">S M L XL | A B</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('L,XL',['A','B'])">L XL | A B</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('M,L,XL',['A','B'])">M L XL | A B</button>
+        <button type="button" class="chip" onclick="setCgBraSizePreset('',['A','B','C','D'])">فقط کاپ‌بندی | A B C D</button>
       </div>
+    </div>
+    <div class="g1" id="CG_CUP_WRAP" style="display:none"><span class="lbl">کاپ‌بندی (فقط سوتین و ست سوتین — می‌تونی چند کاپ با هم انتخاب کنی)</span>
+      <div class="chips" id="CG_CUP_CHIPS">
+        <button class="chip" onclick="toggleCgCup('A',this)">A</button>
+        <button class="chip" onclick="toggleCgCup('B',this)">B</button>
+        <button class="chip" onclick="toggleCgCup('C',this)">C</button>
+        <button class="chip" onclick="toggleCgCup('D',this)">D</button>
+      </div>
+    </div>
+    <div class="g1" id="CG_FABRIC_WRAP" style="display:none"><span class="lbl">جنس / طرح (می‌تونی چندتا با هم انتخاب کنی)</span>
+      <div class="chips" id="CG_FABRIC_CHIPS"></div>
     </div>
 
     <div class="g2">
@@ -477,9 +493,10 @@ input[type=file]{display:none}
       <div><span class="lbl">۷. حداقل سفارش (برای رنگ‌های تکی)</span><input class="fi" type="text" id="CG_MINORDER" placeholder="مثال: 2"></div>
     </div>
     <div class="g1"><span class="lbl">رنگ‌های قابل‌انتخاب جدا (اختیاری — تا مشتری بتونه هرکدوم رو با تعداد دلخواه جدا سفارش بده، و بتونی هرکدوم رو موجود/ناموجود کنی)</span>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input class="fi" type="text" id="CG_CL_NAME" placeholder="نام رنگ (مثال: صورتی)" style="flex:1">
+      <div style="display:flex;gap:6px;margin-bottom:8px;position:relative">
+        <input class="fi" type="text" id="CG_CL_NAME" placeholder="نام رنگ (مثال: صورتی)" style="flex:1" oninput="suggestColorList(this.value)" onfocus="suggestColorList(this.value)">
         <button type="button" class="sbig" style="width:auto;padding:0 16px;background:#3d2b1f;color:#f9f0e8" onclick="addCgColorItem()">+ افزودن</button>
+        <div class="srch-res" id="CG_CL_RES" style="position:absolute;top:100%;right:0;left:0;background:#fff;z-index:20"></div>
       </div>
       <div id="CG_COLORLIST_UI"></div>
       <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">اگه هیچی اضافه نکنی، فقط همون فیلد «رنگ» بالا به‌عنوان توضیح نمایش داده می‌شه و مشتری نمی‌تونه رنگ جدا انتخاب کنه.</p>
@@ -641,7 +658,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-07 09:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-07 18:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1233,6 +1250,7 @@ function collectSingleProduct(targetRid){
             mixDesc:row.dataset.mixdesc||'',
             mixMinOrder:row.dataset.mixminorder||'',
             sizePriceList:JSON.parse(row.dataset.sizepricelist||'[]'),
+            fabricTags:JSON.parse(row.dataset.fabrictags||'[]'),
             img:row.dataset.siteimg||null
           };
         }
@@ -1309,6 +1327,7 @@ function collectAllProducts(){
           mixDesc:row.dataset.mixdesc||'',
           mixMinOrder:row.dataset.mixminorder||'',
           sizePriceList:JSON.parse(row.dataset.sizepricelist||'[]'),
+          fabricTags:JSON.parse(row.dataset.fabrictags||'[]'),
           img:row.dataset.siteimg||CATALOG_IMG_CACHE[rid]||null
         });
       });
@@ -1405,10 +1424,13 @@ function syncProductsToFirestore(){
 var BANNERS=[null,null,null,null],BANNER_IDS=[null,null,null,null];
 var ARCHIVE_MS=4*24*60*60*1000;
 var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9'];
-var TSEQ={p1:['set','bra'],p2:['tset','top'],p3:['panty'],
+var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','brapad_wire','brapad_nowire','branopad_wire','branopad_nowire','brajelly','braplastic','brabutterfly'],p2:['tset','top'],p3:['panty'],
   p4:['twopiece','robe','fantasy','costume','silk','cotton','topshort','onepiece','pajama','nightgownset','nightgown','babydoll','mask','game','whip','buttplug','hat'],
   p5:['accessory'],p6:['sleep2p','bikini','swimcover','sleep3p','skirted'],p7:['crop'],p8:['topw'],p9:['bodycotton','bodysilk']};
 var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شورت',
+  setpad_wire:'ست — اسفنجی فنردار',setpad_nowire:'ست — اسفنجی بدون فنر',setnopad_wire:'ست — بدون اسفنج فنردار',setnopad_nowire:'ست — بدون اسفنج بدون فنر',
+  brapad_wire:'سوتین — اسفنجی فنردار',brapad_nowire:'سوتین — اسفنجی بدون فنر',branopad_wire:'سوتین — بدون اسفنج فنردار',branopad_nowire:'سوتین — بدون اسفنج بدون فنر',
+  brajelly:'سوتین ژله‌ای',braplastic:'سوتین طلقی',brabutterfly:'سوتین پروانه‌ای',
   twopiece:'دو تیکه',robe:'روبدوشام',fantasy:'بادی فانتزی',costume:'کاستوم',
   silk:'بادی حریر',cotton:'بادی نخی',topshort:'تاپ شورتک',onepiece:'سرهمی',
   pajama:'پیژامه',nightgownset:'ست نایتگان',nightgown:'نایتگان',babydoll:'بیبی‌دال',mask:'نقاب',game:'بازی',whip:'شلاق',buttplug:'بات\u200cپلاگ',hat:'کلاه',
@@ -1417,6 +1439,9 @@ var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شو
   crop:'کراپ',topw:'تاپ',
   bodycotton:'بادی نخی',bodysilk:'بادی حریر'};
 var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',
+  setpad_wire:'tbtn t-set',setpad_nowire:'tbtn t-c1',setnopad_wire:'tbtn t-c2',setnopad_nowire:'tbtn t-c3',
+  brapad_wire:'tbtn t-bra',brapad_nowire:'tbtn t-c4',branopad_wire:'tbtn t-c5',branopad_nowire:'tbtn t-c6',
+  brajelly:'tbtn t-c1',braplastic:'tbtn t-c2',brabutterfly:'tbtn t-c3',
   panty:'tbtn t-bra',twopiece:'tbtn t-set',robe:'tbtn t-bra',fantasy:'tbtn t-c1',
   costume:'tbtn t-c2',silk:'tbtn t-c3',cotton:'tbtn t-c4',topshort:'tbtn t-c5',
   onepiece:'tbtn t-c6',pajama:'tbtn t-c1',nightgownset:'tbtn t-c6',nightgown:'tbtn t-c3',babydoll:'tbtn t-c5',
@@ -1961,7 +1986,7 @@ function addBrand(tab,nm,sRows,sLogoId,sLogo){
   document.getElementById('BN'+bid).oninput=save;
   if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
   else if(sLogoId){LOGO_IDS[bid]=sLogoId;idbGet(sLogoId,function(d){if(d){LOGOS[bid]=d;var lp2=document.getElementById('LP'+bid);if(lp2){lp2.src=d;lp2.style.display='block';}}});}
-  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||''});});}
+  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',fabrictags:r.fabrictags||'[]'});});}
   else if(!sRows){addRow(bid,tab);}
   save();
 }
@@ -1996,6 +2021,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   div.dataset.mixminorder=extra.mixminorder||'';
   div.dataset.sizepricelist=extra.sizepricelist||'[]';
   div.dataset.siteimg=extra.siteimg||'';
+  div.dataset.fabrictags=extra.fabrictags||'[]';
   div.dataset.extraImgIds=extra.extraImgIds||'[]';
   div.dataset.tglink=extra.tglink||'';
   if(extra.extraImgIds&&extra.extraImgIds!=='[]'){
@@ -2065,7 +2091,7 @@ function getBrands(tab){
       var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
       var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
       var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-      rows.push({rid:rid,type:ttEl?ttEl.dataset.t:defType,code:cdEl.value||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',price:V('PR'+rid)||'--',stock:stk,img:IMAGES[rid]||null,title:tiEl?tiEl.value:'',material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgs:EXTRA_IMAGES[rid]||[],extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]',siteimg:row.dataset.siteimg||''});
+      rows.push({rid:rid,type:ttEl?ttEl.dataset.t:defType,code:cdEl.value||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',price:V('PR'+rid)||'--',stock:stk,img:IMAGES[rid]||null,title:tiEl?tiEl.value:'',material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgs:EXTRA_IMAGES[rid]||[],extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]',siteimg:row.dataset.siteimg||'',fabrictags:row.dataset.fabrictags||'[]'});
     });
     var bnEl=document.getElementById('BN'+bid);
     res.push({name:bnEl?bnEl.value.trim():'',logo:LOGOS[bid]||null,rows:rows,bid:bid});
@@ -3166,14 +3192,14 @@ function addVip(el){
   VIP_PRODUCTS.push({code:p.code,title:p.title||(TLBL[p.type]||p.type),price:p.price,img:p.img||null,brandName:p.brandName||'',discountPrice:''});
   document.getElementById('VSRCH').value='';
   document.getElementById('VSRCH_RES').style.display='none';
-  renderVipList();save();
+  renderVipList();save();resyncSiteDataOnly();
 }
-function removeVip(code){VIP_PRODUCTS=VIP_PRODUCTS.filter(function(x){return x.code!==code;});renderVipList();save();}
+function removeVip(code){VIP_PRODUCTS=VIP_PRODUCTS.filter(function(x){return x.code!==code;});renderVipList();save();resyncSiteDataOnly();}
 function moveVip(code,dir){
   var i=VIP_PRODUCTS.findIndex(function(x){return x.code===code;});if(i<0)return;
   var ni=i+dir;if(ni<0||ni>=VIP_PRODUCTS.length)return;
   var tmp=VIP_PRODUCTS[i];VIP_PRODUCTS[i]=VIP_PRODUCTS[ni];VIP_PRODUCTS[ni]=tmp;
-  renderVipList();save();
+  renderVipList();save();resyncSiteDataOnly();
 }
 function vipAct(btn,action){
   var row=btn.closest('.vip-row');var code=row?row.getAttribute('data-code'):'';if(!code)return;
@@ -3231,6 +3257,7 @@ function setVipDiscount(inp,code){
   p.discountPrice=val;
   save();
   renderVipList();
+  resyncSiteDataOnly();
 }
 
 // ── تایمر تخفیف پیشنهاد ویژه ──
@@ -4585,12 +4612,20 @@ function suggestBrands(q){
     var name=bnEl?bnEl.value.trim():'';
     if(name&&brands.indexOf(name)===-1)brands.push(name);
   });
-  var exact=brands.filter(function(b){return b.indexOf(q)>-1||q.indexOf(b)>-1;});
+  function brandParts(b){
+    return b.split('|').map(function(s){return s.trim();}).filter(Boolean).concat([b]);
+  }
+  var exact=brands.filter(function(b){
+    return brandParts(b).some(function(part){return part.indexOf(q)>-1||q.indexOf(part)>-1;});
+  });
   var results=exact.slice();
   if(results.length<6){
     var already={};results.forEach(function(b){already[b]=true;});
     var scored=brands.filter(function(b){return !already[b];})
-      .map(function(b){return{b:b,dist:levenshteinDist(q,b)};})
+      .map(function(b){
+        var bestDist=Math.min.apply(null,brandParts(b).map(function(part){return levenshteinDist(q,part);}));
+        return{b:b,dist:bestDist};
+      })
       .filter(function(x){return x.dist<=3;})
       .sort(function(a,b){return a.dist-b.dist;});
     var need=6-results.length;
@@ -4613,20 +4648,32 @@ function pickSuggestedBrand(i){
   document.getElementById('CG_BRAND_RES').innerHTML='';
 }
 var CG_TYPE='';
-var CG_CUP='';
+var CG_CUPS=[];
+var TYPE_FABRIC_TAGS={
+  setpad_wire:['نخی','کبریتی','پرلون‌پرسی','لیزری','دبل‌جک','نیم‌جک','اسفنجی نازک','گیپور','فانتزی'],
+  setpad_nowire:['نخی','کبریتی','مانکنی','کامفورت','گیپور','اسفنجی نازک','فانتزی'],
+  setnopad_wire:['نخی','پرلون‌پرسی','گیپور','تورگاز','دانتل','بالاشیشه‌ای','کش‌پهن','فانتزی'],
+  setnopad_nowire:['نخی','پرلون‌پرسی','گیپور','دانتل','بالاشیشه‌ای','کش‌پهن','فانتزی'],
+  brapad_wire:['نخی','کبریتی','دکلته','پشت‌نامرئی','لیزری','دبل‌جک','نیم‌جک','اسفنجی نازک','گیپور','فانتزی'],
+  brapad_nowire:['نخی','کبریتی','لیزری','اسفنجی نازک','گیپور','فانتزی'],
+  branopad_wire:['نخی','پرلون‌پرسی','گیپور','تورگاز','دانتل','فانتزی'],
+  branopad_nowire:['نخی','پرلون‌پرسی','گیپور','بالاشیشه‌ای','کش‌پهن','فانتزی']
+};
+var CG_FABRIC_TAGS=[];
 function renderCgTypeChips(){
   var wrap=document.getElementById('CG_TYPE_CHIPS');
   var typeWrapEl=document.getElementById('CG_TYPE_WRAP');
   var seq=TSEQ[CG_CATEGORY]||[];
   var cupWrap=document.getElementById('CG_CUP_WRAP');
+  var braSizeWrap=document.getElementById('CG_BRA_SIZE_WRAP');
   if(CG_CATEGORY==='p1'){
     cupWrap.style.display='block';
+    braSizeWrap.style.display='block';
   } else {
     cupWrap.style.display='none';
-    CG_CUP='';
+    braSizeWrap.style.display='none';
+    CG_CUPS=[];
     document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
-    var firstCup=document.querySelector('#CG_CUP_CHIPS .chip');
-    if(firstCup)firstCup.classList.add('on');
   }
   if(CG_CATEGORY==='p3'||CG_CATEGORY==='p5'){
     typeWrapEl.style.display='none';
@@ -4663,6 +4710,41 @@ function editCgSiteImg(){
 function toggleCgMixWrap(checked){
   document.getElementById('CG_MIX_WRAP').style.display=checked?'block':'none';
 }
+var COLOR_HEX_MAP={
+  'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
+  'مشکی':'#000000',
+  'قرمز':'#E53935','زرشکی':'#7B1E3A','شرابی':'#722F37',
+  'آبی':'#1E88E5','آبی آسمانی':'#87CEEB','آبی کاربنی':'#4A6FA5','آبی نفتی':'#1B4F72','سرمه‌ای':'#0B1F3A',
+  'زرد':'#FDD835','زرد لیمویی':'#E3F400','زرد فسفری':'#E8F500','طلایی':'#D4AF37',
+  'نارنجی':'#FB8C00','نارنجی تیره':'#C56000','نارنجی فسفری':'#FF6D00','هلویی':'#FFCBA4',
+  'صورتی':'#FF69B4','صورتی تیره':'#D6467C','صورتی پاستیلی':'#FFD1DC','سرخ‌آبی':'#C2185B','سرخ‌آبی تیره':'#8E1550',
+  'سبز':'#43A047','سبز صابونی':'#A8C686','سبز زمردی':'#009B77','سبز یشمی':'#00A86B','سبز فسفری':'#7FFF00',
+  'قهوه‌ای':'#6F4E37','کرم':'#F5E6CA','نسکافه‌ای':'#A67B5B','شکلاتی':'#5C3317','قهوه‌ای خاکستری':'#7A6C5D','فیلی':'#C4B7A6',
+  'طوسی روشن':'#D3D3D3','طوسی تیره':'#696969','خاکستری':'#808080','خاکستری تیره':'#4F4F4F','موشی':'#8B8589','دلفینی':'#8E9AAF'
+};
+var COLOR_LIST_FLAT=Object.keys(COLOR_HEX_MAP);
+function colorDotHtml(hex){
+  var border=(hex.toUpperCase()==='#FFFFFF'||hex.toUpperCase()==='#FFFDF5')?'1.5px solid #d8cfc2':'1px solid rgba(0,0,0,0.15)';
+  return '<span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:'+hex+';border:'+border+';margin-left:7px;vertical-align:middle"></span>';
+}
+function suggestColorList(q){
+  var el=document.getElementById('CG_CL_RES');
+  q=(q||'').trim();
+  var list=q?COLOR_LIST_FLAT.filter(function(c){return c.indexOf(q)>-1;}):COLOR_LIST_FLAT;
+  if(!list.length){el.innerHTML='';el.style.display='none';return;}
+  el.innerHTML=list.map(function(c){
+    return '<div class="srch-item" onclick="pickColorSuggestion(\''+c+'\')">'+colorDotHtml(COLOR_HEX_MAP[c])+c+'</div>';
+  }).join('');
+  el.style.display='block';
+}
+function pickColorSuggestion(name){
+  document.getElementById('CG_CL_NAME').value=name;
+  document.getElementById('CG_CL_RES').style.display='none';
+}
+document.addEventListener('click',function(e){
+  var wrap=document.getElementById('CG_CL_RES');
+  if(wrap&&!e.target.closest('#CG_CL_NAME')&&!e.target.closest('#CG_CL_RES'))wrap.style.display='none';
+});
 var CG_COLORLIST_ITEMS=[];
 function addCgColorItem(){
   var nm=(document.getElementById('CG_CL_NAME').value||'').trim();
@@ -4682,7 +4764,7 @@ function renderCgColorListUI(){
   el.innerHTML=CG_COLORLIST_ITEMS.map(function(c,i){
     var isOut=c.stock==='out';
     return '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2cdb0;border-radius:8px;padding:8px 10px;margin-bottom:6px'+(isOut?';opacity:0.6':'')+'">'+
-      '<span style="font-weight:900;color:#3d2b1f">'+c.name+(isOut?' (ناموجود)':'')+'</span>'+
+      '<span style="font-weight:900;color:#3d2b1f">'+(COLOR_HEX_MAP[c.name]?colorDotHtml(COLOR_HEX_MAP[c.name]):'')+c.name+(isOut?' (ناموجود)':'')+'</span>'+
       '<div style="display:flex;gap:6px">'+
       '<button type="button" onclick="toggleCgColorStock('+i+')" style="background:'+(isOut?'#e8f5ee':'#fde8e8')+';color:'+(isOut?'#1a6a3a':'#c04040')+';border:1px solid '+(isOut?'#a8d8b8':'#f5b8b8')+';border-radius:6px;padding:0 10px;height:26px;cursor:pointer;font-size:0.68rem">'+(isOut?'برگردون موجود':'ناموجود کن')+'</button>'+
       '<button type="button" onclick="delCgColorItem('+i+')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:6px;width:26px;height:26px;cursor:pointer">✕</button>'+
@@ -4730,6 +4812,27 @@ function setCgType(type,btn){
   document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
   btn.classList.add('on');
   updateSizeFieldVisibility();
+  updateFabricTagsUI();
+}
+function updateFabricTagsUI(){
+  var wrap=document.getElementById('CG_FABRIC_WRAP');
+  var chipsEl=document.getElementById('CG_FABRIC_CHIPS');
+  var tags=TYPE_FABRIC_TAGS[CG_TYPE];
+  if(!tags||!tags.length){
+    wrap.style.display='none';
+    CG_FABRIC_TAGS=[];
+    return;
+  }
+  wrap.style.display='block';
+  CG_FABRIC_TAGS=CG_FABRIC_TAGS.filter(function(t){return tags.indexOf(t)>-1;});
+  chipsEl.innerHTML=tags.map(function(t){
+    return '<button type="button" class="chip'+(CG_FABRIC_TAGS.indexOf(t)>-1?' on':'')+'" onclick="toggleCgFabricTag(\''+t+'\',this)">'+t+'</button>';
+  }).join('');
+}
+function toggleCgFabricTag(tag,btn){
+  var idx=CG_FABRIC_TAGS.indexOf(tag);
+  if(idx>-1){CG_FABRIC_TAGS.splice(idx,1);btn.classList.remove('on');}
+  else{CG_FABRIC_TAGS.push(tag);btn.classList.add('on');}
 }
 var CG_NO_SIZE_TYPES=['mask','game','whip','buttplug','hat'];
 function updateSizeFieldVisibility(){
@@ -4756,10 +4859,17 @@ function setCgCat(cat,btn){
   btn.classList.add('on');
   renderCgTypeChips();
 }
-function setCgCup(cup,btn){
-  CG_CUP=cup;
-  document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
-  btn.classList.add('on');
+function toggleCgCup(cup,btn){
+  var idx=CG_CUPS.indexOf(cup);
+  if(idx>-1){CG_CUPS.splice(idx,1);btn.classList.remove('on');}
+  else{CG_CUPS.push(cup);btn.classList.add('on');}
+}
+function setCgBraSizePreset(sizeText,cups){
+  document.getElementById('CG_SIZE_RANGE').value=sizeText;
+  CG_CUPS=cups.slice();
+  document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(btn){
+    btn.classList.toggle('on',cups.indexOf(btn.textContent.trim())>-1);
+  });
 }
 function expandBandRange(text){
   var v=toEnDigits(text||'').trim();
@@ -4802,7 +4912,8 @@ function buildCaptionData(){
   var showPriceInCaption=!!(document.getElementById('CG_SHOWPRICE_CAPTION')&&document.getElementById('CG_SHOWPRICE_CAPTION').checked);
 
   var expandedSize=expandBandRange(sizeRange);
-  var finalSize=expandedSize+(CG_CUP?(expandedSize?' کاپ '+CG_CUP:'کاپ '+CG_CUP):'');
+  var cupText=CG_CUPS.length?CG_CUPS.join(','):'';
+  var finalSize=expandedSize+(cupText?(expandedSize?' کاپ '+cupText:'کاپ '+cupText):'');
 
   var lines=[];
   if(title){
@@ -4867,6 +4978,7 @@ function buildCaptionData(){
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
     colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:mixEnabled?mixMinOrder:'',
     sizePriceList:sizePriceEnabled?CG_SIZEPRICE_LIST.slice():[],
+    fabricTags:CG_FABRIC_TAGS.slice(),
     siteImg:CG_SITE_IMG||'',
     fullDesc:(document.getElementById('CG_FULLDESC_TO_SITE')&&document.getElementById('CG_FULLDESC_TO_SITE').checked)?fullDesc:''};
 }
@@ -4987,11 +5099,14 @@ function loadProductForEdit(el){
   _spChk.checked=!!_pSizePrice.length;
   toggleCgSizePriceWrap(_spChk.checked);
   renderCgSizePriceList();
+  var _pFabricTags=[];try{_pFabricTags=JSON.parse(p.fabrictags||'[]');}catch(e){}
+  CG_FABRIC_TAGS=_pFabricTags.slice();
 
   var sizeVal=(p.sizes&&p.sizes!=='--')?p.sizes:'';
-  var cupMatch=sizeVal.match(/\s*کاپ\s*([A-D])$/);
+  var cupMatch=sizeVal.match(/\s*کاپ\s*([A-D](?:,[A-D])*)$/);
+  var cupLetters=cupMatch?cupMatch[1].split(','):[];
   if(cupMatch){
-    document.getElementById('CG_SIZE_RANGE').value=sizeVal.replace(/\s*کاپ\s*[A-D]$/,'').trim();
+    document.getElementById('CG_SIZE_RANGE').value=sizeVal.replace(/\s*کاپ\s*[A-D](?:,[A-D])*$/,'').trim();
   } else {
     document.getElementById('CG_SIZE_RANGE').value=sizeVal;
   }
@@ -5003,12 +5118,13 @@ function loadProductForEdit(el){
     });
     if(typeBtn)setCgType(p.type,typeBtn);
 
-    if(cupMatch){
-      var cupBtn=null;
+    if(cupLetters.length){
+      CG_CUPS=[];
       document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(c){
-        if((c.getAttribute('onclick')||'').indexOf("'"+cupMatch[1]+"'")>-1)cupBtn=c;
+        var letter=c.textContent.trim();
+        if(cupLetters.indexOf(letter)>-1){CG_CUPS.push(letter);c.classList.add('on');}
+        else c.classList.remove('on');
       });
-      if(cupBtn)setCgCup(cupMatch[1],cupBtn);
     }
   },80);
 
@@ -5052,6 +5168,7 @@ function updateExistingProduct(rid,data){
     row.dataset.mixminorder=data.mixEnabled?(data.mixMinOrder||''):'';
     row.dataset.sizepricelist=JSON.stringify(data.sizePriceList||[]);
     row.dataset.siteimg=data.siteImg||'';
+    row.dataset.fabrictags=JSON.stringify(data.fabricTags||[]);
     if(data.manualTgLink)row.dataset.tglink=data.manualTgLink;
   }
   var tiEl=document.getElementById('TI'+rid);if(tiEl)tiEl.value=data.title||'';
@@ -5105,7 +5222,7 @@ function saveProductFromCaption(data){
   });
   var extraInfo={material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',
     colorlist:JSON.stringify(data.colorList||[]),mixenabled:data.mixEnabled?'1':'',mixdesc:data.mixDesc||'',mixminorder:data.mixMinOrder||'',
-    sizepricelist:JSON.stringify(data.sizePriceList||[]),siteimg:data.siteImg||''};
+    sizepricelist:JSON.stringify(data.sizePriceList||[]),siteimg:data.siteImg||'',fabrictags:JSON.stringify(data.fabricTags||[])};
   var newImgId=null;
   var primaryImg=SEND_MEDIA.find(function(m){return m.primary&&m.type==='image';});
   var otherImgs=SEND_MEDIA.filter(function(m){return !m.primary&&m.type==='image'&&m.croppedDataUrl;});
@@ -5124,7 +5241,7 @@ function saveProductFromCaption(data){
   if(bid){
     addRow(bid,data.category,data.type,data.code,data.finalSize,data.color,data.minOrder,data.price,'in',newImgId,null,data.title,extraInfo);
   } else {
-    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder,sizepricelist:extraInfo.sizepricelist,siteimg:extraInfo.siteimg}]);
+    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder,sizepricelist:extraInfo.sizepricelist,siteimg:extraInfo.siteimg,fabrictags:extraInfo.fabrictags}]);
   }
   save();
   if(AUTO_SYNC_ENABLED){
@@ -5545,7 +5662,7 @@ function save(){
           var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
           var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
           var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]',siteimg:row.dataset.siteimg||''});
+          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]',siteimg:row.dataset.siteimg||'',fabrictags:row.dataset.fabrictags||'[]'});
         });
         var bnEl=document.getElementById('BN'+bid);
         brands.push({name:bnEl?bnEl.value:'',logoId:LOGO_IDS[bid]||null,rows:rows});
