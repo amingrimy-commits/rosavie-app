@@ -505,18 +505,6 @@ input[type=file]{display:none}
       </div>
       <div id="CG_SIZEPRICE_LIST"></div>
     </div>
-    <div class="g1"><span class="lbl">🌐 عکس جداگانه برای سایت (اختیاری — اگه خالی بذاری، همون عکس اصلی تلگرام برای سایت هم استفاده می‌شه)</span>
-      <div id="CG_SITEIMG_WRAP" style="display:flex;align-items:center;gap:10px">
-        <div id="CG_SITEIMG_PH" style="width:64px;height:85px;border:2px dashed #e2cdb0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#c9a05e;cursor:pointer;flex-shrink:0" onclick="document.getElementById('CG_SITEIMG_FILE').click()">📷</div>
-        <img id="CG_SITEIMG_PREVIEW" style="width:64px;height:85px;border-radius:8px;object-fit:cover;display:none;flex-shrink:0">
-        <input type="file" id="CG_SITEIMG_FILE" accept="image/*" style="display:none" onchange="loadCgSiteImg(this)">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <button type="button" class="sbig" style="width:auto;padding:6px 14px;background:#3d2b1f;color:#f9f0e8;font-size:0.72rem" onclick="document.getElementById('CG_SITEIMG_FILE').click()">📷 انتخاب عکس</button>
-          <button type="button" class="sbig" id="CG_SITEIMG_EDITBTN" style="width:auto;padding:6px 14px;background:#eddfc9;color:#9a6e3a;font-size:0.72rem;display:none" onclick="editCgSiteImg()">✂️ کراپ دستی</button>
-          <button type="button" class="sbig" id="CG_SITEIMG_DELBTN" style="width:auto;padding:6px 14px;background:#fde8e8;color:#c04040;font-size:0.72rem;display:none" onclick="delCgSiteImg()">✕ حذف</button>
-        </div>
-      </div>
-    </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
       <input type="checkbox" id="CG_SHOWPRICE_CAPTION" style="width:17px;height:17px">
       نمایش قیمت در متن کپشن (وگرنه بجاش «استعلام بگیرید» نوشته میشه؛ قیمت همیشه توی لیست قیمت ذخیره میشه)
@@ -653,7 +641,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-06 22:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-07 09:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -4654,34 +4642,6 @@ function renderCgTypeChips(){
   }).join('');
   updateSizeFieldVisibility();
 }
-var CG_SITEIMG_DATAURL=null;
-function loadCgSiteImg(inp){
-  var f=inp.files[0];if(!f)return;
-  compressRatio(f,3,4,640,0.85,function(d){
-    CG_SITEIMG_DATAURL=d;
-    renderCgSiteImgPreview();
-  });
-}
-function renderCgSiteImgPreview(){
-  var ph=document.getElementById('CG_SITEIMG_PH'),prev=document.getElementById('CG_SITEIMG_PREVIEW'),
-      editBtn=document.getElementById('CG_SITEIMG_EDITBTN'),delBtn=document.getElementById('CG_SITEIMG_DELBTN');
-  if(CG_SITEIMG_DATAURL){
-    ph.style.display='none';prev.style.display='block';prev.src=CG_SITEIMG_DATAURL;
-    editBtn.style.display='inline-block';delBtn.style.display='inline-block';
-  }else{
-    ph.style.display='flex';prev.style.display='none';
-    editBtn.style.display='none';delBtn.style.display='none';
-  }
-}
-function editCgSiteImg(){
-  if(!CG_SITEIMG_DATAURL)return;
-  openEditor('cgsiteimg',CG_SITEIMG_DATAURL);
-}
-function delCgSiteImg(){
-  CG_SITEIMG_DATAURL=null;
-  document.getElementById('CG_SITEIMG_FILE').value='';
-  renderCgSiteImgPreview();
-}
 var CG_SITE_IMG=null;
 document.getElementById('CG_SITE_IMG_FILE').addEventListener('change',function(){
   var f=this.files[0];if(!f)return;
@@ -5696,9 +5656,6 @@ window.addEventListener('message',function(e){
         SEND_MEDIA[sidx].previewUrl=dataUrl;
         renderSendMediaList();
       }
-    } else if(_editorTarget&&_editorTarget.indexOf('cgsiteimg')===0){
-      CG_SITEIMG_DATAURL=dataUrl;
-      renderCgSiteImgPreview();
     } else if(_editorTarget==='sitephoto'){
       CG_SITE_IMG=dataUrl;
       document.getElementById('CG_SITE_IMG_THUMB').src=dataUrl;
