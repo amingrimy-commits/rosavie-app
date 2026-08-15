@@ -439,6 +439,11 @@ input[type=file]{display:none}
       </div>
     </div>
     <div class="g1" id="CG_TYPE_WRAP"><span class="lbl">نوع محصول</span>
+      <div class="chips" id="CG_P1_GROUP_CHIPS" style="display:none;margin-bottom:8px">
+        <button type="button" class="chip" onclick="setCgP1Group('set',this)">ست سوتین</button>
+        <button type="button" class="chip" onclick="setCgP1Group('bra',this)">سوتین تک</button>
+        <button type="button" class="chip" onclick="setCgP1Group('special',this)">ژله‌ای / طلقی / پروانه‌ای</button>
+      </div>
       <div class="chips" id="CG_TYPE_CHIPS"></div>
     </div>
 
@@ -658,7 +663,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-07 18:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-07 20:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1422,7 +1427,7 @@ function syncProductsToFirestore(){
 }
 
 var BANNERS=[null,null,null,null],BANNER_IDS=[null,null,null,null];
-var ARCHIVE_MS=4*24*60*60*1000;
+var ARCHIVE_MS=2*24*60*60*1000;
 var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9'];
 var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','brapad_wire','brapad_nowire','branopad_wire','branopad_nowire','brajelly','braplastic','brabutterfly'],p2:['tset','top'],p3:['panty'],
   p4:['twopiece','robe','fantasy','costume','silk','cotton','topshort','onepiece','pajama','nightgownset','nightgown','babydoll','mask','game','whip','buttplug','hat'],
@@ -2120,7 +2125,9 @@ function checkArchive(){
     ARCHIVE.push({id:genId(),tab:tab,brandName:bnEl?bnEl.value.trim():'',type:ttEl?ttEl.dataset.t:defType,
       code:V('CD'+rid)||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',
       price:V('PR'+rid)||'--',imgId:IMG_IDS[rid]||null,title:tiEl?tiEl.value:'',archivedAt:Date.now()});
+    var _archProd=AUTO_SYNC_ENABLED?collectSingleProduct(rid):null;
     row.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];
+    if(_archProd&&_archProd.id)autoSyncDeleteProduct(_archProd.id);
   });
   if(toArc.length)save();
 }
@@ -4660,9 +4667,34 @@ var TYPE_FABRIC_TAGS={
   branopad_nowire:['نخی','پرلون‌پرسی','گیپور','بالاشیشه‌ای','کش‌پهن','فانتزی']
 };
 var CG_FABRIC_TAGS=[];
+var P1_GROUPS={
+  set:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire'],
+  bra:['brapad_wire','brapad_nowire','branopad_wire','branopad_nowire'],
+  special:['brajelly','braplastic','brabutterfly']
+};
+function typeToP1Group(type){
+  for(var g in P1_GROUPS){if(P1_GROUPS[g].indexOf(type)>-1)return g;}
+  return 'set';
+}
+function setCgP1Group(group,btn){
+  document.querySelectorAll('#CG_P1_GROUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+  btn.classList.add('on');
+  renderP1SubtypeChips(group);
+}
+function renderP1SubtypeChips(group){
+  var wrap=document.getElementById('CG_TYPE_CHIPS');
+  var seq=P1_GROUPS[group];
+  CG_TYPE=seq[0];
+  wrap.innerHTML=seq.map(function(t,i){
+    return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+TLBL[t]+'</button>';
+  }).join('');
+  updateSizeFieldVisibility();
+  updateFabricTagsUI();
+}
 function renderCgTypeChips(){
   var wrap=document.getElementById('CG_TYPE_CHIPS');
   var typeWrapEl=document.getElementById('CG_TYPE_WRAP');
+  var p1GroupWrap=document.getElementById('CG_P1_GROUP_CHIPS');
   var seq=TSEQ[CG_CATEGORY]||[];
   var cupWrap=document.getElementById('CG_CUP_WRAP');
   var braSizeWrap=document.getElementById('CG_BRA_SIZE_WRAP');
@@ -4677,12 +4709,22 @@ function renderCgTypeChips(){
   }
   if(CG_CATEGORY==='p3'||CG_CATEGORY==='p5'){
     typeWrapEl.style.display='none';
+    p1GroupWrap.style.display='none';
     CG_TYPE=seq[0]||'';
     wrap.innerHTML='';
     updateSizeFieldVisibility();
     return;
   }
   typeWrapEl.style.display='block';
+  if(CG_CATEGORY==='p1'){
+    p1GroupWrap.style.display='flex';
+    var firstBtn=p1GroupWrap.querySelector('.chip');
+    p1GroupWrap.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    if(firstBtn)firstBtn.classList.add('on');
+    renderP1SubtypeChips('set');
+    return;
+  }
+  p1GroupWrap.style.display='none';
   CG_TYPE=seq[0]||'';
   wrap.innerHTML=seq.map(function(t,i){
     return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+TLBL[t]+'</button>';
@@ -5112,6 +5154,16 @@ function loadProductForEdit(el){
   }
 
   setTimeout(function(){
+    if(CG_CATEGORY==='p1'){
+      var grp=typeToP1Group(p.type);
+      var grpBtn=null;
+      document.querySelectorAll('#CG_P1_GROUP_CHIPS .chip').forEach(function(c,i){
+        if(Object.keys(P1_GROUPS)[i]===grp)grpBtn=c;
+      });
+      document.querySelectorAll('#CG_P1_GROUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+      if(grpBtn)grpBtn.classList.add('on');
+      renderP1SubtypeChips(grp);
+    }
     var typeBtn=null;
     document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){
       if((c.getAttribute('onclick')||'').indexOf("'"+p.type+"'")>-1)typeBtn=c;
