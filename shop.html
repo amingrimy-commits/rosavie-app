@@ -192,6 +192,10 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .modal-brand{font-size:0.75rem;color:#9c8a7c;margin-top:2px}
 .modal-price{font-size:1.2rem;color:#c25a80;font-weight:900;margin-top:12px}
 .modal-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #ecdfd2;font-size:0.78rem}
+.pdp-tags-wrap{padding:10px 0;border-bottom:1px dashed #ecdfd2}
+.pdp-tags-label{font-size:0.76rem;color:#8a7a6c;margin-bottom:6px}
+.pdp-tags-row{display:flex;flex-wrap:wrap;gap:7px}
+.pdp-tag-chip{background:#fbe8ee;color:#b0517a;border:1px solid #f0c8d4;border-radius:20px;padding:5px 12px;font-size:0.72rem;font-weight:700;cursor:pointer}
 .variant-switch-label{font-size:0.76rem;color:#8a7a6c;margin-top:10px;margin-bottom:6px}
 .variant-switch-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px}
 .variant-chip{padding:7px 13px;border-radius:16px;border:1.5px solid #e0d0c0;background:#fff;color:#5a4d45;font-size:0.76rem;font-weight:700;cursor:pointer}
@@ -389,7 +393,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
   <div class="modal" id="SUPPORT_BODY"></div>
 </div>
 
-<div class="footer-note">برای ثبت سفارش، محصول رو به سبد اضافه کن یا از دکمه‌ی تماس با ما استفاده کن.<br><span style="opacity:0.5">نسخه: 2026-08-07 18:30</span></div>
+<div class="footer-note">برای ثبت سفارش، محصول رو به سبد اضافه کن یا از دکمه‌ی تماس با ما استفاده کن.<br><span style="opacity:0.5">نسخه: 2026-08-08 06:00</span></div>
 
 <button class="fab-cart" id="FABCART" onclick="openCart()"><img class="nav-ico" style="width:38px;height:38px;filter:brightness(0) invert(1)" src="data:image/png;base64,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"><span class="fab-cart-badge" id="FABBADGE">0</span></button>
 <button class="fab-support2" id="FABSUPPORT" onclick="openSupport()"><img class="nav-ico" style="width:38px;height:38px;filter:brightness(0) invert(1)" src="data:image/png;base64,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"></button>
@@ -431,15 +435,68 @@ var CATS=[
   {v:'p2-tset',l:'ست نیم‌تنه',tab:'p2',type:'tset'},
   {v:'p2-top',l:'نیم‌تنه تک',tab:'p2',type:'top'},
   {v:'p3',l:'شورت',tab:'p3',type:null},
+  {v:'p3-cotton',l:'شورت نخی',tab:'p3',type:'panty_cotton'},
+  {v:'p3-laser',l:'شورت لیزری',tab:'p3',type:'panty_laser'},
+  {v:'p3-shortex',l:'شورتکس',tab:'p3',type:'panty_shortex'},
+  {v:'p3-fantasy',l:'شورت فانتزی سکسی',tab:'p3',type:'panty_fantasy'},
   {v:'p4',l:'لباس خواب',tab:'p4',type:null},
-  {v:'p4-nightgownset',l:'ست نایتگان',tab:'p4',type:'nightgownset'},
+  {v:'p4-pajama',l:'پیژامه',tab:'p4',type:'pajama'},
   {v:'p4-nightgown',l:'نایتگان',tab:'p4',type:'nightgown'},
-  {v:'p4-babydoll',l:'بیبی‌دال',tab:'p4',type:'babydoll'},
+  {v:'p4-nightgownset',l:'ست نایتگان',tab:'p4',type:'nightgownset'},
+  {v:'p4-robe',l:'روبدوشام',tab:'p4',type:'robe'},
+  {v:'p4-sx-twopiece',l:'دو تیکه (فانتزی و سکسی)',tab:'p4',type:'sexy_twopiece'},
+  {v:'p4-sx-fantasy',l:'بادی فانتزی (فانتزی و سکسی)',tab:'p4',type:'sexy_fantasy'},
+  {v:'p4-sx-costume',l:'کاستوم (فانتزی و سکسی)',tab:'p4',type:'sexy_costume'},
+  {v:'p4-sx-topshort',l:'تاپ شورتک (فانتزی و سکسی)',tab:'p4',type:'sexy_topshort'},
+  {v:'p4-sx-onepiece',l:'سرهمی (فانتزی و سکسی)',tab:'p4',type:'sexy_onepiece'},
+  {v:'p4-sx-babydoll',l:'بیبی‌دال (فانتزی و سکسی)',tab:'p4',type:'sexy_babydoll'},
+  {v:'p4-tool-mask',l:'نقاب (لوازم سکسی)',tab:'p4',type:'tool_mask'},
+  {v:'p4-tool-whip',l:'شلاق (لوازم سکسی)',tab:'p4',type:'tool_whip'},
+  {v:'p4-tool-buttplug',l:'بات‌پلاگ (لوازم سکسی)',tab:'p4',type:'tool_buttplug'},
+  {v:'p4-tool-hat',l:'کلاه (لوازم سکسی)',tab:'p4',type:'tool_hat'},
+  {v:'p4-tool-bracelet',l:'دستبند (لوازم سکسی)',tab:'p4',type:'tool_bracelet'},
+  {v:'p4-tool-garter',l:'گارتر (لوازم سکسی)',tab:'p4',type:'tool_garter'},
+  {v:'p4-tool-tiara',l:'تل (لوازم سکسی)',tab:'p4',type:'tool_tiara'},
+  {v:'p4-tool-choker',l:'چوکر (لوازم سکسی)',tab:'p4',type:'tool_choker'},
+  {v:'p4-game-snake',l:'مار و پله (بازی)',tab:'p4',type:'game_snake'},
+  {v:'p4-game-love',l:'لاو (بازی)',tab:'p4',type:'game_love'},
+  {v:'p4-game-flower',l:'گل‌یاپوچ (بازی)',tab:'p4',type:'game_flower'},
+  {v:'p4-game-map',l:'نقشه (بازی)',tab:'p4',type:'game_map'},
+  {v:'p4-game-challenge',l:'چالش (بازی)',tab:'p4',type:'game_challenge'},
+  {v:'p4-game-cards',l:'کارت‌بازی (بازی)',tab:'p4',type:'game_cards'},
+  {v:'p11',l:'پروتز',tab:'p11',type:null},
+  {v:'p11-hipdip',l:'هیپ‌دیپ',tab:'p11',type:'prosthetic_hipdip'},
+  {v:'p11-hips',l:'باسن',tab:'p11',type:'prosthetic_hips'},
+  {v:'p11-thigh',l:'بغل‌ران',tab:'p11',type:'prosthetic_thigh'},
   {v:'p5',l:'لوازم جانبی',tab:'p5',type:null},
+  {v:'p5-lift',l:'لیفت',tab:'p5',type:'acc_lift'},
+  {v:'p5-solar',l:'سولار',tab:'p5',type:'acc_solar'},
+  {v:'p5-perfume',l:'عطر بیکینی',tab:'p5',type:'acc_perfume'},
+  {v:'p5-lotion',l:'لوسیون',tab:'p5',type:'acc_lotion'},
+  {v:'p5-basket',l:'سبد',tab:'p5',type:'acc_basket'},
   {v:'p6',l:'مایو',tab:'p6',type:null},
+  {v:'p6-slip',l:'اسلیپ',tab:'p6',type:'swim_slip'},
+  {v:'p6-padded',l:'کاپدار فنردار',tab:'p6',type:'swim_padded_wire'},
+  {v:'p6-bikini',l:'بیکینی',tab:'p6',type:'swim_bikini'},
+  {v:'p6-paar',l:'پادار',tab:'p6',type:'swim_paar'},
+  {v:'p6-skirted',l:'دامنی',tab:'p6',type:'swim_skirted'},
+  {v:'p6-2piece',l:'دوتیکه',tab:'p6',type:'swim_2piece'},
+  {v:'p6-3piece',l:'سه‌تیکه',tab:'p6',type:'swim_3piece'},
+  {v:'p6-cover',l:'کاورمایو',tab:'p6',type:'swim_cover'},
+  {v:'p6-cap',l:'کلاه‌شنا',tab:'p6',type:'swim_cap'},
   {v:'p7',l:'کراپ',tab:'p7',type:null},
   {v:'p8',l:'تاپ',tab:'p8',type:null},
-  {v:'p9',l:'بادی',tab:'p9',type:null}
+  {v:'p9',l:'بادی',tab:'p9',type:null},
+  {v:'p9-cotton',l:'بادی نخی',tab:'p9',type:'bodycotton'},
+  {v:'p9-silk',l:'بادی حریر',tab:'p9',type:'bodysilk'},
+  {v:'p9-fishnet',l:'بادی فیشنت',tab:'p9',type:'bodyfishnet'},
+  {v:'p9-sexy',l:'بادی سکسی',tab:'p9',type:'bodysexy'},
+  {v:'p10',l:'گن',tab:'p10',type:null},
+  {v:'p10-slip',l:'گن اسلیپ فنردار',tab:'p10',type:'corset_slip'},
+  {v:'p10-waist',l:'گن کمری',tab:'p10',type:'corset_waist'},
+  {v:'p10-top',l:'گن تاپی',tab:'p10',type:'corset_top'},
+  {v:'p10-cotton',l:'گن نخی',tab:'p10',type:'corset_cotton'},
+  {v:'p10-laser',l:'گن لیزری',tab:'p10',type:'corset_laser'}
 ];
 var PRODUCTS=[];
 var CUR_CAT='all';
@@ -987,7 +1044,7 @@ function renderPdpTabContent(){
       (group.length<=1&&p.colors?'<div class="modal-row"><span>رنگبندی</span><span>'+colorsTextWithSwatches(p.colors)+'</span></div>':'')+
       (p.minOrder?'<div class="modal-row"><span>حداقل سفارش</span><span>'+p.minOrder+' عدد</span></div>':'')+
       (p.material?'<div class="modal-row"><span>جنس</span><span>'+p.material+'</span></div>':'')+
-      (p.fabricTags&&p.fabricTags.length?'<div class="modal-row"><span>طرح</span><span>'+p.fabricTags.join('، ')+'</span></div>':'');
+      (p.fabricTags&&p.fabricTags.length?('<div class="pdp-tags-wrap"><div class="pdp-tags-label">طرح‌ها:</div><div class="pdp-tags-row">'+p.fabricTags.map(function(t){return '<span class="pdp-tag-chip" onclick="navTo(\'list~tag~'+encodeURIComponent(t)+'\')">'+t+'</span>';}).join('')+'</div></div>'):'');
   }
 }
 // ── نظرات کاربران ──
@@ -1216,6 +1273,10 @@ function renderRoute(){
       var bval=parts[2],tabf=parts[3]&&parts[3]!=='_'?parts[3]:null;
       items=PRODUCTS.filter(function(pp){return pp.brand===bval&&(!tabf||pp.tab===tabf);});
       title='برند: '+bval;
+    }else if(subtype==='tag'){
+      var tval=parts[2];
+      items=PRODUCTS.filter(function(pp){return (pp.fabricTags||[]).indexOf(tval)>-1;});
+      title='طرح: '+tval;
     }
     openProductListViewInternal(title,items);
     showOverlay('LIST_VIEW');

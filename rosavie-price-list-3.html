@@ -294,33 +294,30 @@ input[type=file]{display:none}
 <div class="pg" id="p2"><div class="card"><div class="ctitle">نیمتنه و ست نیمتنه</div><button class="addb" onclick="addBrand('p2')">+ افزودن برند</button><div id="BB-p2"></div></div></div>
 <div class="pg" id="p3"><div class="card"><div class="ctitle">شورت</div><button class="addb" onclick="addBrand('p3')">+ افزودن برند</button><div id="BB-p3"></div></div></div>
 <div class="pg" id="p4"><div class="card"><div class="ctitle">لباس خواب و بادی فانتزی، نخی</div><button class="addb" onclick="addBrand('p4')">+ افزودن برند</button><div id="BB-p4"></div></div></div>
+<div class="pg" id="p11"><div class="card"><div class="ctitle">پروتز</div><button class="addb" onclick="addBrand('p11')">+ افزودن برند</button><div id="BB-p11"></div></div></div>
 <div class="pg" id="p5"><div class="card"><div class="ctitle">لوازم جانبی و اکسسوری</div><button class="addb" onclick="addBrand('p5')">+ افزودن برند</button><div id="BB-p5"></div></div></div>
 <div class="pg" id="p6"><div class="card"><div class="ctitle">مایو</div><button class="addb" onclick="addBrand('p6')">+ افزودن برند</button><div id="BB-p6"></div></div></div>
 <div class="pg" id="p7"><div class="card"><div class="ctitle">کراپ</div><button class="addb" onclick="addBrand('p7')">+ افزودن برند</button><div id="BB-p7"></div></div></div>
 <div class="pg" id="p8"><div class="card"><div class="ctitle">تاپ</div><button class="addb" onclick="addBrand('p8')">+ افزودن برند</button><div id="BB-p8"></div></div></div>
 <div class="pg" id="p9"><div class="card"><div class="ctitle">بادی</div><button class="addb" onclick="addBrand('p9')">+ افزودن برند</button><div id="BB-p9"></div></div></div>
+<div class="pg" id="p10"><div class="card"><div class="ctitle">گن</div><button class="addb" onclick="addBrand('p10')">+ افزودن برند</button><div id="BB-p10"></div></div></div>
 <div class="pg" id="ps">
   <div class="card"><div class="ctitle">جستجو</div>
     <div class="g1"><input class="fi" type="text" id="SQ" placeholder="جستجو با کد، سایز، رنگ یا عنوان..." oninput="doSearch()"></div>
     <div class="chips" id="FC">
       <span class="slbl">فیلتر:</span>
       <button class="chip on" onclick="setFil('all',this)">همه</button>
-      <button class="chip" onclick="setFil('bra',this)">سوتین</button>
-      <button class="chip" onclick="setFil('set',this)">ست سوتین</button>
-      <button class="chip" onclick="setFil('top',this)">نیمتنه</button>
-      <button class="chip" onclick="setFil('tset',this)">ست نیمتنه</button>
-      <button class="chip" onclick="setFil('panty',this)">شورت</button>
-      <button class="chip" onclick="setFil('twopiece',this)">دو تیکه</button>
-      <button class="chip" onclick="setFil('robe',this)">روبدوشام</button>
-      <button class="chip" onclick="setFil('fantasy',this)">بادی فانتزی</button>
-      <button class="chip" onclick="setFil('costume',this)">کاستوم</button>
-      <button class="chip" onclick="setFil('silk',this)">بادی حریر</button>
-      <button class="chip" onclick="setFil('cotton',this)">بادی نخی</button>
-      <button class="chip" onclick="setFil('topshort',this)">تاپ شورتک</button>
-      <button class="chip" onclick="setFil('onepiece',this)">سرهمی</button>
-      <button class="chip" onclick="setFil('pajama',this)">پیژامه</button>
-      <button class="chip" onclick="setFil('nightgown',this)">نایتگان</button>
-      <button class="chip" onclick="setFil('accessory',this)">لوازم جانبی</button>
+      <button class="chip" onclick="setFil('p1',this)">سوتین+ست</button>
+      <button class="chip" onclick="setFil('p2',this)">نیم‌تنه+ست</button>
+      <button class="chip" onclick="setFil('p3',this)">شورت</button>
+      <button class="chip" onclick="setFil('p4',this)">لباس خواب</button>
+      <button class="chip" onclick="setFil('p11',this)">پروتز</button>
+      <button class="chip" onclick="setFil('p5',this)">لوازم جانبی</button>
+      <button class="chip" onclick="setFil('p6',this)">مایو</button>
+      <button class="chip" onclick="setFil('p7',this)">کراپ</button>
+      <button class="chip" onclick="setFil('p8',this)">تاپ</button>
+      <button class="chip" onclick="setFil('p9',this)">بادی</button>
+      <button class="chip" onclick="setFil('p10',this)">گن</button>
       <button class="chip" onclick="setFil('in',this)">موجود</button>
       <button class="chip" onclick="setFil('call',this)">تماس بگیرید</button>
       <button class="chip" onclick="setFil('out',this)">ناموجود</button>
@@ -435,7 +432,13 @@ input[type=file]{display:none}
         <button class="chip" onclick="setCgCat('p2',this)">نیم‌تنه+ست</button>
         <button class="chip" onclick="setCgCat('p3',this)">شورت</button>
         <button class="chip" onclick="setCgCat('p4',this)">لباس خواب</button>
+        <button class="chip" onclick="setCgCat('p11',this)">پروتز</button>
         <button class="chip" onclick="setCgCat('p5',this)">لوازم جانبی</button>
+        <button class="chip" onclick="setCgCat('p6',this)">مایو</button>
+        <button class="chip" onclick="setCgCat('p7',this)">کراپ</button>
+        <button class="chip" onclick="setCgCat('p8',this)">تاپ</button>
+        <button class="chip" onclick="setCgCat('p9',this)">بادی</button>
+        <button class="chip" onclick="setCgCat('p10',this)">گن</button>
       </div>
     </div>
     <div class="g1" id="CG_TYPE_WRAP"><span class="lbl">نوع محصول</span>
@@ -444,7 +447,13 @@ input[type=file]{display:none}
         <button type="button" class="chip" onclick="setCgP1Group('bra',this)">سوتین تک</button>
         <button type="button" class="chip" onclick="setCgP1Group('special',this)">ژله‌ای / طلقی / پروانه‌ای</button>
       </div>
+      <div class="chips" id="CG_P4_GROUP_CHIPS" style="display:none;margin-bottom:8px">
+        <button type="button" class="chip" onclick="setCgP4Group('normal',this)">لباس خواب عادی</button>
+        <button type="button" class="chip" onclick="setCgP4Group('sexy_clothes',this)">فانتزی و سکسی — لباس سکسی</button>
+        <button type="button" class="chip" onclick="setCgP4Group('sexy_tools',this)">فانتزی و سکسی — لوازم سکسی</button>
+      </div>
       <div class="chips" id="CG_TYPE_CHIPS"></div>
+      <div class="chips" id="CG_P4_GAME_CHIPS" style="display:none;margin-top:8px"></div>
     </div>
 
     <div class="g1"><span class="lbl">۱. عنوان محصول</span><input class="fi" type="text" id="CG_TITLE" placeholder="مثال: ست نخی مرلین شورت گنی"></div>
@@ -465,6 +474,40 @@ input[type=file]{display:none}
         <button type="button" class="chip" onclick="setCgSleepSize('2XL')">2XL</button>
         <button type="button" class="chip" onclick="setCgSleepSize('سایز بزرگ')">سایز بزرگ</button>
         <button type="button" class="chip" onclick="setCgSleepSize('F')">F (فری‌سایز)</button>
+      </div>
+    </div>
+    <div class="g1" id="CG_TOP_SIZE_WRAP" style="display:none"><span class="lbl">سایز پیشنهادی نیم‌تنه/کراپ/تاپ</span>
+      <div class="chips">
+        <button type="button" class="chip" onclick="setCgSleepSize('L, XL')">L, XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('S,M,L,XL')">S,M,L,XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('S,M')">S,M</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+        <span style="font-size:0.72rem;color:#9a6e3a">F از</span>
+        <input class="fi" type="text" id="CG_FSIZE_X" placeholder="مثلاً 75" style="flex:1">
+        <span style="font-size:0.72rem;color:#9a6e3a">تا</span>
+        <input class="fi" type="text" id="CG_FSIZE_Y" placeholder="مثلاً 90" style="flex:1">
+        <button type="button" class="sbig" style="width:auto;padding:0 14px;background:#3d2b1f;color:#f9f0e8" onclick="setCgFreeSizeRange()">ثبت</button>
+      </div>
+    </div>
+    <div class="g1" id="CG_PANTY_SIZE_WRAP" style="display:none"><span class="lbl">سایز پیشنهادی شورت / گن / بادی / مایو</span>
+      <div class="chips">
+        <button type="button" class="chip" onclick="setCgSleepSize('L,XL')">(L,XL)</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('XS')">XS</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('S')">S</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('M')">M</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('L')">L</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('XL')">XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('2XL')">2XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('3XL')">3XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('4XL')">4XL</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+        <span style="font-size:0.72rem;color:#9a6e3a">F از</span>
+        <input class="fi" type="text" id="CG_PSIZE_X" placeholder="مثلاً 60" style="flex:1">
+        <span style="font-size:0.72rem;color:#9a6e3a">تا</span>
+        <input class="fi" type="text" id="CG_PSIZE_Y" placeholder="مثلاً 80" style="flex:1">
+        <button type="button" class="sbig" style="width:auto;padding:0 14px;background:#3d2b1f;color:#f9f0e8" onclick="setCgPantyFreeSizeRange()">ثبت</button>
       </div>
     </div>
     <div class="g1" id="CG_BRA_SIZE_WRAP" style="display:none"><span class="lbl">سایزبندی پیشنهادی سوتین/ست</span>
@@ -648,11 +691,13 @@ input[type=file]{display:none}
       <div class="pdfsel-row"><span>نیمتنه+ست</span><label><input type="checkbox" id="S2C1" checked></label><label><input type="checkbox" id="S2C2"></label></div>
       <div class="pdfsel-row"><span>شورت</span><label><input type="checkbox" id="S3C1" checked></label><label><input type="checkbox" id="S3C2"></label></div>
       <div class="pdfsel-row"><span>لباس خواب</span><label><input type="checkbox" id="S4C1"></label><label><input type="checkbox" id="S4C2" checked></label></div>
+      <div class="pdfsel-row"><span>پروتز</span><label><input type="checkbox" id="S11C1"></label><label><input type="checkbox" id="S11C2"></label></div>
       <div class="pdfsel-row"><span>لوازم جانبی</span><label><input type="checkbox" id="S5C1" checked></label><label><input type="checkbox" id="S5C2"></label></div>
       <div class="pdfsel-row"><span>مایو</span><label><input type="checkbox" id="S6C1"></label><label><input type="checkbox" id="S6C2"></label></div>
       <div class="pdfsel-row"><span>کراپ</span><label><input type="checkbox" id="S7C1"></label><label><input type="checkbox" id="S7C2"></label></div>
       <div class="pdfsel-row"><span>تاپ</span><label><input type="checkbox" id="S8C1"></label><label><input type="checkbox" id="S8C2"></label></div>
       <div class="pdfsel-row"><span>بادی</span><label><input type="checkbox" id="S9C1"></label><label><input type="checkbox" id="S9C2"></label></div>
+      <div class="pdfsel-row"><span>گن</span><label><input type="checkbox" id="S10C1"></label><label><input type="checkbox" id="S10C2"></label></div>
     </div>
   </div>
   <div class="card"><div class="ctitle">ارسال لیست قیمت</div>
@@ -663,7 +708,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-07 20:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 06:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -759,11 +804,13 @@ input[type=file]{display:none}
 <div id="C2" class="ptpl"></div>
 <div id="C3" class="ptpl"></div>
 <div id="C4" class="ptpl"></div>
+<div id="C11" class="ptpl"></div>
 <div id="C5" class="ptpl"></div>
 <div id="C6" class="ptpl"></div>
 <div id="C7" class="ptpl"></div>
 <div id="C8" class="ptpl"></div>
 <div id="C9" class="ptpl"></div>
+<div id="C10" class="ptpl"></div>
 <div id="CINV" class="ptpl"></div>
 <script>
 // ── GLOBALS ──
@@ -1207,7 +1254,7 @@ setTimeout(startCustomersListener,1400);
 
 
 // ── سینک محصولات با Firestore ──
-var TABLBL_FA={p1:'سوتین و ست',p2:'نیمتنه و ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی'};
+var TABLBL_FA={p1:'سوتین و ست',p2:'نیمتنه و ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز'};
 function sanitizeDocId(s){
   var out=String(s).trim().replace(/[\/\s]+/g,'-').replace(/[^\w\-.\u0600-\u06FF]/g,'');
   return out.slice(0,120)||('x'+Date.now());
@@ -1428,33 +1475,48 @@ function syncProductsToFirestore(){
 
 var BANNERS=[null,null,null,null],BANNER_IDS=[null,null,null,null];
 var ARCHIVE_MS=2*24*60*60*1000;
-var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9'];
-var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','brapad_wire','brapad_nowire','branopad_wire','branopad_nowire','brajelly','braplastic','brabutterfly'],p2:['tset','top'],p3:['panty'],
-  p4:['twopiece','robe','fantasy','costume','silk','cotton','topshort','onepiece','pajama','nightgownset','nightgown','babydoll','mask','game','whip','buttplug','hat'],
-  p5:['accessory'],p6:['sleep2p','bikini','swimcover','sleep3p','skirted'],p7:['crop'],p8:['topw'],p9:['bodycotton','bodysilk']};
+var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11'];
+var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','brapad_wire','brapad_nowire','branopad_wire','branopad_nowire','brajelly','braplastic','brabutterfly'],p2:['tset','top'],p3:['panty_cotton','panty_laser','panty_shortex','panty_fantasy'],
+  p4:['pajama','nightgown','nightgownset','robe',
+    'sexy_twopiece','sexy_fantasy','sexy_costume','sexy_topshort','sexy_onepiece','sexy_babydoll',
+    'tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker',
+    'game_snake','game_love','game_flower','game_map','game_challenge','game_cards'],
+  p5:['acc_lift','acc_solar','acc_perfume','acc_lotion','acc_basket'],p6:['swim_slip','swim_padded_wire','swim_bikini','swim_paar','swim_skirted','swim_2piece','swim_3piece','swim_cover','swim_cap'],p7:['crop'],p8:['topw'],p9:['bodycotton','bodysilk','bodyfishnet','bodysexy'],
+  p11:['prosthetic_hipdip','prosthetic_hips','prosthetic_thigh'],
+  p10:['corset_slip','corset_waist','corset_top','corset_cotton','corset_laser'],
+};
 var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شورت',
+  panty_cotton:'شورت نخی',panty_laser:'شورت لیزری',panty_shortex:'شورتکس',panty_fantasy:'شورت فانتزی سکسی',
   setpad_wire:'ست — اسفنجی فنردار',setpad_nowire:'ست — اسفنجی بدون فنر',setnopad_wire:'ست — بدون اسفنج فنردار',setnopad_nowire:'ست — بدون اسفنج بدون فنر',
   brapad_wire:'سوتین — اسفنجی فنردار',brapad_nowire:'سوتین — اسفنجی بدون فنر',branopad_wire:'سوتین — بدون اسفنج فنردار',branopad_nowire:'سوتین — بدون اسفنج بدون فنر',
   brajelly:'سوتین ژله‌ای',braplastic:'سوتین طلقی',brabutterfly:'سوتین پروانه‌ای',
-  twopiece:'دو تیکه',robe:'روبدوشام',fantasy:'بادی فانتزی',costume:'کاستوم',
-  silk:'بادی حریر',cotton:'بادی نخی',topshort:'تاپ شورتک',onepiece:'سرهمی',
-  pajama:'پیژامه',nightgownset:'ست نایتگان',nightgown:'نایتگان',babydoll:'بیبی‌دال',mask:'نقاب',game:'بازی',whip:'شلاق',buttplug:'بات\u200cپلاگ',hat:'کلاه',
+  pajama:'پیژامه',nightgown:'نایتگان',nightgownset:'ست نایتگان',robe:'روبدوشام',
+  sexy_twopiece:'دو تیکه',sexy_fantasy:'بادی فانتزی',sexy_costume:'کاستوم',sexy_topshort:'تاپ شورتک',sexy_onepiece:'سرهمی',sexy_babydoll:'بیبی‌دال',
+  tool_mask:'نقاب',tool_whip:'شلاق',tool_buttplug:'بات\u200cپلاگ',tool_hat:'کلاه',tool_bracelet:'دستبند',tool_garter:'گارتر',tool_tiara:'تل',tool_choker:'چوکر',
   accessory:'لوازم جانبی',
-  sleep2p:'اسلیپ دوتیکه',bikini:'بیکینی',swimcover:'کاورمایو',sleep3p:'سه تیکه',skirted:'دامن\u200cدار',
+  acc_lift:'لیفت',acc_solar:'سولار',acc_perfume:'عطر بیکینی',acc_lotion:'لوسیون',acc_basket:'سبد',
+  prosthetic_hipdip:'هیپ‌دیپ',prosthetic_hips:'باسن',prosthetic_thigh:'بغل‌ران',
+  swim_slip:'اسلیپ',swim_padded_wire:'کاپدار فنردار',swim_bikini:'بیکینی',swim_paar:'پادار',swim_skirted:'دامنی',swim_2piece:'دوتیکه',swim_3piece:'سه‌تیکه',swim_cover:'کاورمایو',swim_cap:'کلاه‌شنا',
   crop:'کراپ',topw:'تاپ',
-  bodycotton:'بادی نخی',bodysilk:'بادی حریر'};
+  bodycotton:'بادی نخی',bodysilk:'بادی حریر',bodyfishnet:'بادی فیشنت',bodysexy:'بادی سکسی',
+  corset_slip:'گن اسلیپ فنردار',corset_waist:'گن کمری',corset_top:'گن تاپی',corset_cotton:'گن نخی',corset_laser:'گن لیزری',
+  game_snake:'مار و پله',game_love:'لاو',game_flower:'گل‌یاپوچ',game_map:'نقشه',game_challenge:'چالش',game_cards:'کارت‌بازی'};
 var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',
   setpad_wire:'tbtn t-set',setpad_nowire:'tbtn t-c1',setnopad_wire:'tbtn t-c2',setnopad_nowire:'tbtn t-c3',
   brapad_wire:'tbtn t-bra',brapad_nowire:'tbtn t-c4',branopad_wire:'tbtn t-c5',branopad_nowire:'tbtn t-c6',
   brajelly:'tbtn t-c1',braplastic:'tbtn t-c2',brabutterfly:'tbtn t-c3',
-  panty:'tbtn t-bra',twopiece:'tbtn t-set',robe:'tbtn t-bra',fantasy:'tbtn t-c1',
-  costume:'tbtn t-c2',silk:'tbtn t-c3',cotton:'tbtn t-c4',topshort:'tbtn t-c5',
-  onepiece:'tbtn t-c6',pajama:'tbtn t-c1',nightgownset:'tbtn t-c6',nightgown:'tbtn t-c3',babydoll:'tbtn t-c5',
-  mask:'tbtn t-c2',game:'tbtn t-c5',whip:'tbtn t-c6',buttplug:'tbtn t-c4',hat:'tbtn t-c1',
+  panty:'tbtn t-bra',panty_cotton:'tbtn t-c4',panty_laser:'tbtn t-c1',panty_shortex:'tbtn t-c2',panty_fantasy:'tbtn t-c5',
+  pajama:'tbtn t-c1',nightgown:'tbtn t-c3',nightgownset:'tbtn t-c6',robe:'tbtn t-bra',
+  sexy_twopiece:'tbtn t-set',sexy_fantasy:'tbtn t-c1',sexy_costume:'tbtn t-c2',sexy_topshort:'tbtn t-c5',sexy_onepiece:'tbtn t-c6',sexy_babydoll:'tbtn t-c5',
+  tool_mask:'tbtn t-c2',tool_whip:'tbtn t-c6',tool_buttplug:'tbtn t-c4',tool_hat:'tbtn t-c1',tool_bracelet:'tbtn t-c3',tool_garter:'tbtn t-c4',tool_tiara:'tbtn t-c5',tool_choker:'tbtn t-c6',
   accessory:'tbtn t-c2',
-  sleep2p:'tbtn t-set',bikini:'tbtn t-bra',swimcover:'tbtn t-c1',sleep3p:'tbtn t-c2',skirted:'tbtn t-c3',
+  acc_lift:'tbtn t-c1',acc_solar:'tbtn t-c2',acc_perfume:'tbtn t-c3',acc_lotion:'tbtn t-c4',acc_basket:'tbtn t-c5',
+  prosthetic_hipdip:'tbtn t-c1',prosthetic_hips:'tbtn t-c2',prosthetic_thigh:'tbtn t-c3',
+  swim_slip:'tbtn t-set',swim_padded_wire:'tbtn t-bra',swim_bikini:'tbtn t-c1',swim_paar:'tbtn t-c2',swim_skirted:'tbtn t-c3',swim_2piece:'tbtn t-c4',swim_3piece:'tbtn t-c5',swim_cover:'tbtn t-c6',swim_cap:'tbtn t-c1',
   crop:'tbtn t-set',topw:'tbtn t-top',
-  bodycotton:'tbtn t-c4',bodysilk:'tbtn t-c3'};
+  bodycotton:'tbtn t-c4',bodysilk:'tbtn t-c3',bodyfishnet:'tbtn t-c1',bodysexy:'tbtn t-c2',
+  corset_slip:'tbtn t-c1',corset_waist:'tbtn t-c2',corset_top:'tbtn t-c3',corset_cotton:'tbtn t-c4',corset_laser:'tbtn t-c5',
+  game_snake:'tbtn t-c1',game_love:'tbtn t-c2',game_flower:'tbtn t-c3',game_map:'tbtn t-c4',game_challenge:'tbtn t-c5',game_cards:'tbtn t-c6'};
 var TGB='https://api.telegram.org/bot';
 var SLEEVE_SEQ=['ring','q3','long'];
 var SLEEVE_LBL={ring:'آستین حلقه\u200cای',q3:'آستین سه ربع',long:'آستین بلند'};
@@ -1878,8 +1940,8 @@ function showTab(id,btn){
 function hideSubNav(){var el=document.getElementById('SUBNAV');if(el)el.style.display='none';}
 var PRODUCTS_GROUP_TABS=[
   {id:'p1',l:'سوتین+ست'},{id:'p2',l:'نیمتنه+ست'},{id:'p3',l:'شورت'},
-  {id:'p4',l:'لباس خواب'},{id:'p5',l:'لوازم جانبی'},{id:'p6',l:'مایو'},
-  {id:'p7',l:'کراپ'},{id:'p8',l:'تاپ'},{id:'p9',l:'بادی'},
+  {id:'p4',l:'لباس خواب'},{id:'p11',l:'پروتز'},{id:'p5',l:'لوازم جانبی'},{id:'p6',l:'مایو'},
+  {id:'p7',l:'کراپ'},{id:'p8',l:'تاپ'},{id:'p9',l:'بادی'},{id:'p10',l:'گن'},
   {id:'ppdf',l:'PDF'},{id:'ps',l:'جستجو'},{id:'pa',l:'آرشیو'}
 ];
 var SITE_GROUP_TABS=[
@@ -2134,7 +2196,7 @@ function checkArchive(){
 function renderArchive(){
   var el=document.getElementById('ARCH_LIST');if(!el)return;
   if(!ARCHIVE.length){el.innerHTML='<div class="nores">آرشیو خالی است</div>';return;}
-  var tabNames={p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی'};
+  var tabNames={p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز'};
   el.innerHTML=ARCHIVE.map(function(a,i){
     var days=Math.floor((Date.now()-a.archivedAt)/86400000);
     return '<div class="rc"><div><div class="rn">'+(a.title||TLBL[a.type]||a.type)+(a.code&&a.code!=='--'?' - کد: '+a.code:'')+'</div>'+
@@ -2163,7 +2225,7 @@ function doSearch(){
   var q=V('SQ').toLowerCase();
   var items=allProds().filter(function(p){
     var mq=!q||[p.code,p.sizes,p.colors,p.title].some(function(v){return(v||'').toLowerCase().indexOf(q)>-1;});
-    var mf=CFIL==='all'||CFIL===p.type||CFIL===p.stock;
+    var mf=CFIL==='all'||CFIL===p.type||CFIL===p.stock||CFIL===p.tab;
     return mq&&mf;
   });
   if(CSORT==='cheap')items.sort(function(a,b){return numP(a.price)-numP(b.price);});
@@ -2182,13 +2244,13 @@ function doSearch(){
 
 // ── BUILD PDF HTML ──
 function buildPDF(num){
-  var tabKey={1:'p1',2:'p2',3:'p3',4:'p4',5:'p5',6:'p6',7:'p7',8:'p8',9:'p9'}[num];
-  var bgPage={1:'#f9f0e8',2:'#f5f0ff',3:'#fff0f5',4:'#eef2ff',5:'#fdf6e8',6:'#e8f7f5',7:'#fdf0f5',8:'#f2f7e8',9:'#f5eef9'}[num];
-  var bgHdr={1:'#3d2b1f',2:'#5a2080',3:'#8b2040',4:'#2a3a7a',5:'#8a6a1a',6:'#1a7a6e',7:'#a02050',8:'#4a7a1a',9:'#6a2a8a'}[num];
-  var bgAcc={1:'#eddfc9',2:'#e8d8ff',3:'#ffd6e0',4:'#dde4ff',5:'#f5e6b8',6:'#c9f0ea',7:'#ffd6e6',8:'#dcf0c0',9:'#e8d0f5'}[num];
-  var bgHrs={1:'#fff8f2',2:'#f0ebff',3:'#fff5f8',4:'#f0f3ff',5:'#fffaf0',6:'#eefdfb',7:'#fff5f8',8:'#f5fdec',9:'#f7f0fb'}[num];
-  var bgEv={1:'#fff8f2',2:'#f5f0ff',3:'#fff8fa',4:'#f5f7ff',5:'#fdf9ee',6:'#f2fdfc',7:'#fdf8fa',8:'#f8fdf2',9:'#faf5fd'}[num];
-  var bdr={1:'#d4a87a',2:'#9060c0',3:'#e06080',4:'#5a70c0',5:'#c9a23a',6:'#2ab0a0',7:'#d05580',8:'#7ab030',9:'#a050c0'}[num];
+  var tabKey={1:'p1',2:'p2',3:'p3',4:'p4',5:'p5',6:'p6',7:'p7',8:'p8',9:'p9',10:'p10',11:'p11'}[num];
+  var bgPage={1:'#f9f0e8',2:'#f5f0ff',3:'#fff0f5',4:'#eef2ff',5:'#fdf6e8',6:'#e8f7f5',7:'#fdf0f5',8:'#f2f7e8',9:'#f5eef9',10:'#eef7f0',11:'#f5f0ea'}[num];
+  var bgHdr={1:'#3d2b1f',2:'#5a2080',3:'#8b2040',4:'#2a3a7a',5:'#8a6a1a',6:'#1a7a6e',7:'#a02050',8:'#4a7a1a',9:'#6a2a8a',10:'#1a5a3a',11:'#7a5a3a'}[num];
+  var bgAcc={1:'#eddfc9',2:'#e8d8ff',3:'#ffd6e0',4:'#dde4ff',5:'#f5e6b8',6:'#c9f0ea',7:'#ffd6e6',8:'#dcf0c0',9:'#e8d0f5',10:'#cfeed9',11:'#e8dcc9'}[num];
+  var bgHrs={1:'#fff8f2',2:'#f0ebff',3:'#fff5f8',4:'#f0f3ff',5:'#fffaf0',6:'#eefdfb',7:'#fff5f8',8:'#f5fdec',9:'#f7f0fb',10:'#eefdf3',11:'#f9f5ef'}[num];
+  var bgEv={1:'#fff8f2',2:'#f5f0ff',3:'#fff8fa',4:'#f5f7ff',5:'#fdf9ee',6:'#f2fdfc',7:'#fdf8fa',8:'#f8fdf2',9:'#faf5fd',10:'#f3fdf6',11:'#faf6f0'}[num];
+  var bdr={1:'#d4a87a',2:'#9060c0',3:'#e06080',4:'#5a70c0',5:'#c9a23a',6:'#2ab0a0',7:'#d05580',8:'#7ab030',9:'#a050c0',10:'#2a9a5c',11:'#a87a4a'}[num];
   var clP={1:'#9a6e3a',2:'#5a2080',3:'#8b2040',4:'#2a3a7a',5:'#8a6a1a',6:'#1a7a6e',7:'#a02050',8:'#4a7a1a',9:'#6a2a8a'}[num];
   var brands=getBrands(tabKey).filter(function(b){return b.rows.length>0;});
   var note=V('NOTE'),date=pdate();
@@ -2418,7 +2480,7 @@ function fetchOrderChatId2(){
 }
 
 // ── SEND PDFs ──
-var ALLPDFS=[{n:1,fa:'سوتین و ست',fn:'BraSet'},{n:2,fa:'نیمتنه و ست',fn:'TopSet'},{n:3,fa:'شورت',fn:'Panty'},{n:4,fa:'لباس خواب',fn:'Sleepwear'},{n:5,fa:'لوازم جانبی',fn:'Accessory'},{n:6,fa:'مایو',fn:'Swimwear'},{n:7,fa:'کراپ',fn:'Crop'},{n:8,fa:'تاپ',fn:'Top'},{n:9,fa:'بادی',fn:'Bodysuit'}];
+var ALLPDFS=[{n:1,fa:'سوتین و ست',fn:'BraSet'},{n:2,fa:'نیمتنه و ست',fn:'TopSet'},{n:3,fa:'شورت',fn:'Panty'},{n:4,fa:'لباس خواب',fn:'Sleepwear'},{n:5,fa:'لوازم جانبی',fn:'Accessory'},{n:6,fa:'مایو',fn:'Swimwear'},{n:7,fa:'کراپ',fn:'Crop'},{n:8,fa:'تاپ',fn:'Top'},{n:9,fa:'بادی',fn:'Bodysuit'},{n:10,fa:'گن',fn:'Corset'},{n:11,fa:'پروتز',fn:'Prosthetic'}];
 var FMSG='🌹 لیست قیمت فروشگاه رُزاوی 😁\n\n😍 سلام دوستان و همکارای عزیز\n\n📋 لیست قیمت بهروز خدمتتون ارسال شد\n🗓 آپدیت: DATE\n\n📞 تماس: 09190134599\n\n🙏 ممنون از اعتماد و همراهیتون 🌸 پرسود و پرفروش باشید 🤝\n\n🔴 ارتباط با ما\n\n1 - کانال لباس زیر:\nhttps://t.me/rozavie_underwear\n\n2 - کانال لباس خواب:\nhttps://t.me/rozavie_sleepwear\n\n3 - اینستاگرام فروشگاه:\nhttps://www.instagram.com/rosavie_underwear?igsh=bmhvcDEzdjNoemV3\n\nآیدی ثبت سفارش: @amin_beik_mohammady\n\nشماره تماس: 09190134599';
 
 function sendPDFs(ch){
@@ -2460,9 +2522,9 @@ function buildSearchHTML(){
   var orderTgk=JSON.stringify(V('TGK'));
   var orderCid=JSON.stringify(V('ORDERCID'));
   var orderCid2=JSON.stringify(V('ORDERCID2'));
-  var SLEEP_TYPES=['twopiece','robe','fantasy','costume','silk','cotton','topshort','onepiece','pajama','nightgown','mask','game','whip','buttplug','hat'];
-  var SWIM_TYPES=['sleep2p','bikini','swimcover','sleep3p','skirted'];
-  var BODY_TYPES=['bodycotton','bodysilk'];
+  var SLEEP_TYPES=['pajama','nightgown','nightgownset','robe','sexy_twopiece','sexy_fantasy','sexy_costume','sexy_topshort','sexy_onepiece','sexy_babydoll','tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker','game_snake','game_love','game_flower','game_map','game_challenge','game_cards'];
+  var SWIM_TYPES=['swim_slip','swim_padded_wire','swim_bikini','swim_paar','swim_skirted','swim_2piece','swim_3piece','swim_cover','swim_cap'];
+  var BODY_TYPES=['bodycotton','bodysilk','bodyfishnet','bodysexy'];
   var dateStr=pdate();
 
   var css='';
@@ -2958,7 +3020,7 @@ function buildSearchHTML(){
   js+='var SL='+slp+';';
   js+='var SW='+swp+';';
   js+='var BO='+bop+';';
-  js+='var LBL={set:"ست سوتین",bra:"سوتین",tset:"ست نیمتنه",top:"نیمتنه",panty:"شورت",twopiece:"دو تیکه",robe:"روبدوشام",fantasy:"بادی فانتزی",costume:"کاستوم",silk:"بادی حریر",cotton:"بادی نخی",topshort:"تاپ شورتک",onepiece:"سرهمی",pajama:"پیژامه",nightgown:"نایتگان",accessory:"لوازم جانبی"};';
+  js+='var LBL={set:"ست",bra:"سوتین",tset:"ست",top:"نیمتنه",panty:"شورت",panty_cotton:"شورت نخی",panty_laser:"شورت لیزری",panty_shortex:"شورتکس",panty_fantasy:"شورت فانتزی سکسی",setpad_wire:"ست — اسفنجی فنردار",setpad_nowire:"ست — اسفنجی بدون فنر",setnopad_wire:"ست — بدون اسفنج فنردار",setnopad_nowire:"ست — بدون اسفنج بدون فنر",brapad_wire:"سوتین — اسفنجی فنردار",brapad_nowire:"سوتین — اسفنجی بدون فنر",branopad_wire:"سوتین — بدون اسفنج فنردار",branopad_nowire:"سوتین — بدون اسفنج بدون فنر",brajelly:"سوتین ژله‌ای",braplastic:"سوتین طلقی",brabutterfly:"سوتین پروانه‌ای",pajama:"پیژامه",nightgown:"نایتگان",nightgownset:"ست نایتگان",robe:"روبدوشام",sexy_twopiece:"دو تیکه",sexy_fantasy:"بادی فانتزی",sexy_costume:"کاستوم",sexy_topshort:"تاپ شورتک",sexy_onepiece:"سرهمی",sexy_babydoll:"بیبی‌دال",tool_mask:"نقاب",tool_whip:"شلاق",tool_buttplug:"بات\u200cپلاگ",tool_hat:"کلاه",tool_bracelet:"دستبند",tool_garter:"گارتر",tool_tiara:"تل",tool_choker:"چوکر",accessory:"لوازم جانبی",acc_lift:"لیفت",acc_solar:"سولار",acc_perfume:"عطر بیکینی",acc_lotion:"لوسیون",acc_basket:"سبد",prosthetic_hipdip:"هیپ‌دیپ",prosthetic_hips:"باسن",prosthetic_thigh:"بغل‌ران",swim_slip:"اسلیپ",swim_padded_wire:"کاپدار فنردار",swim_bikini:"بیکینی",swim_paar:"پادار",swim_skirted:"دامنی",swim_2piece:"دوتیکه",swim_3piece:"سه‌تیکه",swim_cover:"کاورمایو",swim_cap:"کلاه‌شنا",crop:"کراپ",topw:"تاپ",bodycotton:"بادی نخی",bodysilk:"بادی حریر",bodyfishnet:"بادی فیشنت",bodysexy:"بادی سکسی",corset_slip:"گن اسلیپ فنردار",corset_waist:"گن کمری",corset_top:"گن تاپی",corset_cotton:"گن نخی",corset_laser:"گن لیزری",game_snake:"مار و پله",game_love:"لاو",game_flower:"گل‌یاپوچ",game_map:"نقشه",game_challenge:"چالش",game_cards:"کارت‌بازی"};';
   js+='function toEnD(s){if(s==null)return s;return String(s).replace(/[\u06f0-\u06f9]/g,function(d){return String("\u06f0\u06f1\u06f2\u06f3\u06f4\u06f5\u06f6\u06f7\u06f8\u06f9".indexOf(d));}).replace(/[\u0660-\u0669]/g,function(d){return String("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(d));});}';
   js+='function fP(p){if(!p||p=="--")return"--";var n=toEnD(String(p)).replace(/,/g,"");if(n!==""&&!isNaN(n))return Number(n).toLocaleString("fa-IR")+" تومان";return p;}';
   js+='function nP(p){return parseFloat(toEnD(String(p||0)).replace(/,/g,""))||0;}';
@@ -3120,7 +3182,7 @@ function bannerBrandSearch(i,q){
   items=items.slice(0,10);
   if(!items.length){el.style.display='none';return;}
   el.style.display='block';
-  var tabNamesLoc={p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی'};
+  var tabNamesLoc={p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز'};
   el.innerHTML=items.map(function(b){
     var safeName=b.name.replace(/"/g,'&quot;');
     return '<div class="srch-item" data-brand="'+safeName+'" data-tab="'+b.tab+'" onclick="linkBannerBrand('+i+',this)"><div class="srch-item-ph">🏷</div><div class="srch-item-info"><div class="srch-item-name">'+b.name+'</div><div class="srch-item-price">'+(tabNamesLoc[b.tab]||b.tab)+' — '+b.count+' محصول</div></div></div>';
@@ -4664,9 +4726,66 @@ var TYPE_FABRIC_TAGS={
   brapad_wire:['نخی','کبریتی','دکلته','پشت‌نامرئی','لیزری','دبل‌جک','نیم‌جک','اسفنجی نازک','گیپور','فانتزی'],
   brapad_nowire:['نخی','کبریتی','لیزری','اسفنجی نازک','گیپور','فانتزی'],
   branopad_wire:['نخی','پرلون‌پرسی','گیپور','تورگاز','دانتل','فانتزی'],
-  branopad_nowire:['نخی','پرلون‌پرسی','گیپور','بالاشیشه‌ای','کش‌پهن','فانتزی']
+  branopad_nowire:['نخی','پرلون‌پرسی','گیپور','بالاشیشه‌ای','کش‌پهن','فانتزی'],
+  tset:['کبریتی','لیزری','فانتزی','کش‌پهن','هارنس‌دار','بندتنظیمی','پشت‌قهرمانی','پشت‌ضربدری','رومی','بدون‌کاپ','شورت‌اسلیپ','شورت‌بکلس'],
+  top:['کبریتی','لیزری','فانتزی','کش‌پهن','هارنس‌دار','بندتنظیمی','پشت‌قهرمانی','پشت‌ضربدری','رومی','بدون‌کاپ'],
+  crop:['نخی','فانتزی'],
+  topw:['نخی','بندباریک','فانتزی'],
+  panty_cotton:['اسلیپ','بکلس','کبریتی','کِلوی','گنی','کش‌پهن','چاپی','جنیفری','عینکی'],
+  panty_laser:['پادار','اسلیپ','برزیلی','بکلس','لامبادا','اروپایی','گیپوردار'],
+  panty_shortex:['ویسکوز','نخی','جیبدار','گنی'],
+  panty_fantasy:['فاق‌باز','کِلوین','کش‌پهن','دامنی','توری','گیپور','ریش‌دار','یراق‌دار'],
+  corset_slip:['اِسپاچ'],
+  corset_waist:['گن ساعت‌شنی'],
+  corset_top:['گن ساعت‌شنی'],
+  corset_cotton:['اسلیپ','لامبادا'],
+  corset_laser:['اسلیپ','پادار','لامبادا']
 };
 var CG_FABRIC_TAGS=[];
+var P4_GROUPS={
+  normal:['pajama','nightgown','nightgownset','robe'],
+  sexy_clothes:['sexy_twopiece','sexy_fantasy','sexy_costume','sexy_topshort','sexy_onepiece','sexy_babydoll'],
+  sexy_tools:['tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker']
+};
+var P4_GAME_TYPES=['game_snake','game_love','game_flower','game_map','game_challenge','game_cards'];
+function typeToP4Group(type){
+  if(P4_GAME_TYPES.indexOf(type)>-1)return 'sexy_tools';
+  for(var g in P4_GROUPS){if(P4_GROUPS[g].indexOf(type)>-1)return g;}
+  return 'normal';
+}
+function setCgP4Group(group,btn){
+  document.querySelectorAll('#CG_P4_GROUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+  btn.classList.add('on');
+  renderP4SubtypeChips(group);
+}
+function renderP4SubtypeChips(group){
+  var wrap=document.getElementById('CG_TYPE_CHIPS');
+  var gameWrap=document.getElementById('CG_P4_GAME_CHIPS');
+  gameWrap.style.display='none';gameWrap.innerHTML='';
+  var seq=P4_GROUPS[group];
+  CG_TYPE=seq[0];
+  var html=seq.map(function(t,i){
+    return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+TLBL[t]+'</button>';
+  }).join('');
+  if(group==='sexy_tools'){
+    html+='<button type="button" class="chip" id="CG_P4_GAME_BTN" onclick="showP4GameChips(this)">🎲 بازی</button>';
+  }
+  wrap.innerHTML=html;
+  updateSizeFieldVisibility();
+  updateFabricTagsUI();
+}
+function showP4GameChips(btn){
+  document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+  if(btn)btn.classList.add('on');
+  var gameWrap=document.getElementById('CG_P4_GAME_CHIPS');
+  CG_TYPE=P4_GAME_TYPES[0];
+  gameWrap.innerHTML=P4_GAME_TYPES.map(function(t,i){
+    return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+TLBL[t]+'</button>';
+  }).join('');
+  gameWrap.style.display='flex';
+  updateSizeFieldVisibility();
+  updateFabricTagsUI();
+}
 var P1_GROUPS={
   set:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire'],
   bra:['brapad_wire','brapad_nowire','branopad_wire','branopad_nowire'],
@@ -4695,6 +4814,8 @@ function renderCgTypeChips(){
   var wrap=document.getElementById('CG_TYPE_CHIPS');
   var typeWrapEl=document.getElementById('CG_TYPE_WRAP');
   var p1GroupWrap=document.getElementById('CG_P1_GROUP_CHIPS');
+  var p4GroupWrap=document.getElementById('CG_P4_GROUP_CHIPS');
+  var gameWrap=document.getElementById('CG_P4_GAME_CHIPS');
   var seq=TSEQ[CG_CATEGORY]||[];
   var cupWrap=document.getElementById('CG_CUP_WRAP');
   var braSizeWrap=document.getElementById('CG_BRA_SIZE_WRAP');
@@ -4707,16 +4828,10 @@ function renderCgTypeChips(){
     CG_CUPS=[];
     document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
   }
-  if(CG_CATEGORY==='p3'||CG_CATEGORY==='p5'){
-    typeWrapEl.style.display='none';
-    p1GroupWrap.style.display='none';
-    CG_TYPE=seq[0]||'';
-    wrap.innerHTML='';
-    updateSizeFieldVisibility();
-    return;
-  }
   typeWrapEl.style.display='block';
+  gameWrap.style.display='none';gameWrap.innerHTML='';
   if(CG_CATEGORY==='p1'){
+    p4GroupWrap.style.display='none';
     p1GroupWrap.style.display='flex';
     var firstBtn=p1GroupWrap.querySelector('.chip');
     p1GroupWrap.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
@@ -4724,7 +4839,17 @@ function renderCgTypeChips(){
     renderP1SubtypeChips('set');
     return;
   }
+  if(CG_CATEGORY==='p4'){
+    p1GroupWrap.style.display='none';
+    p4GroupWrap.style.display='flex';
+    var firstBtn4=p4GroupWrap.querySelector('.chip');
+    p4GroupWrap.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    if(firstBtn4)firstBtn4.classList.add('on');
+    renderP4SubtypeChips('normal');
+    return;
+  }
   p1GroupWrap.style.display='none';
+  p4GroupWrap.style.display='none';
   CG_TYPE=seq[0]||'';
   wrap.innerHTML=seq.map(function(t,i){
     return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+TLBL[t]+'</button>';
@@ -4876,24 +5001,54 @@ function toggleCgFabricTag(tag,btn){
   if(idx>-1){CG_FABRIC_TAGS.splice(idx,1);btn.classList.remove('on');}
   else{CG_FABRIC_TAGS.push(tag);btn.classList.add('on');}
 }
-var CG_NO_SIZE_TYPES=['mask','game','whip','buttplug','hat'];
+var CG_NO_SIZE_TYPES=['tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker','game_snake','game_love','game_flower','game_map','game_challenge','game_cards','acc_lift','acc_solar','acc_perfume','acc_lotion','acc_basket'];
 function updateSizeFieldVisibility(){
   var sizeWrap=document.getElementById('CG_SIZE_WRAP');
   var sleepWrap=document.getElementById('CG_SLEEP_SIZE_WRAP');
+  var topWrap=document.getElementById('CG_TOP_SIZE_WRAP');
+  var pantyWrap=document.getElementById('CG_PANTY_SIZE_WRAP');
   if(CG_NO_SIZE_TYPES.indexOf(CG_TYPE)>-1){
     sizeWrap.style.display='none';
     sleepWrap.style.display='none';
+    topWrap.style.display='none';
+    pantyWrap.style.display='none';
     document.getElementById('CG_SIZE_RANGE').value='';
   }else if(CG_CATEGORY==='p4'){
     sizeWrap.style.display='block';
     sleepWrap.style.display='block';
+    topWrap.style.display='none';
+    pantyWrap.style.display='none';
+  }else if(CG_CATEGORY==='p2'||CG_CATEGORY==='p7'||CG_CATEGORY==='p8'){
+    sizeWrap.style.display='block';
+    sleepWrap.style.display='none';
+    topWrap.style.display='block';
+    pantyWrap.style.display='none';
+  }else if(CG_CATEGORY==='p3'||CG_CATEGORY==='p10'||CG_CATEGORY==='p9'||CG_CATEGORY==='p6'||CG_CATEGORY==='p11'){
+    sizeWrap.style.display='block';
+    sleepWrap.style.display='none';
+    topWrap.style.display='none';
+    pantyWrap.style.display='block';
   }else{
     sizeWrap.style.display='block';
     sleepWrap.style.display='none';
+    topWrap.style.display='none';
+    pantyWrap.style.display='none';
   }
 }
 function setCgSleepSize(val){
   document.getElementById('CG_SIZE_RANGE').value=val;
+}
+function setCgPantyFreeSizeRange(){
+  var x=toEnDigits(document.getElementById('CG_PSIZE_X').value||'').trim();
+  var y=toEnDigits(document.getElementById('CG_PSIZE_Y').value||'').trim();
+  if(!x||!y){alert('هر دو عدد رو پر کن');return;}
+  document.getElementById('CG_SIZE_RANGE').value='F ('+x+' الی '+y+')';
+}
+function setCgFreeSizeRange(){
+  var x=toEnDigits(document.getElementById('CG_FSIZE_X').value||'').trim();
+  var y=toEnDigits(document.getElementById('CG_FSIZE_Y').value||'').trim();
+  if(!x||!y){alert('هر دو عدد رو پر کن');return;}
+  document.getElementById('CG_SIZE_RANGE').value='F ('+x+' الی '+y+')';
 }
 function setCgCat(cat,btn){
   CG_CATEGORY=cat;
@@ -5164,8 +5319,21 @@ function loadProductForEdit(el){
       if(grpBtn)grpBtn.classList.add('on');
       renderP1SubtypeChips(grp);
     }
+    if(CG_CATEGORY==='p4'){
+      var grp4=typeToP4Group(p.type);
+      var grp4Btn=null;
+      document.querySelectorAll('#CG_P4_GROUP_CHIPS .chip').forEach(function(c,i){
+        if(Object.keys(P4_GROUPS)[i]===grp4)grp4Btn=c;
+      });
+      document.querySelectorAll('#CG_P4_GROUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+      if(grp4Btn)grp4Btn.classList.add('on');
+      renderP4SubtypeChips(grp4);
+      if(P4_GAME_TYPES.indexOf(p.type)>-1){
+        showP4GameChips(document.getElementById('CG_P4_GAME_BTN'));
+      }
+    }
     var typeBtn=null;
-    document.querySelectorAll('#CG_TYPE_CHIPS .chip').forEach(function(c){
+    document.querySelectorAll('#CG_TYPE_CHIPS .chip, #CG_P4_GAME_CHIPS .chip').forEach(function(c){
       if((c.getAttribute('onclick')||'').indexOf("'"+p.type+"'")>-1)typeBtn=c;
     });
     if(typeBtn)setCgType(p.type,typeBtn);
@@ -5703,7 +5871,7 @@ function validateChatIdField(id,label){
 function save(){
   if(_loading)return;
   try{
-    var sel={};[1,2,3,4,5,6,7,8,9].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
+    var sel={};[1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
     var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,autoSync:AUTO_SYNC_ENABLED};
     TABS.forEach(function(tab){
       var brands=[];
@@ -5845,7 +6013,7 @@ window.addEventListener('message',function(e){
 });
 
 // auto-save checkboxes and fields
-[1,2,3,4,5,6,7,8,9].forEach(function(n){[1,2].forEach(function(c){var cb=document.getElementById('S'+n+'C'+c);if(cb)cb.onchange=save;});});
+[1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(c){var cb=document.getElementById('S'+n+'C'+c);if(cb)cb.onchange=save;});});
 document.getElementById('TGCID2').oninput=save;
 document.getElementById('ORDERCID').oninput=save;
 document.getElementById('ORDERCID2').oninput=save;
