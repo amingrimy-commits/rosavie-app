@@ -510,18 +510,18 @@ input[type=file]{display:none}
         <button type="button" class="sbig" style="width:auto;padding:0 14px;background:#3d2b1f;color:#f9f0e8" onclick="setCgPantyFreeSizeRange()">ثبت</button>
       </div>
     </div>
-    <div class="g1" id="CG_BRA_SIZE_WRAP" style="display:none"><span class="lbl">سایزبندی پیشنهادی سوتین/ست</span>
+    <div class="g1" id="CG_BRA_SIZE_WRAP" style="display:none"><span class="lbl">سایزبندی پیشنهادی سوتین/ست (کاپ رو جدا و دستی از پایین انتخاب کن)</span>
       <div class="chips">
-        <button type="button" class="chip" onclick="setCgBraSizePreset('75 تا 90',['A','B','C','D'])">75.80.85.90 | A B C D</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('80 تا 95',['A','B','C','D'])">80.85.90.95 | A B C D</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('80 تا 90',['A','B','C'])">80.85.90 | A B C</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('85 تا 100',['B','C','D'])">85.90.95.100 | B C D</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('90 تا 105',['B','C','D'])">90.95.100.105 | B C D</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('80 تا 85',['C','D'])">80.85 | C D</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('S,M,L,XL',['A','B'])">S M L XL | A B</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('L,XL',['A','B'])">L XL | A B</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('M,L,XL',['A','B'])">M L XL | A B</button>
-        <button type="button" class="chip" onclick="setCgBraSizePreset('',['A','B','C','D'])">فقط کاپ‌بندی | A B C D</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('75 تا 90')">75.80.85.90</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('80 تا 95')">80.85.90.95</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('80 تا 90')">80.85.90</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('75 تا 85')">75.80.85</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('85 تا 100')">85.90.95.100</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('90 تا 105')">90.95.100.105</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('80 تا 85')">80.85</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('S,M,L,XL')">S M L XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('L,XL')">L XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('M,L,XL')">M L XL</button>
       </div>
     </div>
     <div class="g1" id="CG_CUP_WRAP" style="display:none"><span class="lbl">کاپ‌بندی (فقط سوتین و ست سوتین — می‌تونی چند کاپ با هم انتخاب کنی)</span>
@@ -708,7 +708,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 06:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 10:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1319,9 +1319,26 @@ function autoSyncSingleProduct(rid){
   function pushIt(imgData){
     prod.img=imgData;
     delete prod.rid;
-    fbDb.collection('products').doc(prod.id).set(Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()})).then(function(){
+    var payload=Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    var approxSize=JSON.stringify(payload).length;
+    if(approxSize>900000){
+      addNotif('⚠️ «'+(prod.title||prod.code)+'» حجمش خیلی زیاده ('+Math.round(approxSize/1024)+'KB) — دارم عکسش رو بیشتر فشرده می‌کنم...');
+      resizeDataUrl(imgData,480,0.7,function(smaller){
+        prod.img=smaller;
+        var payload2=Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        writeToFirestore(payload2);
+      });
+      return;
+    }
+    writeToFirestore(payload);
+  }
+  function writeToFirestore(payload){
+    fbDb.collection('products').doc(prod.id).set(payload).then(function(){
       addNotif('🔄 «'+(prod.title||prod.code)+'» خودکار با سایت همگام شد');
-    }).catch(function(e){console.error('autoSyncSingleProduct error',e);});
+    }).catch(function(e){
+      addNotif('❌ همگام‌سازی «'+(prod.title||prod.code)+'» با سایت شکست خورد: '+(e&&e.message?e.message:e));
+      console.error('autoSyncSingleProduct error',e);
+    });
   }
   if(prod.img){
     pushIt(prod.img);
@@ -1338,7 +1355,10 @@ function autoSyncDeleteProduct(docId){
   if(!initFirebase())return;
   fbDb.collection('products').doc(docId).delete().then(function(){
     addNotif('🗑️ محصول از سایت هم حذف شد');
-  }).catch(function(e){console.error('autoSyncDeleteProduct error',e);});
+  }).catch(function(e){
+    addNotif('❌ حذف محصول از سایت شکست خورد: '+(e&&e.message?e.message:e));
+    console.error('autoSyncDeleteProduct error',e);
+  });
 }
 function collectAllProducts(){
   var out=[];
@@ -3231,7 +3251,7 @@ function autoSyncBanners(){
 
 // ── VIP ──
 var VIP_PRODUCTS=[];
-var AUTO_SYNC_ENABLED=false;
+var AUTO_SYNC_ENABLED=true;
 function toggleAutoSync(checked){AUTO_SYNC_ENABLED=checked;save();}
 
 function vipSearch(q){
