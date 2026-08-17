@@ -633,6 +633,7 @@ input[type=file]{display:none}
       <label class="platform-cb pcb-tg"><input type="checkbox" id="SEND_TG2" checked><span>🔵 تلگرام کانال ۲</span></label>
     </div>
     <button class="sbig stg" onclick="sendToChannels()">🚀 تولید، ارسال و ذخیره در لیست قیمت</button>
+    <button class="sbig" id="SAVE_ONLY_BTN" style="display:none;margin-top:8px;background:#eddfc9;color:#3d2b1f" onclick="saveEditOnly()">💾 فقط ذخیره در سایت و لیست قیمت (بدون ارسال به تلگرام)</button>
     <div class="stat" id="SEND_STAT"></div>
 
     <div class="platform-row" style="margin-top:14px">
@@ -708,7 +709,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 10:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 11:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -5275,6 +5276,7 @@ function loadProductForEdit(el){
   var p=allProds().find(function(x){return String(x.rid)===String(rid);});
   if(!p)return;
   EDITING_RID=rid;
+  document.getElementById('SAVE_ONLY_BTN').style.display='block';
 
   var catBtn=null;
   document.querySelectorAll('#CG_CAT_CHIPS .chip').forEach(function(c){
@@ -5385,6 +5387,22 @@ function loadProductForEdit(el){
 function cancelEdit(){
   EDITING_RID=null;
   document.getElementById('EDIT_BANNER').style.display='none';
+  document.getElementById('SAVE_ONLY_BTN').style.display='none';
+}
+function saveEditOnly(){
+  var stat=document.getElementById('CG_STAT');
+  if(!EDITING_RID){stat.textContent='محصولی برای ویرایش انتخاب نشده — از دکمه‌ی «ویرایش این محصول» شروع کن';stat.className='stat serr';return;}
+  var data=buildCaptionData();
+  if(!data.code){stat.textContent='لطفاً حداقل کد محصول رو پر کن';stat.className='stat serr';return;}
+  var ok=updateExistingProduct(EDITING_RID,data);
+  if(ok){
+    stat.textContent='✅ فقط توی اپ و سایت ذخیره شد (چیزی به تلگرام ارسال نشد)';
+    stat.className='stat sok';
+    document.getElementById('SAVE_ONLY_BTN').style.display='none';
+  }else{
+    stat.textContent='خطا در ذخیره — دوباره امتحان کن';
+    stat.className='stat serr';
+  }
 }
 function updateExistingProduct(rid,data){
   var cdEl=document.getElementById('CD'+rid);if(!cdEl)return false;
