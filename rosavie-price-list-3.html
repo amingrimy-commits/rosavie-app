@@ -709,7 +709,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 11:30 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 12:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -5713,7 +5713,9 @@ function sendToChannels(){
   var data=buildCaptionData();
   if(!data.text){stat.textContent='لطفاً حداقل یکی از فیلدهای محصول را پر کن';stat.className='stat serr';return;}
   showCaptionPreview(data);
-  var caption=data.text;
+  var manualText=V('SEND_CAPTION');
+  var isManuallyEdited=!!(manualText&&manualText.trim()!==data.text.trim());
+  var caption=isManuallyEdited?manualText:data.text;
   var siteLinkText='🛍️✨ «برای خرید و بازدید در سایت کلیک کن» 🌟🎀';
   var displayLen=caption.length+(data.code?('\n\n'+siteLinkText).length:0);
   if(displayLen>1024){
@@ -5721,7 +5723,14 @@ function sendToChannels(){
     stat.className='stat serr';
     return;
   }
-  if(data.code){
+  if(isManuallyEdited){
+    if(data.code){
+      var siteUrlM=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
+      caption=escapeHtmlCaption(manualText)+'\n\n<a href="'+siteUrlM+'">'+siteLinkText+'</a>';
+    }else{
+      caption=escapeHtmlCaption(manualText);
+    }
+  }else if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
     var linkLine='<a href="'+siteUrl+'">'+siteLinkText+'</a>';
     caption=escapeHtmlCaption(data.topSection)+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml;
