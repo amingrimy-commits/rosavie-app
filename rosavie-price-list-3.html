@@ -330,20 +330,38 @@ input[type=file]{display:none}
       <button class="sbig" style="margin-top:8px;background:#eee2d0;color:#3d2b1f" onclick="toggleDoneOrders()" id="DONE_TOGGLE_BTN">📋 مشاهده سفارش‌های انجام‌شده</button>
       <div id="DONE_ORDERS_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
     </div>
-    <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">👥 مشتریان ثبت‌نام‌شده</div>
-      <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">مشتری‌هایی که توی سایت shop.html حساب کاربری ساختن، با شماره و آدرسشون اینجا نشون داده می‌شن.</p>
-      <div class="g1"><input class="fi" type="text" id="CUST2_SEARCH" placeholder="جستجو با نام، شماره، استان یا شهر..." oninput="renderCustomers2()"></div>
-      <div id="CUSTOMERS2_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px">در حال اتصال...</div>
-    </div>
-    <div class="card" style="border:2px solid #e0304f"><div class="ctitle">✉️ پیام‌های پشتیبانی از سایت</div>
-      <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">پیام‌هایی که مشتری‌ها از فرم «ارتباط با ما» توی سایت می‌فرستن، اینجا زنده نشون داده می‌شه.</p>
-      <div id="SUPPORTMSG_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
-      <button class="sbig" style="margin-top:8px;background:#eee2d0;color:#3d2b1f" onclick="toggleDoneSupportMsgs()" id="SUPPORTMSG_TOGGLE_BTN">📋 مشاهده پیام‌های جواب‌داده‌شده</button>
-      <div id="SUPPORTMSG_DONE_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
-    </div>
-    <div class="card" style="border:2px solid #b0517a"><div class="ctitle">💬 نظرات مشتریان روی محصولات</div>
-      <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">نظری که مشتری زیر هر محصول توی سایت می‌ذاره، اینجا زنده میاد. می‌تونی جواب بدی (روی سایت نشون داده می‌شه) یا در صورت نیاز (مثلاً توهین) پاکش کنی.</p>
-      <div id="REVIEWS_ADMIN_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
+    <div class="card" style="border:2px solid #7a5c1a"><div class="ctitle">🧾 ثبت دستی فاکتور جدید</div>
+      <div class="g1" style="background:#fbf6ee;border-radius:10px;padding:9px;border:1.5px dashed #d4a87a">
+        <span class="lbl">🔍 بازیابی فاکتور قبلی برای اصلاح (با شماره فاکتور، نام یا شماره مشتری)</span>
+        <input class="fi" type="text" id="INV_OLDSRCH" placeholder="مثلاً RV000123 یا اسم مشتری..." oninput="invOldInvoiceSearch(this.value)">
+        <div class="srch-res" id="INV_OLDSRCH_RES"></div>
+        <p style="font-size:0.62rem;color:#aaa;margin-top:5px">اگه چند روز بعد خواستی فاکتوری رو اصلاح کنی، از همین‌جا پیداش کن — با همون شماره فاکتور دوباره ثبت می‌شه، نه با شماره جدید.</p>
+      </div>
+      <div id="INV_RECEIPT_SHORTCUT" style="display:none;margin-top:8px"></div>
+      <div class="g1" style="margin-top:10px">
+        <span class="lbl">جستجوی مشتری قدیمی (نام یا شماره)</span>
+        <input class="fi" type="text" id="INV_CUSTSRCH" placeholder="تایپ کن تا مشتری‌های ثبت‌شده نشون داده بشن..." oninput="invCustSearch(this.value)">
+        <div class="srch-res" id="INV_CUSTSRCH_RES"></div>
+      </div>
+      <button class="sbig" style="background:#eddfc9;color:#9a6e3a;margin-top:2px" onclick="toggleInvNewCustomer()" id="INV_NEWCUST_TOGGLE">➕ مشتری جدید (ثبت در باشگاه مشتریان)</button>
+      <div id="INV_NEWCUST_CARD" style="display:none;margin-top:10px;padding-top:10px;border-top:1.5px dashed #eddfc9"></div>
+      <div class="g2" style="margin-top:12px">
+        <div><span class="lbl">نام مشتری</span><input class="fi" type="text" id="INV_CNAME" placeholder="مثال: زهرا محمدی"></div>
+        <div><span class="lbl">شماره تماس مشتری</span><input class="fi" type="text" id="INV_CPHONE" style="direction:ltr" placeholder="09xxxxxxxxx"></div>
+      </div>
+      <div class="g1">
+        <span class="lbl">جستجوی محصول برای افزودن به فاکتور</span>
+        <input class="fi" type="text" id="INVSRCH" placeholder="کد یا اسم محصول را بنویس..." oninput="invSearch(this.value)">
+        <div class="srch-res" id="INVSRCH_RES"></div>
+      </div>
+      <div id="INV_ITEMS"></div>
+      <div class="stat" id="INV_TOTAL_BOX" style="display:block;background:#eddfc9;color:#7a5c1a;font-weight:900;text-align:center">جمع کل: 0 تومان</div>
+      <div class="stat" id="INV_NUMBADGE" style="display:none;background:#3d2b1f;color:#d4a87a;text-align:center;font-weight:700"></div>
+      <button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="downloadManualInvoice()">📥 فقط دانلود PDF فاکتور</button>
+      <button class="sbig" style="background:#3d2b1f;color:#fff;margin-top:8px" onclick="shareManualInvoice()">📤 اشتراک‌گذاری فاکتور (واتساپ / تلگرام شخصی / هر اپ)</button>
+      <button class="sbig" style="background:#f3eee8;color:#b09070;margin-top:8px;border:1.5px dashed #d4a87a" onclick="startNewInvoice()">🆕 فاکتور جدید (پاک کردن سبد)</button>
+      <p style="font-size:0.66rem;color:#aaa;margin-top:6px;line-height:1.9">فاکتور می‌سازه، ثبت می‌کنه، و صفحه اشتراک‌گذاری گوشیت باز می‌شه تا از واتساپ، تلگرام شخصی خودت، یا هر اپ دیگه‌ای مستقیم برای مشتری بفرستی. بعد از ارسال، سبد پاک نمی‌شه — می‌تونی محصول اضافه/کم کنی و دوباره بفرستی، همون شماره فاکتور می‌مونه. وقتی کامل تموم شد، «فاکتور جدید» رو بزن.</p>
+      <div class="stat" id="INV_STAT"></div>
     </div>
     <button class="sett-qbtn" onclick="closeOrdersPanel();openAdmDrawer();showTab('pcust',document.querySelector('#ADMDR .tab[onclick*=pcust]'));">👥 مشاهده کامل باشگاه مشتریان</button>
   </div>
@@ -362,7 +380,7 @@ input[type=file]{display:none}
       </div>
       <div class="settings-section">
         <button class="sett-qbtn" onclick="closeSettingsPanel();hideSubNav();showTab('pstats',null);">📊 آمار</button>
-        <button class="sett-qbtn" onclick="closeSettingsPanel();openSiteGroup();">تنظیمات اتصال</button>
+        <button class="sett-qbtn" onclick="closeSettingsPanel();openSiteGroup();setTimeout(function(){var b=document.querySelector('#SUBNAV .tab:last-child');if(b)showTab('psettings',b);},50);">تنظیمات اتصال</button>
         <button class="sett-qbtn" onclick="closeSettingsPanel();openProductsGroup();showTab('pa',document.querySelector('#SUBNAV .tab:last-child'));">آرشیو</button>
       </div>
     </div>
@@ -477,39 +495,6 @@ input[type=file]{display:none}
       <div class="stat-widget-num" id="SW_TG2_POSTS" style="margin-top:6px">--</div>
       <div class="stat-widget-lbl">پست امروز</div>
     </div>
-  </div>
-  <div class="card"><div class="ctitle">🧾 نوشتن فاکتور جدید</div>
-    <div class="g1" style="background:#fbf6ee;border-radius:10px;padding:9px;border:1.5px dashed #d4a87a">
-      <span class="lbl">🔍 بازیابی فاکتور قبلی برای اصلاح (با شماره فاکتور، نام یا شماره مشتری)</span>
-      <input class="fi" type="text" id="INV_OLDSRCH" placeholder="مثلاً RV000123 یا اسم مشتری..." oninput="invOldInvoiceSearch(this.value)">
-      <div class="srch-res" id="INV_OLDSRCH_RES"></div>
-      <p style="font-size:0.62rem;color:#aaa;margin-top:5px">اگه برنامه بسته شد یا چند روز بعد خواستی فاکتوری رو اصلاح کنی، از همین‌جا پیداش کن — با همون شماره فاکتور دوباره ثبت می‌شه، نه با شماره جدید.</p>
-    </div>
-    <div id="INV_RECEIPT_SHORTCUT" style="display:none;margin-top:8px"></div>
-    <div class="g1" style="margin-top:10px">
-      <span class="lbl">جستجوی مشتری قدیمی (نام یا شماره)</span>
-      <input class="fi" type="text" id="INV_CUSTSRCH" placeholder="تایپ کن تا مشتری‌های ثبت‌شده نشون داده بشن..." oninput="invCustSearch(this.value)">
-      <div class="srch-res" id="INV_CUSTSRCH_RES"></div>
-    </div>
-    <button class="sbig" style="background:#eddfc9;color:#9a6e3a;margin-top:2px" onclick="toggleInvNewCustomer()" id="INV_NEWCUST_TOGGLE">➕ مشتری جدید (ثبت در باشگاه مشتریان)</button>
-    <div id="INV_NEWCUST_CARD" style="display:none;margin-top:10px;padding-top:10px;border-top:1.5px dashed #eddfc9"></div>
-    <div class="g2" style="margin-top:12px">
-      <div><span class="lbl">نام مشتری</span><input class="fi" type="text" id="INV_CNAME" placeholder="مثال: زهرا محمدی"></div>
-      <div><span class="lbl">شماره تماس مشتری</span><input class="fi" type="text" id="INV_CPHONE" style="direction:ltr" placeholder="09xxxxxxxxx"></div>
-    </div>
-    <div class="g1">
-      <span class="lbl">جستجوی محصول برای افزودن به فاکتور</span>
-      <input class="fi" type="text" id="INVSRCH" placeholder="کد یا اسم محصول را بنویس..." oninput="invSearch(this.value)">
-      <div class="srch-res" id="INVSRCH_RES"></div>
-    </div>
-    <div id="INV_ITEMS"></div>
-    <div class="stat" id="INV_TOTAL_BOX" style="display:block;background:#eddfc9;color:#7a5c1a;font-weight:900;text-align:center">جمع کل: 0 تومان</div>
-    <div class="stat" id="INV_NUMBADGE" style="display:none;background:#3d2b1f;color:#d4a87a;text-align:center;font-weight:700"></div>
-    <button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="downloadManualInvoice()">📥 فقط دانلود PDF فاکتور</button>
-    <button class="sbig" style="background:#3d2b1f;color:#fff;margin-top:8px" onclick="shareManualInvoice()">📤 اشتراک‌گذاری فاکتور (واتساپ / تلگرام شخصی / هر اپ)</button>
-    <button class="sbig" style="background:#f3eee8;color:#b09070;margin-top:8px;border:1.5px dashed #d4a87a" onclick="startNewInvoice()">🆕 فاکتور جدید (پاک کردن سبد)</button>
-    <p style="font-size:0.66rem;color:#aaa;margin-top:6px;line-height:1.9">فاکتور می‌سازه، ثبت می‌کنه، و صفحه اشتراک‌گذاری گوشیت باز می‌شه تا از واتساپ، تلگرام شخصی خودت، یا هر اپ دیگه‌ای مستقیم برای مشتری بفرستی. شماره کارت و شبا هم خودکار توی متن پیام نوشته می‌شه. بعد از ارسال، سبد پاک نمی‌شه — می‌تونی محصول اضافه/کم کنی و دوباره بفرستی، همون شماره فاکتور می‌مونه و توی گزارش جایگزین نسخه قبلی می‌شه. وقتی کامل تموم شد، «فاکتور جدید» رو بزن.</p>
-    <div class="stat" id="INV_STAT"></div>
   </div>
 
 </div>
@@ -873,8 +858,25 @@ input[type=file]{display:none}
   </div>
 </div>
 
+<div class="pg" id="psite">
+  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">👥 مشتریان ثبت‌نام‌شده</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">مشتری‌هایی که توی سایت shop.html حساب کاربری ساختن، با شماره و آدرسشون اینجا نشون داده می‌شن.</p>
+    <div class="g1"><input class="fi" type="text" id="CUST2_SEARCH" placeholder="جستجو با نام، شماره، استان یا شهر..." oninput="renderCustomers2()"></div>
+    <div id="CUSTOMERS2_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px">در حال اتصال...</div>
+  </div>
+  <div class="card" style="border:2px solid #e0304f"><div class="ctitle">✉️ پیام‌های پشتیبانی از سایت</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">پیام‌هایی که مشتری‌ها از فرم «ارتباط با ما» توی سایت می‌فرستن، اینجا زنده نشون داده می‌شه.</p>
+    <div id="SUPPORTMSG_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
+    <button class="sbig" style="margin-top:8px;background:#eee2d0;color:#3d2b1f" onclick="toggleDoneSupportMsgs()" id="SUPPORTMSG_TOGGLE_BTN">📋 مشاهده پیام‌های جواب‌داده‌شده</button>
+    <div id="SUPPORTMSG_DONE_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
+  </div>
+  <div class="card" style="border:2px solid #b0517a"><div class="ctitle">💬 نظرات مشتریان روی محصولات</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">نظری که مشتری زیر هر محصول توی سایت می‌ذاره، اینجا زنده میاد. می‌تونی جواب بدی (روی سایت نشون داده می‌شه) یا در صورت نیاز (مثلاً توهین) پاکش کنی.</p>
+    <div id="REVIEWS_ADMIN_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
+  </div>
+</div>
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-09 01:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-09 02:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1057,16 +1059,98 @@ function renderOrdersList(list){
       if(it.color)line+=' — رنگ/سایز: '+it.color;
       return line;
     }).join('<br>');
-    return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
+    return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px" data-order-id="'+o._id+'">'+
       '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+fmtP(o.total)+'</span></div>'+
       '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">شماره سفارش: '+o.orderNo+'</div>'+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       (o.note?'<div style="color:#9a6e3a;font-size:0.72rem;margin-top:4px">یادداشت: '+o.note+'</div>':'')+
-      '<div style="display:flex;gap:8px;margin-top:8px">'+
-        '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.72rem">☎️ '+(o.customerPhone||'')+'</a>'+
-        '<button onclick="markOrderDone(\''+o._id+'\')" style="flex:1;background:#2a9d5c;color:#fff;border:none;border-radius:8px;font-size:0.72rem;cursor:pointer">✅ انجام شد</button>'+
-      '</div></div>';
+      '<div style="display:flex;gap:6px;margin-top:8px">'+
+        '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
+        '<button onclick="toggleEditOrder(\''+o._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✏️ ویرایش</button>'+
+        '<button onclick="cancelOrder(\''+o._id+'\')" style="flex:1;background:#e05a5a;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">❌ لغو</button>'+
+        '<button onclick="showConfirmOrderForm(\''+o._id+'\')" style="flex:1;background:#2a9d5c;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✅ تایید سفارش</button>'+
+      '</div>'+
+      '<div id="ORDEDIT_'+o._id+'" style="display:none;margin-top:8px;padding:9px;background:#f0f6ff;border-radius:8px;border:1.5px dashed #4a9dff">'+
+        '<div id="ORDEDIT_ITEMS_'+o._id+'">'+(o.items||[]).map(function(it,i){
+          return '<div class="ordedit-row" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.72rem">'+
+            '<span style="flex:1">'+it.title+(it.color?(' — '+it.color):'')+'</span>'+
+            '<input type="text" value="'+it.qty+'" data-oi="'+i+'" class="fi" style="width:50px;padding:4px;text-align:center">'+
+            '<button onclick="this.parentElement.remove()" style="background:#e05a5a;color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button>'+
+          '</div>';
+        }).join('')+'</div>'+
+        '<button onclick="saveOrderEdit(\''+o._id+'\')" style="width:100%;background:#4a9dff;color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.72rem;cursor:pointer;font-weight:700">💾 ذخیره تغییرات سفارش</button>'+
+      '</div>'+
+      '<div id="ORDCONF_'+o._id+'" style="display:none;margin-top:8px;padding:9px;background:#fbf6ee;border-radius:8px;border:1.5px dashed #d4a87a">'+
+        '<div style="font-size:0.7rem;color:#9a6e3a;margin-bottom:6px">شماره پیگیری/رسید واریزی رو وارد کن — تا این رو پر نکنی، سفارش نهایی نمی‌شه و توی گزارش فروش و باشگاه مشتریان حساب نمی‌شه.</div>'+
+        '<input class="fi" type="text" id="ORDRCPT_'+o._id+'" placeholder="مثلاً شماره پیگیری بانک یا توضیح رسید" style="margin-bottom:6px">'+
+        '<button onclick="confirmOrderFinal(\''+o._id+'\')" style="width:100%;background:#2a9d5c;color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.72rem;cursor:pointer;font-weight:700">✅ ثبت نهایی سفارش</button>'+
+      '</div>'+
+    '</div>';
   }).join('');
+}
+function toggleEditOrder(id){
+  var box=document.getElementById('ORDEDIT_'+id);
+  if(box)box.style.display=box.style.display==='none'?'block':'none';
+}
+function saveOrderEdit(id){
+  if(!fbDb)return;
+  var wrap=document.getElementById('ORDEDIT_ITEMS_'+id);
+  if(!wrap)return;
+  var rows=wrap.querySelectorAll('.ordedit-row');
+  fbDb.collection('orders').doc(id).get().then(function(doc){
+    if(!doc.exists)return;
+    var o=doc.data();
+    var origItems=o.items||[];
+    var newItems=[];
+    rows.forEach(function(row){
+      var input=row.querySelector('input[data-oi]');
+      var idx=parseInt(input.getAttribute('data-oi'));
+      var qty=parseInt(toEnDigits(input.value))||0;
+      if(qty>0&&origItems[idx]){
+        var it=Object.assign({},origItems[idx]);
+        it.qty=qty;
+        newItems.push(it);
+      }
+    });
+    var newTotal=newItems.reduce(function(s,it){return s+((Number(it.price)||0)*it.qty);},0);
+    fbDb.collection('orders').doc(id).update({items:newItems,total:newTotal}).then(function(){
+      addNotif('✏️ سفارش «'+o.orderNo+'» ویرایش شد');
+      toggleEditOrder(id);
+    }).catch(function(err){console.error('saveOrderEdit error',err);alert('خطا در ذخیره تغییرات');});
+  });
+}
+function showConfirmOrderForm(id){
+  var box=document.getElementById('ORDCONF_'+id);
+  if(box)box.style.display=box.style.display==='none'?'block':'none';
+}
+function cancelOrder(id){
+  if(!fbDb)return;
+  if(!confirm('مطمئنی می‌خوای این سفارش رو لغو کنی؟'))return;
+  fbDb.collection('orders').doc(id).update({status:'cancelled'}).then(function(){
+    addNotif('❌ سفارش لغو شد');
+  }).catch(function(err){console.error('cancelOrder error',err);});
+}
+function confirmOrderFinal(id){
+  var rcptEl=document.getElementById('ORDRCPT_'+id);
+  var rcpt=rcptEl?rcptEl.value.trim():'';
+  if(!rcpt){alert('لطفاً شماره پیگیری یا توضیح رسید واریزی رو وارد کن');return;}
+  if(!fbDb)return;
+  fbDb.collection('orders').doc(id).get().then(function(doc){
+    if(!doc.exists)return;
+    var o=doc.data();
+    var dupCustomer=findCustomerByPhone(o.customerPhone)||findCustomerByName(o.customerName);
+    var forceNew=false;
+    if(dupCustomer&&dupCustomer.name!==o.customerName){
+      var replace=confirm('یه مشتری با این شماره/اسم قبلاً توی باشگاه مشتریان هست («'+dupCustomer.name+'»).\n\nOK بزن تا اطلاعاتش با این سفارش به‌روز بشه (همون مشتری در نظر گرفته بشه).\nCancel بزن اگه فکر می‌کنی این یه مشتری کاملاً جدیدست.');
+      if(!replace)forceNew=true;
+    }
+    var itemsSummary=(o.items||[]).map(function(it){return it.title+' ×'+it.qty;}).join('، ');
+    var cartForInvoice=(o.items||[]).map(function(it){return {title:it.title,code:it.code||'--',qty:it.qty,price:it.price,minO:'1',colors:it.color||''};});
+    fbDb.collection('orders').doc(id).update({status:'confirmed',receiptRef:rcpt,confirmedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+      logInvoice(o.customerName,o.customerPhone,itemsSummary,o.total,o.orderNo,cartForInvoice,forceNew);
+      addNotif('✅ سفارش «'+o.orderNo+'» تایید و به فاکتور و باشگاه مشتریان اضافه شد');
+    }).catch(function(err){console.error('confirmOrderFinal error',err);});
+  });
 }
 function markOrderDone(id){
   if(!fbDb)return;
@@ -1338,9 +1422,69 @@ function renderCustomers2(){
         (addrLine?'<div style="color:#3d2b1f;font-size:0.74rem;margin-top:4px">'+addrLine+'</div>':'')+
         (c.address?'<div style="color:#3d2b1f;font-size:0.72rem;margin-top:3px">'+c.address+(c.postal?' — کدپستی '+c.postal:'')+'</div>':'')+
         '<div style="color:#9a6e3a;font-size:0.68rem;margin-top:5px">'+termsLine+'</div>'+
-        '<a href="tel:'+(c.phone||'')+'" style="display:block;text-align:center;background:#3d2b1f;color:#fff;padding:6px;border-radius:8px;text-decoration:none;font-size:0.7rem;margin-top:7px">☎️ تماس</a>'+
+        '<div style="display:flex;gap:6px;margin-top:7px">'+
+        '<a href="tel:'+(c.phone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:6px;border-radius:8px;text-decoration:none;font-size:0.7rem">☎️ تماس</a>'+
+        '<button onclick="showAddSiteCustomerForm(\''+c._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:6px">✏️ ویرایش و ورود به باشگاه</button>'+
+        '</div>'+
+        '<div id="SCFORM_'+c._id+'" style="display:none;margin-top:9px;padding:9px;background:#f0f6ff;border-radius:8px;border:1.5px dashed #4a9dff"></div>'+
         '</div>';
     }).join('');
+}
+function showAddSiteCustomerForm(cid){
+  var c=CUSTOMERS2.find(function(x){return x._id===cid;});
+  if(!c)return;
+  var box=document.getElementById('SCFORM_'+cid);
+  if(!box)return;
+  if(box.style.display==='block'){box.style.display='none';return;}
+  var h='';
+  h+='<div class="g2">';
+  h+='<div><span class="lbl">نام و نام‌خانوادگی</span><input class="fi" type="text" id="SCF_NAME_'+cid+'" value="'+escAttr(c.name)+'"></div>';
+  h+='<div><span class="lbl">شماره موبایل</span><input class="fi" type="text" id="SCF_PHONE_'+cid+'" style="direction:ltr" value="'+escAttr(c.phone)+'"></div>';
+  h+='<div><span class="lbl">استان</span><select class="fi" id="SCF_PROVINCE_'+cid+'">'+provinceOptionsHtml(c.province||'')+'</select></div>';
+  h+='<div><span class="lbl">شهر/محله</span><input class="fi" type="text" id="SCF_HOOD_'+cid+'" value="'+escAttr(c.city)+'"></div>';
+  h+='</div>';
+  h+='<div class="g1"><span class="lbl">آدرس</span><input class="fi" type="text" id="SCF_ADDR_'+cid+'" value="'+escAttr(c.address)+'"></div>';
+  h+='<div class="g1"><span class="lbl">کد پستی (اختیاری، ۱۰ رقمی — هرکسی نداره، خالی هم اشکالی نداره)</span><input class="fi" type="text" style="direction:ltr" id="SCF_POSTAL_'+cid+'" maxlength="10" placeholder="مثال: 1234567890" value="'+escAttr(c.postal)+'"></div>';
+  h+='<button class="sbig stg2" onclick="saveAddSiteCustomerForm(\''+cid+'\')">✅ تأیید و افزودن به باشگاه</button>';
+  box.innerHTML=h;
+  box.style.display='block';
+}
+function saveAddSiteCustomerForm(cid){
+  var c=CUSTOMERS2.find(function(x){return x._id===cid;});
+  if(!c)return;
+  var name=V('SCF_NAME_'+cid);
+  if(!name){alert('لطفاً نام مشتری را وارد کن');return;}
+  var postal=toEnDigits(V('SCF_POSTAL_'+cid)).replace(/[^0-9]/g,'');
+  if(postal&&postal.length!==10){alert('کد پستی باید دقیقاً ۱۰ رقم باشد (یا خالی بذارش)');return;}
+  var edited={
+    name:name,phone:V('SCF_PHONE_'+cid),
+    province:V('SCF_PROVINCE_'+cid),city:V('SCF_HOOD_'+cid),
+    address:V('SCF_ADDR_'+cid),postal:postal
+  };
+  var dup=findCustomerByPhone(edited.phone)||findCustomerByName(edited.name);
+  var forceNew=false;
+  if(dup&&dup.name!==edited.name){
+    var replace=confirm('یه مشتری با این شماره/اسم قبلاً توی باشگاه مشتریان هست («'+dup.name+'»).\n\nOK بزن تا همون مشتری در نظر گرفته بشه و اطلاعاتش به‌روز بشه.\nCancel بزن اگه فکر می‌کنی این یه مشتری کاملاً جدیدست.');
+    if(!replace)forceNew=true;
+  }
+  var today=new Date().toISOString().slice(0,10);
+  var target=forceNew?null:(findCustomerByPhone(edited.phone)||findCustomerByName(edited.name));
+  if(!target){
+    target={id:custUid(),name:edited.name,phone:edited.phone,birthdate:'',discountCode:'',loyaltyPoints:0,address:edited.address,postalCode:postal,province:edited.province,neighborhood:edited.city,location:null,notes:'وارد شده از مشتریان ثبت‌نام‌شده‌ی سایت (بدون خرید)',createdAt:today,updatedAt:today,purchases:[]};
+    CUSTOMERS.unshift(target);
+  }else{
+    target.name=edited.name;target.phone=edited.phone;
+    target.address=edited.address;target.postalCode=postal;
+    target.province=edited.province;target.neighborhood=edited.city;
+    target.updatedAt=today;
+  }
+  saveCustomers();
+  var pg=document.getElementById('pcust');
+  if(pg&&pg.classList.contains('on'))renderCustomerList();
+  addNotif('👥 «'+(edited.name||edited.phone)+'» به باشگاه مشتریان اضافه شد');
+  showToast('به باشگاه مشتریان اضافه شد ✅');
+  var box=document.getElementById('SCFORM_'+cid);
+  if(box)box.style.display='none';
 }
 var CUSTOMERS2_SEEN_IDS={},CUSTOMERS2_FIRST_LOAD=true;
 function startCustomersListener(){
@@ -1862,6 +2006,36 @@ function showBackupNotice(msg,isErr){
   clearTimeout(window._abToastTimer);
   window._abToastTimer=setTimeout(function(){el.style.display='none';},6000);
 }
+var _eventBackupTimer=null;
+function scheduleEventBackup(){
+  if(_eventBackupTimer)clearTimeout(_eventBackupTimer);
+  _eventBackupTimer=setTimeout(silentEventBackup,8000);
+}
+function silentEventBackup(){
+  var token=V('TGK'),backupCid=V('BACKUPCID');
+  if(!token||!backupCid)return;
+  try{
+    var exportObj={customers:CUSTOMERS,invoiceLog:INVOICE_LOG,exportedAt:new Date().toISOString(),type:'event-triggered'};
+    var jsonStr=JSON.stringify(exportObj);
+    var blob=new Blob([jsonStr],{type:'application/json'});
+    var fname='rosavie-backup-event-'+new Date().toISOString().slice(0,10)+'.json';
+    var fd=new FormData();
+    fd.append('chat_id',backupCid);
+    fd.append('document',blob,fname);
+    fd.append('caption','📦 پشتیبان خودکار (بعد از ثبت مشتری/فاکتور جدید) — '+new Date().toLocaleString('fa-IR'));
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST','https://api.telegram.org/bot'+token+'/sendDocument',true);
+    xhr.timeout=60000;
+    xhr.onload=function(){
+      try{
+        var r=JSON.parse(xhr.responseText);
+        if(r.ok)addNotif('📦 پشتیبان خودکار مشتریان/فاکتورها بعد از تغییر، به تلگرام ارسال شد');
+      }catch(e){}
+    };
+    xhr.onerror=function(){};
+    xhr.send(fd);
+  }catch(e){console.error('silentEventBackup error',e);}
+}
 function doAutoBackup(slotLabel){
   var metaRaw=localStorage.getItem('rv10');
   var meta=metaRaw?JSON.parse(metaRaw):{};
@@ -2127,7 +2301,7 @@ function showTab(id,btn){
     updateLastReportInfo();
   }
   if(id==='pcat'){initBanners();renderVipList();}
-  if(id==='pf'){renderInvItems();renderReport(CUR_REPORT_PERIOD);updateLastReportInfo();}
+  if(id==='pf'){initHomeStatWidgets();}
   if(id==='pcust'){renderCustomerList();}
 }
 function hideSubNav(){var el=document.getElementById('SUBNAV');if(el)el.style.display='none';}
@@ -2138,7 +2312,7 @@ var PRODUCTS_GROUP_TABS=[
   {id:'ppdf',l:'PDF'},{id:'ps',l:'جستجو'},{id:'pa',l:'آرشیو'}
 ];
 var SITE_GROUP_TABS=[
-  {id:'psettings',l:'تنظیمات اتصال'}
+  {id:'psite',l:'سایت'},{id:'psettings',l:'تنظیمات اتصال'}
 ];
 function renderSubNavAndOpen(list,defaultId){
   var el=document.getElementById('SUBNAV');
@@ -2151,7 +2325,7 @@ function renderSubNavAndOpen(list,defaultId){
   showTab(defaultId,defBtn);
 }
 function openProductsGroup(){renderSubNavAndOpen(PRODUCTS_GROUP_TABS,'p1');}
-function openSiteGroup(){renderSubNavAndOpen(SITE_GROUP_TABS,'psettings');}
+function openSiteGroup(){renderSubNavAndOpen(SITE_GROUP_TABS,'psite');}
 
 // ── منوی همبرگری (تب‌ها) ──
 function openAdmDrawer(){document.getElementById('ADMDR').classList.add('open');document.getElementById('ADMOV').classList.add('open');document.body.style.overflow='hidden';}
@@ -2205,6 +2379,7 @@ function openOrdersPanel(){
   document.body.style.overflow='hidden';
   NEW_CUSTOMERS_COUNT=0;
   updateOrdersDot();
+  renderInvItems();
 }
 function closeOrdersPanel(){
   document.getElementById('ORDERSPANEL').classList.remove('open');
@@ -3929,19 +4104,19 @@ function buildManualInvoiceHTML(cName,cPhone,invNum,cartOverride){
   h+='<div style="text-align:center;margin-top:20px;font-size:0.68rem;color:#aaa">Rosa Vie | رُزاوی — 09190134599</div></div>';
   return h;
 }
-function logInvoice(cName,cPhone,items,total,invoiceNumber,cart){
+function logInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer){
   invoiceNumber=invoiceNumber||nextInvoiceNumber();
   var entry={date:Date.now(),customerName:cName,customerPhone:cPhone,items:items,total:total,invoiceNumber:invoiceNumber,cart:cart||null};
   var existingIdx=-1;
   for(var i=0;i<INVOICE_LOG.length;i++){if(INVOICE_LOG[i].invoiceNumber===invoiceNumber){existingIdx=i;break;}}
   if(existingIdx>-1)INVOICE_LOG[existingIdx]=entry;else INVOICE_LOG.push(entry);
   saveInvoiceLog();
-  upsertCustomerFromInvoice(cName,cPhone,items,total,invoiceNumber,cart);
+  upsertCustomerFromInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer);
 }
 
 // ── باشگاه مشتریان (CRM) ──
 function loadCustomers(){try{var raw=localStorage.getItem('rv_customers');CUSTOMERS=raw?JSON.parse(raw):[];}catch(e){CUSTOMERS=[];}}
-function saveCustomers(){try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}}
+function saveCustomers(){try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}scheduleEventBackup();}
 function custUid(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function showToast(msg){
   var old=document.querySelector('.toast');if(old)old.remove();
@@ -4175,7 +4350,7 @@ function findPurchaseLocation(invoiceNumber){
   }
   return null;
 }
-function upsertCustomerFromInvoice(cName,cPhone,itemsSummary,total,invoiceNumber,cart){
+function upsertCustomerFromInvoice(cName,cPhone,itemsSummary,total,invoiceNumber,cart,forceNew){
   invoiceNumber=invoiceNumber||nextInvoiceNumber();
   var today=new Date().toISOString().slice(0,10);
   var existingLoc=findPurchaseLocation(invoiceNumber);
@@ -4184,7 +4359,7 @@ function upsertCustomerFromInvoice(cName,cPhone,itemsSummary,total,invoiceNumber
     existingPurchase=existingLoc.customer.purchases[existingLoc.index];
     existingLoc.customer.purchases.splice(existingLoc.index,1);
   }
-  var c=findCustomerByPhone(cPhone)||findCustomerByName(cName);
+  var c=forceNew?null:(findCustomerByPhone(cPhone)||findCustomerByName(cName));
   if(!c){
     c={id:custUid(),name:cName||'',phone:cPhone||'',birthdate:'',discountCode:'',loyaltyPoints:0,address:'',postalCode:'',province:'',neighborhood:'',location:null,notes:'',createdAt:today,updatedAt:today,purchases:[]};
     CUSTOMERS.unshift(c);
@@ -4897,7 +5072,7 @@ function renderInvNumBadge(){
 var INVOICE_LOG=[];
 var CUR_REPORT_PERIOD='day';
 function loadInvoiceLog(){try{var raw=localStorage.getItem('rv_invoice_log');INVOICE_LOG=raw?JSON.parse(raw):[];}catch(e){INVOICE_LOG=[];}}
-function saveInvoiceLog(){try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}}
+function saveInvoiceLog(){try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}scheduleEventBackup();}
 function setReportPeriod(period,btn){
   CUR_REPORT_PERIOD=period;
   document.querySelectorAll('#pf .chip').forEach(function(c){c.classList.remove('on');});
