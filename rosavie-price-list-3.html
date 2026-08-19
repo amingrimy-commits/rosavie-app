@@ -41,7 +41,8 @@ body.dark-mode .sett-qbtn{background:#2a2119;border-color:#4a3d2e;color:#ecdfd0}
 body.dark-mode .stat{background:#2a2119}
 body.dark-mode input,body.dark-mode textarea{color-scheme:dark}
 #ORDERS_LIST{word-break:break-word;overflow-wrap:anywhere}
-.hdr{background:#3d2b1f;color:#f9f0e8;text-align:center;padding:16px}
+.hdr{background:#3d2b1f;color:#f9f0e8;text-align:center;padding:16px;position:relative}
+.hdr-sig{position:absolute;top:6px;right:10px;font-size:0.245rem;color:#d4a87a;opacity:0.55;letter-spacing:0.5px}
 .hdr h1{font-size:1.4rem;font-weight:900;letter-spacing:4px}
 .hdr p{font-size:0.68rem;color:#d4a87a;letter-spacing:3px;margin-top:2px}
 .topbar{background:#5a3d28;padding:8px 12px;display:flex;flex-wrap:wrap;justify-content:center;gap:7px}
@@ -81,6 +82,15 @@ body.dark-mode input,body.dark-mode textarea{color-scheme:dark}
 .notif-panel-close{width:34px;height:34px;border-radius:50%;background:#f9f0e8;border:1px solid #e2cdb0;color:#3d2b1f;font-size:1rem;cursor:pointer;flex-shrink:0}
 .notif-panel-body{padding:10px 12px 24px}
 .settings-section{border-bottom:1px solid #f0e6d8;padding:8px 2px;margin-bottom:2px}
+.stats-outer{border:2px solid #d4a87a;border-radius:12px;padding:10px 10px 4px;margin-top:12px;background:#fffdf9}
+.stats-outer-title{font-size:0.95rem;font-weight:900;color:#3d2b1f;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid #d4a87a}
+.stats-group{border-bottom:1.5px dashed #eddfc9;padding:4px 2px 10px;margin-bottom:10px}
+.stats-group:last-child{border-bottom:none;margin-bottom:0}
+body.dark-mode .stats-outer{background:#241c15;border-color:#8a6a3a}
+body.dark-mode .stats-outer-title{color:#f0dfc0;border-color:#8a6a3a}
+.stats-group-title{font-size:0.8rem;font-weight:900;color:#7a5a2a;margin-bottom:6px;padding-bottom:6px;border-bottom:1.5px solid #e2cdb0}
+body.dark-mode .stats-group{border-color:#4a3d2e}
+body.dark-mode .stats-group-title{color:#d4a87a}
 .settings-section:last-child{border-bottom:none}
 .settings-section-title{font-size:0.72rem;font-weight:900;color:#9a6e3a;margin-bottom:4px}
 .sett-qbtn{display:block;width:100%;text-align:right;background:#f9f0e8;border:1px solid #eddfc9;border-radius:8px;padding:9px 10px;margin-top:6px;font-size:0.76rem;color:#5a4a3a;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif}
@@ -278,6 +288,7 @@ input[type=file]{display:none}
 </head>
 <body>
 <div class="hdr">
+  <span class="hdr-sig">A♡R</span>
   <h1>ROSA VIE</h1><p>under wear</p>
   <div class="adm-topctl">
     <div style="display:flex;gap:6px">
@@ -341,44 +352,19 @@ input[type=file]{display:none}
 <div class="notif-panel" id="SETTPANEL">
   <div class="notif-panel-head"><span>⚙️ تنظیمات</span><button class="notif-panel-close" onclick="closeSettingsPanel()">✕</button></div>
   <div class="notif-panel-body">
-    <div class="settings-section">
-      <div class="settings-section-title">🔗 وضعیت اتصال به سرور</div>
-      <div id="SETT_CONN_STATUS" style="font-size:0.76rem;color:#6a5a4a;display:flex;align-items:center;gap:7px;padding:6px 2px">
-        <span id="SETT_CONN_DOT" style="width:10px;height:10px;border-radius:50%;background:#888;flex-shrink:0"></span>
-        <span id="SETT_CONN_TEXT">در حال بررسی...</span>
+    <div id="SETT_TAB_GENERAL">
+      <div class="settings-section">
+        <div class="settings-section-title">🎨 نمایش</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#5a4a3a;padding:6px 2px;cursor:pointer">
+          <input type="checkbox" id="DARKMODE_CHK" style="width:17px;height:17px" onchange="toggleDarkMode(this.checked)">
+          حالت تیره (دارک‌مود)
+        </label>
       </div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">📊 بازدید سایت</div>
-      <div id="SETT_ANALYTICS" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">📢 تعداد اعضای کانال‌های تلگرام</div>
-      <div id="SETT_TG_MEMBERS" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">📮 فعالیت پست‌گذاری کانال‌ها</div>
-      <div id="SETT_CHANNEL_ACTIVITY" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">🎨 نمایش</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#5a4a3a;padding:6px 2px;cursor:pointer">
-        <input type="checkbox" id="DARKMODE_CHK" style="width:17px;height:17px" onchange="toggleDarkMode(this.checked)">
-        حالت تیره (دارک‌مود)
-      </label>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">🔄 همگام‌سازی با سایت</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#5a4a3a;padding:6px 2px;cursor:pointer">
-        <input type="checkbox" id="SETT_AUTOSYNC_CHK" style="width:17px;height:17px" onchange="toggleAutoSync(this.checked);syncAutoSyncCheckboxes()">
-        همگام‌سازی خودکار محصولات
-      </label>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">🚀 دسترسی سریع</div>
-      <button class="sett-qbtn" onclick="closeSettingsPanel();openSiteGroup();">تنظیمات کانال‌های تلگرام</button>
-      <button class="sett-qbtn" onclick="closeSettingsPanel();openProductsGroup();showTab('pa',document.querySelector('#SUBNAV .tab:last-child'));">آرشیو محصولات</button>
-      <button class="sett-qbtn" onclick="closeSettingsPanel();openNotifPanel();">اعلان‌ها</button>
+      <div class="settings-section">
+        <button class="sett-qbtn" onclick="closeSettingsPanel();hideSubNav();showTab('pstats',null);">📊 آمار</button>
+        <button class="sett-qbtn" onclick="closeSettingsPanel();openSiteGroup();">تنظیمات اتصال</button>
+        <button class="sett-qbtn" onclick="closeSettingsPanel();openProductsGroup();showTab('pa',document.querySelector('#SUBNAV .tab:last-child'));">آرشیو</button>
+      </div>
     </div>
   </div>
 </div>
@@ -459,8 +445,8 @@ input[type=file]{display:none}
   </div>
 </div>
 <div class="pg" id="pa">
-  <div class="card"><div class="ctitle">آرشیو محصولات ناموجود</div>
-    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:10px">محصولاتی که بیش از 4 روز ناموجود بمانند، اینجا میآیند و از PDF حذف میشوند.</p>
+  <div class="card"><div class="ctitle">آرشیو</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:10px">محصولاتی که بیش از ۲ روز ناموجود بمانند، اینجا میان و از سایت و PDF حذف می‌شن.</p>
     <div id="ARCH_LIST"></div>
     <div class="stat" id="ASTAT"></div>
   </div>
@@ -526,26 +512,56 @@ input[type=file]{display:none}
     <div class="stat" id="INV_STAT"></div>
   </div>
 
-  <div class="card"><div class="ctitle">📊 گزارش فروش</div>
-    <div class="chips" style="margin-bottom:12px">
-      <button class="chip on" onclick="setReportPeriod('day',this)">امروز</button>
-      <button class="chip" onclick="setReportPeriod('week',this)">این هفته</button>
-      <button class="chip" onclick="setReportPeriod('month',this)">این ماه</button>
-      <button class="chip" onclick="setReportPeriod('year',this)">امسال</button>
-    </div>
-    <div class="g1"><input class="fi" type="text" id="REPORT_SEARCH" placeholder="جستجو با شماره فاکتور یا نام مشتری..." oninput="renderReport(CUR_REPORT_PERIOD)"></div>
-    <div id="REPORT_STATS"></div>
-    <div id="REPORT_LIST"></div>
-  </div>
-
-  <div class="card"><div class="ctitle">📬 ارسال گزارش هفتگی</div>
-    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">هر جمعه صبح که اپ را باز کنی، گزارش هفته گذشته خودکار ارسال می‌شود (تنظیمات شناسه گروه در تب «تنظیمات کانال‌ها»).</p>
-    <button class="sbig stg2" onclick="sendWeeklyReportNow()">📤 ارسال گزارش این هفته همین الان</button>
-    <div class="stat" id="WRSTAT"></div>
-    <p style="font-size:0.7rem;color:#aaa;margin-top:8px" id="LAST_REPORT_INFO"></p>
-  </div>
 </div>
 
+<div class="pg" id="pstats">
+  <div class="stats-outer">
+    <div class="stats-outer-title">📊 آمارها</div>
+    <div class="stats-group">
+      <div class="stats-group-title">👁️ آمار بازدید و فالور</div>
+      <div class="settings-section">
+        <div class="settings-section-title">📊 بازدید سایت</div>
+        <div id="SETT_ANALYTICS" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">📢 تعداد اعضای کانال‌های تلگرام</div>
+        <div id="SETT_TG_MEMBERS" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
+      </div>
+    </div>
+    <div class="stats-group">
+      <div class="stats-group-title">📝 آمار محتواسازی</div>
+      <div class="settings-section">
+        <div class="settings-section-title">🌐 محتوای سایت</div>
+        <div id="SETT_CONTENT_ACTIVITY" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">📮 پست‌گذاری کانال‌ها</div>
+        <div id="SETT_CHANNEL_ACTIVITY" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
+      </div>
+    </div>
+    <div class="stats-group">
+      <div class="stats-group-title">💰 گزارش فروش</div>
+      <div class="settings-section">
+        <div class="chips" style="margin-bottom:12px">
+          <button class="chip on" onclick="setReportPeriod('day',this)">امروز</button>
+          <button class="chip" onclick="setReportPeriod('week',this)">این هفته</button>
+          <button class="chip" onclick="setReportPeriod('month',this)">این ماه</button>
+          <button class="chip" onclick="setReportPeriod('year',this)">امسال</button>
+        </div>
+        <div class="g1"><input class="fi" type="text" id="REPORT_SEARCH" placeholder="جستجو با شماره فاکتور یا نام مشتری..." oninput="renderReport(CUR_REPORT_PERIOD)"></div>
+        <div id="REPORT_STATS"></div>
+        <div id="REPORT_LIST"></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">📬 ارسال گزارش هفتگی</div>
+        <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:9px">هر جمعه صبح که اپ را باز کنی، گزارش هفته گذشته خودکار ارسال می‌شود (تنظیمات شناسه گروه در تب «تنظیمات اتصال»).</p>
+        <button class="sbig stg2" onclick="sendWeeklyReportNow()">📤 ارسال گزارش این هفته همین الان</button>
+        <div class="stat" id="WRSTAT"></div>
+        <p style="font-size:0.66rem;color:#aaa;margin-top:8px" id="LAST_REPORT_INFO"></p>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="pg" id="pcust">
   <div class="card">
     <div class="ctitle">👥 باشگاه مشتریان</div>
@@ -858,7 +874,7 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-08 21:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-09 01:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -2099,9 +2115,17 @@ function preloadAll(cb){
 function showTab(id,btn){
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
-  document.getElementById(id).classList.add('on');btn.classList.add('on');
+  document.getElementById(id).classList.add('on');if(btn)btn.classList.add('on');
   if(id==='ps')doSearch();
   if(id==='pa'){checkArchive();renderArchive();}
+  if(id==='pstats'){
+    loadSiteAnalytics();
+    loadTelegramMemberCounts();
+    loadContentActivity();
+    loadChannelActivity();
+    renderReport(CUR_REPORT_PERIOD);
+    updateLastReportInfo();
+  }
   if(id==='pcat'){initBanners();renderVipList();}
   if(id==='pf'){renderInvItems();renderReport(CUR_REPORT_PERIOD);updateLastReportInfo();}
   if(id==='pcust'){renderCustomerList();}
@@ -2114,7 +2138,7 @@ var PRODUCTS_GROUP_TABS=[
   {id:'ppdf',l:'PDF'},{id:'ps',l:'جستجو'},{id:'pa',l:'آرشیو'}
 ];
 var SITE_GROUP_TABS=[
-  {id:'pcat',l:'فایل جستجو'},{id:'psettings',l:'تنظیمات کانال‌ها'}
+  {id:'psettings',l:'تنظیمات اتصال'}
 ];
 function renderSubNavAndOpen(list,defaultId){
   var el=document.getElementById('SUBNAV');
@@ -2127,7 +2151,7 @@ function renderSubNavAndOpen(list,defaultId){
   showTab(defaultId,defBtn);
 }
 function openProductsGroup(){renderSubNavAndOpen(PRODUCTS_GROUP_TABS,'p1');}
-function openSiteGroup(){renderSubNavAndOpen(SITE_GROUP_TABS,'pcat');}
+function openSiteGroup(){renderSubNavAndOpen(SITE_GROUP_TABS,'psettings');}
 
 // ── منوی همبرگری (تب‌ها) ──
 function openAdmDrawer(){document.getElementById('ADMDR').classList.add('open');document.getElementById('ADMOV').classList.add('open');document.body.style.overflow='hidden';}
@@ -2194,9 +2218,6 @@ function openSettingsPanel(){
   var asChk=document.getElementById('SETT_AUTOSYNC_CHK');
   if(asChk)asChk.checked=AUTO_SYNC_ENABLED;
   checkServerConnection();
-  loadSiteAnalytics();
-  loadTelegramMemberCounts();
-  loadChannelActivity();
 }
 function fetchTelegramMemberCounts(){
   var token=V('TGK'),cid1=V('TGCID'),cid2=V('TGCID2');
@@ -2298,6 +2319,35 @@ function loadSiteAnalytics(){
     }).join('');
     el.innerHTML='<div style="font-weight:900;color:#3d2b1f;font-size:0.9rem;margin-bottom:6px">امروز: '+todayVisits+' بازدید</div>'+
       '<div style="font-size:0.7rem;color:#9a6e3a;margin-bottom:8px">مجموع ۷ روز اخیر: '+weekTotal+' بازدید</div>'+rows;
+  }).catch(function(err){
+    el.textContent='خطا در دریافت آمار: '+(err&&err.message?err.message:err);
+  });
+}
+function loadContentActivity(){
+  var el=document.getElementById('SETT_CONTENT_ACTIVITY');
+  if(!el)return;
+  if(!initFirebase()){el.textContent='خطا: Firebase بارگذاری نشد';return;}
+  el.textContent='در حال دریافت...';
+  var days=[];
+  for(var i=0;i<7;i++){
+    var d=new Date();d.setDate(d.getDate()-i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  Promise.all(days.map(function(d){
+    return fbDb.collection('channelActivity').doc(d).get().then(function(doc){
+      return {date:d,count:doc.exists?(doc.data().contentActions||0):0};
+    }).catch(function(){return {date:d,count:0};});
+  })).then(function(results){
+    var today=results[0].count;
+    var week=results.reduce(function(s,r){return s+r.count;},0);
+    var dayNames=['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنج‌شنبه','جمعه','شنبه'];
+    var rows=results.map(function(r){
+      var dObj=new Date(r.date+'T00:00:00');
+      var lbl=dayNames[dObj.getDay()]+' '+dObj.toLocaleDateString('fa-IR',{day:'numeric',month:'short'});
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #eddfc9"><span>'+lbl+'</span><span style="font-weight:900">'+r.count+'</span></div>';
+    }).join('');
+    el.innerHTML='<div style="font-weight:900;color:#3d2b1f;font-size:0.85rem;margin-bottom:6px">امروز: '+today+' محصول</div>'+
+      '<div style="font-size:0.68rem;color:#9a6e3a;margin-bottom:8px">مجموع ۷ روز: '+week+'</div>'+rows;
   }).catch(function(err){
     el.textContent='خطا در دریافت آمار: '+(err&&err.message?err.message:err);
   });
@@ -6312,7 +6362,7 @@ function load(){
       if(looksLikeBotToken(d.tgcid))bad.push('کانال ۱');
       if(looksLikeBotToken(d.tgcid2))bad.push('کانال ۲');
       if(bad.length){
-        addNotif('🚨 توی شناسه‌ی '+bad.join(' و ')+' یه چیزی شبیه توکن رباته، نه شناسه‌ی کانال! برو تب سایت → تنظیمات کانال‌ها و درستش کن، وگرنه ارسال پست fail می‌شه.');
+        addNotif('🚨 توی شناسه‌ی '+bad.join(' و ')+' یه چیزی شبیه توکن رباته، نه شناسه‌ی کانال! برو تب سایت → تنظیمات اتصال و درستش کن، وگرنه ارسال پست fail می‌شه.');
       }
       validateChatIdField('TGCID');
       validateChatIdField('TGCID2');
@@ -6452,7 +6502,7 @@ renderCgTypeChips();
 var _cgPriceEl=document.getElementById('CG_PRICE');
 if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});
 load();
-setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();},600);
+setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();},600);
 </script>
 </body>
 </html>
