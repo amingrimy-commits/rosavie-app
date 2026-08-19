@@ -1082,6 +1082,7 @@ function renderOrdersList(list){
     return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px" data-order-id="'+o._id+'">'+
       '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+fmtP(o.total)+'</span></div>'+
       '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">شماره سفارش: '+o.orderNo+'</div>'+
+      (o.customerAddress?('<div style="color:#3d2b1f;font-size:0.72rem;margin-top:4px;background:#fbf6ee;border-radius:6px;padding:6px 8px">📍 '+(o.customerProvince||'')+(o.customerCity?(' - '+o.customerCity):'')+' — '+o.customerAddress+(o.customerPostal?(' — کدپستی: '+o.customerPostal):'')+'</div>'):'')+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       (o.note?'<div style="color:#9a6e3a;font-size:0.72rem;margin-top:4px">یادداشت: '+o.note+'</div>':'')+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
@@ -1098,7 +1099,11 @@ function renderOrdersList(list){
             '<button onclick="this.parentElement.remove()" style="background:#e05a5a;color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button>'+
           '</div>';
         }).join('')+'</div>'+
-        '<button onclick="saveOrderEdit(\''+o._id+'\')" style="width:100%;background:#4a9dff;color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.72rem;cursor:pointer;font-weight:700">💾 ذخیره تغییرات سفارش</button>'+
+        '<div style="margin-top:8px;position:relative">'+
+          '<input type="text" id="ORDEDIT_SEARCH_'+o._id+'" class="fi" placeholder="🔍 جستجوی محصول برای افزودن به سفارش..." style="font-size:0.72rem" oninput="orderEditSearch(\''+o._id+'\',this.value)">'+
+          '<div id="ORDEDIT_SEARCHRES_'+o._id+'" style="display:none;position:absolute;z-index:5;background:#fff;border:1px solid #d4a87a;border-radius:8px;max-height:220px;overflow:auto;width:100%;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>'+
+        '</div>'+
+        '<button onclick="saveOrderEdit(\''+o._id+'\')" style="width:100%;background:#4a9dff;color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.72rem;cursor:pointer;font-weight:700;margin-top:8px">💾 ذخیره تغییرات سفارش</button>'+
       '</div>'+
       '<div id="ORDCONF_'+o._id+'" style="display:none;margin-top:8px;padding:9px;background:#fbf6ee;border-radius:8px;border:1.5px dashed #d4a87a">'+
         '<div style="font-size:0.7rem;color:#9a6e3a;margin-bottom:6px">شماره پیگیری/رسید واریزی رو وارد کن — تا این رو پر نکنی، سفارش نهایی نمی‌شه و توی گزارش فروش و باشگاه مشتریان حساب نمی‌شه.</div>'+
@@ -1112,6 +1117,46 @@ function toggleEditOrder(id){
   var box=document.getElementById('ORDEDIT_'+id);
   if(box)box.style.display=box.style.display==='none'?'block':'none';
 }
+function orderEditSearch(id,q){
+  var el=document.getElementById('ORDEDIT_SEARCHRES_'+id);
+  if(!el)return;
+  if(!q||q.trim().length<1){el.style.display='none';return;}
+  var items=allProds().filter(function(p){
+    return [p.code,p.title,p.brandName].some(function(v){return(v||'').toLowerCase().indexOf(q.toLowerCase())>-1;});
+  }).slice(0,10);
+  if(!items.length){el.innerHTML='<div style="padding:8px;font-size:0.72rem;color:#9a6e3a">چیزی پیدا نشد</div>';el.style.display='block';return;}
+  el.style.display='block';
+  el.innerHTML=items.map(function(p){
+    var nm=p.title||(TLBL[p.type]||p.type);
+    var safeCode=(p.code||'').replace(/"/g,'&quot;');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-bottom:1px solid #f0e6d8;cursor:pointer" onclick="orderEditAddProduct(\''+id+'\',\''+safeCode+'\')">'+
+      '<span style="flex:1;font-size:0.74rem">'+nm+(p.code&&p.code!='--'?' - '+p.code:'')+'</span>'+
+      '<span style="font-size:0.7rem;color:#2a9d5c">'+fmtP(p.price)+'</span>'+
+    '</div>';
+  }).join('');
+}
+function orderEditAddProduct(id,code){
+  var p=allProds().find(function(x){return x.code===code;});
+  if(!p)return;
+  var qtyRaw=prompt('تعداد این محصول رو وارد کن:','1');
+  if(qtyRaw===null)return;
+  var qty=parseInt(toEnDigits(qtyRaw))||0;
+  if(qty<=0){alert('تعداد نامعتبره');return;}
+  var colorNote=prompt('توضیح رنگ/سایز (اختیاری، خالی بذار اگه نیاز نیست):','')||'';
+  var nm=p.title||(TLBL[p.type]||p.type);
+  var wrap=document.getElementById('ORDEDIT_ITEMS_'+id);
+  var row=document.createElement('div');
+  row.className='ordedit-row';
+  row.setAttribute('data-new','1');
+  row.setAttribute('data-item',JSON.stringify({code:p.code,title:nm,tab:p.tab,color:colorNote,price:p.price}));
+  row.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.72rem';
+  row.innerHTML='<span style="flex:1">'+nm+(colorNote?(' — '+colorNote):'')+'</span>'+
+    '<input type="text" value="'+qty+'" data-newqty="1" class="fi" style="width:50px;padding:4px;text-align:center">'+
+    '<button onclick="this.parentElement.remove()" style="background:#e05a5a;color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button>';
+  wrap.appendChild(row);
+  document.getElementById('ORDEDIT_SEARCH_'+id).value='';
+  document.getElementById('ORDEDIT_SEARCHRES_'+id).style.display='none';
+}
 function saveOrderEdit(id){
   if(!fbDb)return;
   var wrap=document.getElementById('ORDEDIT_ITEMS_'+id);
@@ -1123,7 +1168,15 @@ function saveOrderEdit(id){
     var origItems=o.items||[];
     var newItems=[];
     rows.forEach(function(row){
+      if(row.getAttribute('data-new')==='1'){
+        var item=JSON.parse(row.getAttribute('data-item'));
+        var qInput=row.querySelector('input[data-newqty]');
+        var qty=parseInt(toEnDigits(qInput.value))||0;
+        if(qty>0){item.qty=qty;newItems.push(item);}
+        return;
+      }
       var input=row.querySelector('input[data-oi]');
+      if(!input)return;
       var idx=parseInt(input.getAttribute('data-oi'));
       var qty=parseInt(toEnDigits(input.value))||0;
       if(qty>0&&origItems[idx]){
@@ -1581,7 +1634,7 @@ function linkOrderToCustomerClub(order){
   var cust=findLocalCustomerByPhone(order.customerPhone);
   if(!cust){
     cust={id:custUid(),name:order.customerName||'مشتری سایت',phone:order.customerPhone,birthdate:'',discountCode:'',loyaltyPoints:0,
-      address:'',postalCode:'',province:'',neighborhood:'',notes:'ثبت‌نام خودکار از سفارش سایت',
+      address:order.customerAddress||'',postalCode:order.customerPostal||'',province:order.customerProvince||'',neighborhood:order.customerCity||'',notes:'ثبت‌نام خودکار از سفارش سایت',
       location:null,createdAt:today,updatedAt:today,purchases:[]};
     CUSTOMERS.unshift(cust);
   }

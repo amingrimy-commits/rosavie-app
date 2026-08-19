@@ -1884,19 +1884,47 @@ function cartRemove(i){CART.splice(i,1);saveCart();updateFab();renderCart();}
 function openCart(){navTo('cart');}
 function closeCart(){goBack();}
 
+function renderOFProvinceOptions(selected){
+  var sel=document.getElementById('OF_PROVINCE');
+  if(!sel)return;
+  var h='<option value="">انتخاب استان</option>';
+  Object.keys(SHOP_PROVINCES).forEach(function(p){h+='<option value="'+p+'"'+(p===selected?' selected':'')+'>'+p+'</option>';});
+  sel.innerHTML=h;
+}
+function fillOFCityOptions(selectedCity){
+  var provSel=document.getElementById('OF_PROVINCE');
+  var citySel=document.getElementById('OF_CITY');
+  if(!provSel||!citySel)return;
+  var cities=SHOP_PROVINCES[provSel.value]||[];
+  var h='<option value="">انتخاب شهر</option>';
+  cities.forEach(function(c){h+='<option value="'+c+'"'+(c===selectedCity?' selected':'')+'>'+c+'</option>';});
+  citySel.innerHTML=h;
+}
 function renderCheckout(){
   var body=document.getElementById('CART_BODY');
   var pfName=(CUR_CUSTOMER&&CUR_CUSTOMER.name)||'';
   var pfPhone=(CUR_CUSTOMER&&CUR_CUSTOMER.phone)||'';
+  var pfProvince=(CUR_CUSTOMER&&CUR_CUSTOMER.province)||'';
+  var pfCity=(CUR_CUSTOMER&&CUR_CUSTOMER.city)||'';
+  var pfAddr=(CUR_CUSTOMER&&CUR_CUSTOMER.address)||'';
+  var pfPostal=(CUR_CUSTOMER&&CUR_CUSTOMER.postal)||'';
+  var pfEmail=(CUR_CUSTOMER&&CUR_CUSTOMER.email)||'';
   body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
     '<div class="modal-name" style="margin-bottom:12px">تکمیل سفارش</div>'+
     '<div class="cart-total-row"><span>جمع کل ('+CART.reduce(function(s,c){return s+c.qty;},0)+' قلم)</span><span>'+fmtP(cartTotal())+'</span></div>'+
     '<div class="form-field"><label>نام و نام‌خانوادگی *</label><input id="OF_NAME" type="text" placeholder="مثال: زهرا محمدی" value="'+pfName+'"></div>'+
     '<div class="form-field"><label>شماره تماس *</label><input id="OF_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left" value="'+pfPhone+'"></div>'+
-    '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="آدرس، رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
+    '<div class="form-field"><label>استان *</label><select id="OF_PROVINCE" onchange="fillOFCityOptions()"></select></div>'+
+    '<div class="form-field"><label>شهر *</label><select id="OF_CITY"></select></div>'+
+    '<div class="form-field"><label>آدرس دقیق پستی *</label><textarea id="OF_ADDR" placeholder="خیابان، کوچه، پلاک، واحد...">'+pfAddr+'</textarea></div>'+
+    '<div class="form-field"><label>کد پستی (اختیاری)</label><input id="OF_POSTAL" type="text" style="direction:ltr;text-align:left" value="'+pfPostal+'" placeholder="۱۰ رقم"></div>'+
+    '<div class="form-field"><label>ایمیل (اختیاری)</label><input id="OF_EMAIL" type="email" style="direction:ltr;text-align:left" value="'+pfEmail+'" placeholder="example@gmail.com"></div>'+
+    '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
     '<div id="OF_ERR" style="color:#e57373;font-size:0.76rem;margin-bottom:8px"></div>'+
     '<button class="checkout-btn" id="OF_SUBMIT" onclick="submitOrder()">✅ ثبت نهایی سفارش</button>'+
     '<div style="text-align:center;color:#777;font-size:0.68rem;margin-top:10px">بعد از ثبت، از طریق شماره تماس باهات هماهنگ می‌کنیم.</div>';
+  renderOFProvinceOptions(pfProvince);
+  fillOFCityOptions(pfCity);
 }
 function copyOrderNo(no){
   var done=function(){
@@ -1928,10 +1956,19 @@ function genOrderNo(){
 function submitOrder(){
   var name=(document.getElementById('OF_NAME').value||'').trim();
   var phone=(document.getElementById('OF_PHONE').value||'').trim();
+  var province=(document.getElementById('OF_PROVINCE').value||'').trim();
+  var city=(document.getElementById('OF_CITY').value||'').trim();
+  var addr=(document.getElementById('OF_ADDR').value||'').trim();
+  var postal=(document.getElementById('OF_POSTAL').value||'').trim();
+  var email=(document.getElementById('OF_EMAIL').value||'').trim();
   var note=(document.getElementById('OF_NOTE').value||'').trim();
   var errEl=document.getElementById('OF_ERR');
   if(!name){errEl.textContent='لطفاً نام رو وارد کن';return;}
   if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
+  if(!province){errEl.textContent='لطفاً استان رو انتخاب کن';return;}
+  if(!city){errEl.textContent='لطفاً شهر رو انتخاب کن';return;}
+  if(!addr){errEl.textContent='لطفاً آدرس دقیق پستی رو وارد کن';return;}
+  if(email&&!isValidEmail(email)){errEl.textContent='ایمیلی که وارد کردی معتبر نیست';return;}
   errEl.textContent='';
   var btn=document.getElementById('OF_SUBMIT');
   btn.disabled=true;btn.textContent='در حال ثبت سفارش...';
@@ -1942,6 +1979,11 @@ function submitOrder(){
     total:cartTotal(),
     customerName:name,
     customerPhone:phone,
+    customerProvince:province,
+    customerCity:city,
+    customerAddress:addr,
+    customerPostal:postal,
+    customerEmail:email,
     customerUid:(CUR_CUSTOMER&&CUR_CUSTOMER.uid)||null,
     note:note,
     status:'new',
@@ -1949,6 +1991,14 @@ function submitOrder(){
   };
   db.collection('orders').doc(orderNo).set(order).then(function(){
     CART=[];saveCart();updateFab();
+    if(CUR_CUSTOMER&&CUR_CUSTOMER.uid&&!CUR_CUSTOMER.address&&!CUR_CUSTOMER.province){
+      var profileUpdate={name:name,province:province,city:city,address:addr};
+      if(postal)profileUpdate.postal=postal;
+      if(email)profileUpdate.email=email;
+      db.collection('customers').doc(CUR_CUSTOMER.uid).set(profileUpdate,{merge:true}).then(function(){
+        CUR_CUSTOMER=Object.assign({},CUR_CUSTOMER,profileUpdate);
+      }).catch(function(e){console.error('profile auto-update error',e);});
+    }
     document.getElementById('CART_BODY').innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
       '<div class="order-ok"><div class="oi">🎉</div><div style="font-weight:900;font-size:0.95rem">سفارشت با موفقیت ثبت شد!</div>'+
       '<div class="onum" id="ORDNO_TXT">'+orderNo+'</div>'+
