@@ -1677,6 +1677,7 @@ function renderAccountView(){
       :
         ('<div class="form-field"><label>نام و نام‌خانوادگی</label><input id="AC_NAME" type="text" placeholder="مثال: زهرا محمدی"></div>'+
          '<div class="form-field"><label>شماره تماس</label><input id="AC_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left"></div>'+
+         '<div class="form-field"><label>ایمیل (اختیاری)</label><input id="AC_EMAIL" type="email" placeholder="example@gmail.com" style="direction:ltr;text-align:left"><div style="font-size:0.68rem;color:#8a7a6c;margin-top:4px">اگه ایمیل بدی، اگه رمزت یادت رفت خودکار می‌تونی بازیابیش کنی. بدون ایمیل هم می‌تونی ثبت‌نام کنی، فقط بازیابی رمز باید دستی از طریق پشتیبانی انجام بشه.</div></div>'+
          '<div class="form-field"><label>رمز عبور (حداقل ۶ رقم)</label><input id="AC_PASS" type="password"></div>'+
          '<div class="form-field"><label>تکرار رمز عبور</label><input id="AC_PASS2" type="password"></div>'+
          '<div class="acc-terms-row"><input type="checkbox" id="AC_TERMS"><label for="AC_TERMS">'+
@@ -1706,23 +1707,36 @@ function authErrMsg(code){
   return m[code]||('خطای ناشناخته'+(code?(' ('+code+')'):'')+' — این کد رو برای بررسی بیشتر بفرست.');
 }
 
+function normPhone(p){return toEnDigitsPhone(p||'').replace(/\D/g,'');}
+function isValidEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e||'');}
 function doSignup(){
   var name=(document.getElementById('AC_NAME').value||'').trim();
   var phone=(document.getElementById('AC_PHONE').value||'').trim();
+  var email=(document.getElementById('AC_EMAIL').value||'').trim();
   var pass=document.getElementById('AC_PASS').value||'';
   var pass2=document.getElementById('AC_PASS2').value||'';
   var err=document.getElementById('AC_ERR');
   if(!name){err.textContent='لطفاً نام رو وارد کن';return;}
   if(!phone||phone.replace(/\D/g,'').length<10){err.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
+  if(email&&!isValidEmail(email)){err.textContent='ایمیلی که وارد کردی معتبر نیست';return;}
   if(pass.length<6){err.textContent='رمز عبور باید حداقل ۶ رقم باشه';return;}
   if(pass!==pass2){err.textContent='تکرار رمز عبور با رمز عبور یکی نیست';return;}
   var termsChecked=document.getElementById('AC_TERMS').checked;
   if(!termsChecked){err.textContent='برای ثبت‌نام باید قوانین و مقررات رو بپذیری';return;}
   err.textContent='';
   var btn=document.getElementById('AC_BTN');btn.disabled=true;btn.textContent='در حال ثبت‌نام...';
-  fbAuth.createUserWithEmailAndPassword(phoneToEmail(phone),pass).then(function(cred){
+  var authEmail=email?email:phoneToEmail(phone);
+  fbAuth.createUserWithEmailAndPassword(authEmail,pass).then(function(cred){
     var uid=cred.user.uid;
-    return db.collection('customers').doc(uid).set({name:name,phone:phone,termsAccepted:true,termsAcceptedAt:firebase.firestore.FieldValue.serverTimestamp(),createdAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    var custData={name:name,phone:phone,termsAccepted:true,termsAcceptedAt:firebase.firestore.FieldValue.serverTimestamp(),createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+    if(email)custData.email=email;
+    var chain=db.collection('customers').doc(uid).set(custData);
+    if(email){
+      chain=chain.then(function(){
+        return db.collection('customerLookup').doc(normPhone(phone)).set({authEmail:email,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      });
+    }
+    return chain.then(function(){
       CUR_CUSTOMER={uid:uid,name:name,phone:phone,termsAccepted:true};
       showSavePasswordReminder(pass);
     });
@@ -1738,7 +1752,10 @@ function doLogin(){
   if(!phone||!pass){err.textContent='شماره و رمز عبور رو وارد کن';return;}
   err.textContent='';
   var btn=document.getElementById('AC_BTN');btn.disabled=true;btn.textContent='در حال ورود...';
-  fbAuth.signInWithEmailAndPassword(phoneToEmail(phone),pass).then(function(cred){
+  db.collection('customerLookup').doc(normPhone(phone)).get().then(function(doc){
+    var authEmail=(doc.exists&&doc.data().authEmail)?doc.data().authEmail:phoneToEmail(phone);
+    return fbAuth.signInWithEmailAndPassword(authEmail,pass);
+  }).then(function(cred){
     return loadCustomerProfile(cred.user.uid).then(function(){renderAccountView();});
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ورود';
@@ -1747,10 +1764,49 @@ function doLogin(){
 }
 function forgotPassword(){
   var body=document.getElementById('ACCOUNT_BODY');
-  body.innerHTML='<p>به دلیل مشکلات فنی، نمی‌تونیم رمز عبور رو بازنویسی کنیم — مجبوریم حساب قبلی‌تون رو پاک کنیم تا بتونید با رمز جدید دوباره ثبت‌نام کنید.</p>'+
-    '<p>شماره تماستون رو برای پشتیبانی بفرستید تا این کار رو براتون انجام بدیم.</p>'+
-    '<button class="acc-btn" onclick="silentCloseAccount();openSupport()">📞 تماس با پشتیبانی</button>'+
+  body.innerHTML=
+    '<div style="text-align:center;padding:6px 0 12px"><div style="font-size:2rem">🔑</div>'+
+    '<div style="font-weight:900;font-size:0.9rem;margin-top:6px">بازیابی رمز عبور</div></div>'+
+    '<div class="form-field"><label>شماره تماسی که باهاش ثبت‌نام کردی</label><input id="FP_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left"></div>'+
+    '<div class="acc-err" id="FP_ERR"></div>'+
+    '<button class="acc-btn" id="FP_BTN" onclick="submitForgotPassword()">ارسال درخواست</button>'+
     '<div style="text-align:center;margin-top:12px"><span style="color:#8a7a6c;font-size:0.78rem;cursor:pointer;text-decoration:underline" onclick="renderAccountView()">بازگشت به ورود</span></div>';
+}
+function submitForgotPassword(){
+  var phone=(document.getElementById('FP_PHONE').value||'').trim();
+  var err=document.getElementById('FP_ERR');
+  if(!phone||phone.replace(/\D/g,'').length<10){err.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
+  err.textContent='';
+  var btn=document.getElementById('FP_BTN');btn.disabled=true;btn.textContent='در حال بررسی...';
+  var body=document.getElementById('ACCOUNT_BODY');
+  db.collection('customerLookup').doc(normPhone(phone)).get().then(function(doc){
+    if(doc.exists&&doc.data().authEmail){
+      var authEmail=doc.data().authEmail;
+      return fbAuth.sendPasswordResetEmail(authEmail).then(function(){
+        var masked=authEmail.replace(/^(.{2}).+(@.+)$/,'$1***$2');
+        body.innerHTML='<div style="text-align:center;padding:10px 0"><div style="font-size:2.2rem">✅</div>'+
+          '<div style="font-weight:900;font-size:0.9rem;margin-top:8px">لینک بازیابی ارسال شد</div>'+
+          '<div style="color:#8a7a6c;font-size:0.8rem;margin-top:8px;line-height:1.8">یه ایمیل به آدرس '+masked+' فرستادیم. روی لینک داخلش بزن و رمز جدید بساز.</div></div>'+
+          '<button class="acc-btn" onclick="renderAccountView()">بازگشت</button>';
+      });
+    }else{
+      return db.collection('supportMessages').add({
+        name:'',phone:phone,
+        message:'🔑 درخواست بازیابی رمز عبور — این مشتری موقع ثبت‌نام ایمیل وارد نکرده، پس بازیابی خودکار ممکن نیست. لطفاً از Firebase Console > Authentication حساب با شماره '+phone+' رو پیدا و حذف کن تا مشتری بتونه دوباره ثبت‌نام کنه.',
+        type:'password_reset',
+        customerUid:null,
+        status:'new',createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(){
+        body.innerHTML='<div style="text-align:center;padding:10px 0"><div style="font-size:2.2rem">📨</div>'+
+          '<div style="font-weight:900;font-size:0.9rem;margin-top:8px">درخواستت ثبت شد</div>'+
+          '<div style="color:#8a7a6c;font-size:0.8rem;margin-top:8px;line-height:1.8">چون موقع ثبت‌نام ایمیل ثبت نکرده بودی، بازیابی رمز باید دستی انجام بشه. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>'+
+          '<button class="acc-btn" onclick="renderAccountView()">بازگشت</button>';
+      });
+    }
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='ارسال درخواست';
+    err.textContent='خطا: '+(e&&e.message?e.message:e);
+  });
 }
 function doLogout(){
   fbAuth.signOut().then(function(){CUR_CUSTOMER=null;ACC_MODE='login';renderAccountView();});

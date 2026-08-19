@@ -16,6 +16,7 @@
 <script>if(typeof L==='undefined'){document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"><\/scr'+'ipt>');}</script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -287,6 +288,19 @@ input[type=file]{display:none}
 </style>
 </head>
 <body>
+<div id="ADMIN_LOGIN_GATE" style="position:fixed;inset:0;z-index:99999;background:#3d2b1f;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:320px;background:#f9f0e8;border-radius:18px;padding:26px 22px;box-shadow:0 8px 30px rgba(0,0,0,0.35)">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-weight:900;font-size:1.3rem;color:#3d2b1f;letter-spacing:1px">ROSA VIE</div>
+      <div style="font-size:0.78rem;color:#9a6e3a;margin-top:4px">ورود مدیر برای دسترسی به پنل</div>
+    </div>
+    <div style="margin-bottom:10px"><input id="ADM_LOGIN_EMAIL" type="email" placeholder="ایمیل" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid #e2cdb0;font-size:0.85rem;direction:ltr;text-align:left" autocomplete="username"></div>
+    <div style="margin-bottom:14px"><input id="ADM_LOGIN_PASS" type="password" placeholder="رمز عبور" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid #e2cdb0;font-size:0.85rem;direction:ltr;text-align:left" autocomplete="current-password"></div>
+    <div id="ADM_LOGIN_ERR" style="color:#c0304a;font-size:0.76rem;text-align:center;min-height:16px;margin-bottom:6px"></div>
+    <button id="ADM_LOGIN_BTN" onclick="adminDoLogin()" style="width:100%;padding:12px;border:none;border-radius:9px;background:#3d2b1f;color:#f9f0e8;font-weight:900;font-size:0.88rem;cursor:pointer">ورود</button>
+  </div>
+</div>
+<div id="APP_ROOT" style="display:none">
 <div class="hdr">
   <span class="hdr-sig">A♡R</span>
   <h1>ROSA VIE</h1><p>under wear</p>
@@ -315,7 +329,7 @@ input[type=file]{display:none}
   <div class="adm-drawer-head"><span>منو</span><button class="adm-drawer-x" onclick="closeAdmDrawer()">✕</button></div>
   <button class="tab on" onclick="hideSubNav();showTab('pf',this);closeAdmDrawer()">فاکتور</button>
   <button class="tab" onclick="hideSubNav();showTab('pcust',this);closeAdmDrawer()">👥 باشگاه مشتریان</button>
-  <button class="tab" onclick="hideSubNav();showTab('pc',this);closeAdmDrawer()">تولید محتوا</button>
+  <button class="tab" onclick="openContentGroup();closeAdmDrawer()">تولید محتوا</button>
   <button class="tab" onclick="openProductsGroup();closeAdmDrawer()">🛍️ محصولات</button>
   <button class="tab" onclick="openSiteGroup();closeAdmDrawer()">🌐 سایت</button>
 </div>
@@ -591,6 +605,7 @@ input[type=file]{display:none}
         <button class="chip" onclick="setCgCat('p10',this)">گن</button>
       </div>
     </div>
+    <div id="CG_PRODUCT_FIELDS">
     <div class="g1" id="CG_TYPE_WRAP"><span class="lbl">نوع محصول</span>
       <div class="chips" id="CG_P1_GROUP_CHIPS" style="display:none;margin-bottom:8px">
         <button type="button" class="chip" onclick="setCgP1Group('set',this)">ست سوتین</button>
@@ -791,17 +806,11 @@ input[type=file]{display:none}
     </div>
     <div class="stat" id="SHARE_STAT"></div>
     <div id="SHARE_HELPER" style="display:none;margin-top:10px"></div>
+    </div>
   </div>
 </div>
 
-<div class="pg" id="pcat">
-  <div class="card"><div class="ctitle">صفحه جستجوی مشتری</div>
-    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">یک فایل HTML قابل جستجو و فیلتر برای مشتریان — عکس لحظه ارسال</p>
-    <button class="sbig scust" onclick="downloadSearchHTML()">دانلود فایل جستجو</button>
-    <button class="sbig stg" id="BSH1" onclick="sendSearchHTML(1)">ارسال صفحه جستجو به کانال 1</button>
-    <button class="sbig stg2" id="BSH2" onclick="sendSearchHTML(2)">ارسال صفحه جستجو به کانال 2</button>
-    <div class="stat" id="SSTAT"></div>
-  </div>
+<div class="pg" id="psitecontent">
   <div class="card"><div class="ctitle">بنرهای اسلایدر (4 بنر)</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:10px">این بنرها در صفحه مشتری به صورت اسلایدر نمایش داده میشوند. تصویر با نسبت 2:1 (عرض دو برابر ارتفاع) بهتره.</p>
     <div id="BANNERS"></div>
@@ -815,6 +824,15 @@ input[type=file]{display:none}
     </div>
     <div id="VIP_LIST"></div>
     <div class="stat" id="VSTAT"></div>
+  </div>
+</div>
+<div class="pg" id="pcat">
+  <div class="card"><div class="ctitle">صفحه جستجوی مشتری (قدیمی، معمولاً لازم نیست)</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">یک فایل HTML قابل جستجو و فیلتر برای مشتریان — عکس لحظه ارسال</p>
+    <button class="sbig scust" onclick="downloadSearchHTML()">دانلود فایل جستجو</button>
+    <button class="sbig stg" id="BSH1" onclick="sendSearchHTML(1)">ارسال صفحه جستجو به کانال 1</button>
+    <button class="sbig stg2" id="BSH2" onclick="sendSearchHTML(2)">ارسال صفحه جستجو به کانال 2</button>
+    <div class="stat" id="SSTAT"></div>
   </div>
 </div>
 
@@ -873,10 +891,12 @@ input[type=file]{display:none}
   <div class="card" style="border:2px solid #b0517a"><div class="ctitle">💬 نظرات مشتریان روی محصولات</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">نظری که مشتری زیر هر محصول توی سایت می‌ذاره، اینجا زنده میاد. می‌تونی جواب بدی (روی سایت نشون داده می‌شه) یا در صورت نیاز (مثلاً توهین) پاکش کنی.</p>
     <div id="REVIEWS_ADMIN_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
+    <button class="sbig" style="margin-top:8px;background:#eee2d0;color:#3d2b1f" onclick="toggleDoneReviews()" id="REVIEWS_TOGGLE_BTN">📋 مشاهده نظرات پاسخ‌داده‌شده</button>
+    <div id="REVIEWS_DONE_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
   </div>
 </div>
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-09 02:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-09 06:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
@@ -1246,7 +1266,9 @@ function renderSupportMsgList(list){
   if(!el)return;
   if(!list.length){el.innerHTML='<div style="color:#9a6e3a">پیام جدیدی نیست.</div>';return;}
   el.innerHTML=list.map(function(m){
-    return '<div style="background:#fff;border:1px solid #f0b8c4;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
+    var isReset=m.type==='password_reset';
+    return '<div style="background:'+(isReset?'#fff6e0':'#fff')+';border:1px solid '+(isReset?'#e8b84b':'#f0b8c4')+';border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
+      (isReset?'<div style="font-size:0.68rem;font-weight:900;color:#a5750a;margin-bottom:4px">🔑 درخواست بازیابی رمز عبور</div>':'')+
       '<div style="font-weight:900;color:#3d2b1f">'+(m.name||'بدون نام')+'</div>'+
       '<div style="color:#3d2b1f;font-size:0.78rem;margin-top:5px">'+m.message+'</div>'+
       '<div style="display:flex;gap:8px;margin-top:8px">'+
@@ -1337,11 +1359,13 @@ function startSupportMsgListener(){
 setTimeout(startSupportMsgListener,1600);
 
 // ── نظرات مشتریان روی محصولات ──
-var REVIEWS_SEEN_IDS={},REVIEWS_FIRST_LOAD=true;
-function renderReviewsAdminList(list){
+var REVIEWS_SEEN_IDS={},REVIEWS_FIRST_LOAD=true,ALL_REVIEWS_CACHE=[],DONE_REVIEWS_OPEN=false;
+function renderReviewsAdminList(fullList){
+  ALL_REVIEWS_CACHE=fullList;
+  var list=fullList.filter(function(r){return !r.adminReply;});
   var el=document.getElementById('REVIEWS_ADMIN_LIST');
   if(!el)return;
-  if(!list.length){el.innerHTML='<div style="color:#9a6e3a">هنوز نظری ثبت نشده.</div>';return;}
+  if(!list.length){el.innerHTML='<div style="color:#9a6e3a">نظر بی‌پاسخی نیست 🎉</div>';return;}
   el.innerHTML=list.map(function(r){
     var replyBox=r.adminReply?
       ('<div style="background:#fbe8ee;border-radius:8px;padding:7px 9px;margin-top:7px;font-size:0.72rem;color:#5a4d45"><b style="color:#b0517a">پاسخ تو:</b> '+r.adminReply+'</div>'):'';
@@ -1355,6 +1379,38 @@ function renderReviewsAdminList(list){
         '<button onclick="deleteReview(\''+r._id+'\')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:7px;padding:6px 10px;font-size:0.7rem;cursor:pointer">حذف</button>'+
       '</div></div>';
   }).join('');
+}
+function toggleDoneReviews(){
+  var box=document.getElementById('REVIEWS_DONE_LIST');
+  var btn=document.getElementById('REVIEWS_TOGGLE_BTN');
+  DONE_REVIEWS_OPEN=!DONE_REVIEWS_OPEN;
+  if(!DONE_REVIEWS_OPEN){box.style.display='none';btn.textContent='📋 مشاهده نظرات پاسخ‌داده‌شده';return;}
+  refreshDoneReviews();
+}
+function refreshDoneReviews(){
+  var box=document.getElementById('REVIEWS_DONE_LIST');
+  var btn=document.getElementById('REVIEWS_TOGGLE_BTN');
+  var list=ALL_REVIEWS_CACHE.filter(function(r){return !!r.adminReply;});
+  if(!list.length){box.innerHTML='<div style="color:#9a6e3a">هنوز نظر پاسخ‌داده‌شده‌ای نیست.</div>';}
+  else{
+    box.innerHTML=list.map(function(r){
+      return '<div style="background:#f5efe3;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px;opacity:0.85">'+
+        '<div style="display:flex;justify-content:space-between"><b style="color:#3d2b1f">'+(r.customerName||'کاربر')+'</b><span style="color:#9a6e3a;font-size:0.7rem">کد: '+(r.productCode||'—')+'</span></div>'+
+        '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+r.text+'</div>'+
+        '<div style="background:#fbe8ee;border-radius:8px;padding:7px 9px;margin-top:7px;font-size:0.72rem;color:#5a4d45"><b style="color:#b0517a">پاسخ تو:</b> '+r.adminReply+'</div>'+
+        '<button onclick="unreplyReview(\''+r._id+'\')" style="margin-top:8px;background:#9a6e3a;color:#fff;border:none;border-radius:8px;font-size:0.7rem;padding:6px 10px;cursor:pointer">↩️ بازگردانی به بی‌پاسخ‌ها</button>'+
+        '<button onclick="deleteReview(\''+r._id+'\')" style="margin-top:8px;margin-right:6px;background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:8px;font-size:0.7rem;padding:6px 10px;cursor:pointer">حذف</button>'+
+        '</div>';
+    }).join('');
+  }
+  box.style.display='block';
+  btn.textContent='📋 پنهان کردن نظرات پاسخ‌داده‌شده';
+}
+function unreplyReview(id){
+  if(!fbDb)return;
+  fbDb.collection('reviews').doc(id).update({adminReply:firebase.firestore.FieldValue.delete(),adminReplyAt:firebase.firestore.FieldValue.delete()}).then(function(){
+    if(DONE_REVIEWS_OPEN)refreshDoneReviews();
+  }).catch(function(err){console.error('unreplyReview error',err);});
 }
 function sendReviewReply(id){
   var inp=document.getElementById('RVREPLY_'+id);
@@ -1383,6 +1439,7 @@ function startReviewsListener(){
       return tb-ta;
     });
     renderReviewsAdminList(list);
+    if(DONE_REVIEWS_OPEN)refreshDoneReviews();
     NEW_REVIEWS_COUNT=list.filter(function(r){return !r.adminReply;}).length;updateOrdersDot();
     if(!REVIEWS_FIRST_LOAD){
       snap.docChanges().forEach(function(ch){
@@ -2301,10 +2358,15 @@ function showTab(id,btn){
     updateLastReportInfo();
   }
   if(id==='pcat'){initBanners();renderVipList();}
+  if(id==='psitecontent'){initBanners();renderVipList();}
   if(id==='pf'){initHomeStatWidgets();}
   if(id==='pcust'){renderCustomerList();}
 }
 function hideSubNav(){var el=document.getElementById('SUBNAV');if(el)el.style.display='none';}
+var CONTENT_GROUP_TABS=[
+  {id:'pc',l:'تولید محتوا'},{id:'psitecontent',l:'🌐 سایت'}
+];
+function openContentGroup(){renderSubNavAndOpen(CONTENT_GROUP_TABS,'pc');}
 var PRODUCTS_GROUP_TABS=[
   {id:'p1',l:'سوتین+ست'},{id:'p2',l:'نیمتنه+ست'},{id:'p3',l:'شورت'},
   {id:'p4',l:'لباس خواب'},{id:'p11',l:'پروتز'},{id:'p5',l:'لوازم جانبی'},{id:'p6',l:'مایو'},
@@ -6678,6 +6740,49 @@ var _cgPriceEl=document.getElementById('CG_PRICE');
 if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});
 load();
 setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();},600);
+</script>
+</div>
+<script>
+// ── قفل ورود ادمین ──
+var ADMIN_UID='5OEb6mBf4mOwDPdOcAx4ycAUc692';
+function adminShowApp(){
+  document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
+  document.getElementById('APP_ROOT').style.display='';
+}
+function adminShowGate(msg){
+  document.getElementById('APP_ROOT').style.display='none';
+  document.getElementById('ADMIN_LOGIN_GATE').style.display='flex';
+  if(msg)document.getElementById('ADM_LOGIN_ERR').textContent=msg;
+}
+function adminDoLogin(){
+  if(!initFirebase())return;
+  var email=(document.getElementById('ADM_LOGIN_EMAIL').value||'').trim();
+  var pass=document.getElementById('ADM_LOGIN_PASS').value||'';
+  var err=document.getElementById('ADM_LOGIN_ERR');
+  var btn=document.getElementById('ADM_LOGIN_BTN');
+  if(!email||!pass){err.textContent='ایمیل و رمز عبور رو وارد کن';return;}
+  err.textContent='';btn.disabled=true;btn.textContent='در حال ورود...';
+  firebase.auth().signInWithEmailAndPassword(email,pass).then(function(cred){
+    if(cred.user.uid!==ADMIN_UID){
+      firebase.auth().signOut();
+      btn.disabled=false;btn.textContent='ورود';
+      err.textContent='این حساب دسترسی مدیریت نداره';
+      return;
+    }
+    adminShowApp();
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='ورود';
+    var m={'auth/wrong-password':'رمز عبور اشتباهه.','auth/user-not-found':'حسابی با این ایمیل پیدا نشد.','auth/invalid-credential':'ایمیل یا رمز عبور اشتباهه.','auth/network-request-failed':'مشکل در اتصال به اینترنت.','auth/too-many-requests':'تعداد تلاش زیاد بوده، چند دقیقه صبر کن.'};
+    err.textContent=m[e.code]||('خطا: '+(e.message||e.code));
+  });
+}
+(function initAdminAuthGate(){
+  if(!initFirebase())return;
+  firebase.auth().onAuthStateChanged(function(user){
+    if(user&&user.uid===ADMIN_UID){adminShowApp();}
+    else{if(user)firebase.auth().signOut();adminShowGate();}
+  });
+})();
 </script>
 </body>
 </html>
