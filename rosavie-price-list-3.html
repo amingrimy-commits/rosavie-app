@@ -703,10 +703,10 @@ input[type=file]{display:none}
     </div>
 
     <div class="g1" style="margin-top:4px">
-      <span class="lbl">نوع فروش این محصول</span>
+      <span class="lbl">نوع فروش این محصول (می‌تونی هر دو رو با هم روشن کنی، اگه هم تک‌رنگ هم میکس می‌فروشی)</span>
       <div style="display:flex;gap:8px;margin-top:4px">
-        <button type="button" id="CG_SALETYPE_SINGLE" class="chip on" style="flex:1;padding:10px" onclick="setCgSaleType('single')">🎨 تک رنگ (قیمت ثابت)</button>
-        <button type="button" id="CG_SALETYPE_MIXPKG" class="chip" style="flex:1;padding:10px" onclick="setCgSaleType('mixpkg')">🎁 بسته میکس (قیمت از روی بسته)</button>
+        <button type="button" id="CG_SALETYPE_SINGLE" class="chip on" style="flex:1;padding:10px" onclick="toggleCgSaleType('single')">🎨 تک رنگ (قیمت ثابت)</button>
+        <button type="button" id="CG_SALETYPE_MIXPKG" class="chip" style="flex:1;padding:10px" onclick="toggleCgSaleType('mixpkg')">🎁 بسته میکس (قیمت از روی بسته)</button>
       </div>
     </div>
 
@@ -5701,14 +5701,29 @@ function editCgSiteImg(){
   if(!CG_SITE_IMG)return;
   openEditor('sitephoto',CG_SITE_IMG);
 }
-var CG_SALE_TYPE='single';
-function setCgSaleType(type){
-  CG_SALE_TYPE=type;
-  document.getElementById('CG_SALETYPE_SINGLE').classList.toggle('on',type==='single');
-  document.getElementById('CG_SALETYPE_MIXPKG').classList.toggle('on',type==='mixpkg');
-  document.getElementById('CG_SINGLE_PRICE_WRAP').style.display=type==='single'?'':'none';
-  document.getElementById('CG_COLORLIST_SECTION').style.display=type==='single'?'':'none';
-  document.getElementById('CG_MIXPKG_WRAP').style.display=type==='mixpkg'?'block':'none';
+var CG_SALE_SINGLE=true,CG_SALE_MIXPKG=false;
+function updateCgSaleTypeUI(){
+  document.getElementById('CG_SALETYPE_SINGLE').classList.toggle('on',CG_SALE_SINGLE);
+  document.getElementById('CG_SALETYPE_MIXPKG').classList.toggle('on',CG_SALE_MIXPKG);
+  document.getElementById('CG_SINGLE_PRICE_WRAP').style.display=CG_SALE_SINGLE?'':'none';
+  document.getElementById('CG_COLORLIST_SECTION').style.display=CG_SALE_SINGLE?'':'none';
+  document.getElementById('CG_MIXPKG_WRAP').style.display=CG_SALE_MIXPKG?'block':'none';
+}
+function toggleCgSaleType(type){
+  if(type==='single'){
+    if(CG_SALE_SINGLE&&!CG_SALE_MIXPKG)return; // حداقل یکی باید روشن بمونه
+    CG_SALE_SINGLE=!CG_SALE_SINGLE;
+  }else{
+    if(CG_SALE_MIXPKG&&!CG_SALE_SINGLE)return;
+    CG_SALE_MIXPKG=!CG_SALE_MIXPKG;
+  }
+  updateCgSaleTypeUI();
+}
+function setCgSaleType(mode){ // برای سازگاری با کد قدیمی/بارگذاری ویرایش
+  CG_SALE_SINGLE=(mode==='single'||mode==='both');
+  CG_SALE_MIXPKG=(mode==='mixpkg'||mode==='both');
+  if(!CG_SALE_SINGLE&&!CG_SALE_MIXPKG)CG_SALE_SINGLE=true;
+  updateCgSaleTypeUI();
 }
 var COLOR_HEX_MAP={
   'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
@@ -5951,12 +5966,12 @@ function buildCaptionData(){
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
       sizeRange=V('CG_SIZE_RANGE'), priceRaw=V('CG_PRICE'), minOrder=V('CG_MINORDER'), material=V('CG_MATERIAL'),
       desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK'),
-      mixEnabled=(CG_SALE_TYPE==='mixpkg'),
+      mixEnabled=CG_SALE_MIXPKG,
       mixDesc=V('CG_MIX_DESC');
-  var colorList=mixEnabled?[]:CG_COLORLIST_ITEMS.slice();
-  var sizePriceEnabled=(CG_SALE_TYPE==='mixpkg');
-  var price=sizePriceEnabled?'':expandPriceShorthand(priceRaw);
-  if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
+  var colorList=CG_SALE_SINGLE?CG_COLORLIST_ITEMS.slice():[];
+  var sizePriceEnabled=CG_SALE_MIXPKG;
+  var price=CG_SALE_SINGLE?expandPriceShorthand(priceRaw):'';
+  if(!CG_SALE_SINGLE&&sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
     var minUnit=Math.min.apply(null,CG_SIZEPRICE_LIST.map(function(sp){return Number(sp.price)||Infinity;}));
     if(isFinite(minUnit))price=String(minUnit);
   }
@@ -5974,20 +5989,21 @@ function buildCaptionData(){
   if(brand)lines.push('⭐برند '+brand+'⭐');
   if(code)lines.push('🔖 کد: #'+code);
   if(color)lines.push('🎨 رنگ: '+color);
+  if(CG_SALE_SINGLE){
+    if(finalSize)lines.push('📏 سایز: '+finalSize);
+    if(price){
+      if(showPriceInCaption)lines.push('💰 قیمت تک‌رنگ: '+Math.round(Number(price)/1000)+'t');
+      else lines.push('💰 قیمت تک‌رنگ: استعلام بگیرید');
+    }
+    if(minOrder)lines.push('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
+  }
   if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    lines.push('📏 سایز و قیمت هر عدد (بسته میکس):');
+    lines.push('🎁 سایز و قیمت هر عدد (بسته میکس):');
     CG_SIZEPRICE_LIST.forEach(function(sp){
       lines.push(sp.size+' → '+(showPriceInCaption?(fmtUnitPriceDisplay(sp.price)):'استعلام بگیرید'));
     });
-  }else{
-    if(finalSize)lines.push('📏 سایز: '+finalSize);
-    if(price){
-      if(showPriceInCaption)lines.push('💰 قیمت عمده: '+Math.round(Number(price)/1000)+'t');
-      else lines.push('💰 قیمت عمده: استعلام بگیرید');
-    }
   }
-  if(!sizePriceEnabled&&minOrder)lines.push('🛒 حداقل سفارش: '+minOrder+' عدد');
-  if(mixEnabled&&mixDesc)lines.push('🎁 '+mixDesc);
+  if(mixEnabled&&mixDesc)lines.push('🎨 '+mixDesc);
   if(material)lines.push('🌿 پارچه و کش '+material);
 
   var countryMap={
@@ -6128,13 +6144,15 @@ function loadProductForEdit(el){
   document.getElementById('CG_FULLDESC').value=p.fulldesc||'';
   document.getElementById('CG_TGLINK').value=p.tglink||'';
   var _pSizePrice=[];try{_pSizePrice=JSON.parse(p.sizepricelist||'[]');}catch(e){}
-  var _isMixPkg=!!(p.mixenabled||_pSizePrice.length);
+  var _hasMix=!!(p.mixenabled||_pSizePrice.length);
+  var _hasColorList=!!(p.colorlist&&p.colorlist!=='[]'&&p.colorlist!=='');
+  var _hasSingle=!!((p.price&&p.price!=='--')||_hasColorList||!_hasMix);
   CG_SIZEPRICE_LIST=_pSizePrice.map(function(s){
     return {size:s.size,price:s.price,stock:s.stock||'in',pkgPrice:(s.pkgPrice!=null?s.pkgPrice:s.price),pkgCount:(s.pkgCount!=null?s.pkgCount:1)};
   });
   document.getElementById('CG_MIX_DESC').value=p.mixdesc||'';
-  setCgSaleType(_isMixPkg?'mixpkg':'single');
-  document.getElementById('CG_PRICE').value=(!_isMixPkg&&p.price&&p.price!=='--')?p.price:'';
+  setCgSaleType(_hasSingle&&_hasMix?'both':(_hasMix?'mixpkg':'single'));
+  document.getElementById('CG_PRICE').value=(_hasSingle&&p.price&&p.price!=='--')?p.price:'';
   document.getElementById('CG_MINORDER').value=(p.minO&&p.minO!=='--')?p.minO:'';
   var _pColorList=[];try{_pColorList=JSON.parse(p.colorlist||'[]');}catch(e){}
   CG_COLORLIST_ITEMS=_pColorList.map(function(c){
@@ -6481,7 +6499,7 @@ function sendPlainTextTo(baseUrl,token,chatId,text,cb){
   xhr.ontimeout=function(){cb('زمان تمام شد');};
   xhr.send(JSON.stringify({chat_id:chatId,text:text,parse_mode:'HTML'}));
 }
-function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
+function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb,onProgress){
   var needsFollowup=!!(caption&&tgDisplayLen(caption)>TG_CAPTION_LIMIT);
   var useCaption=needsFollowup?'':caption;
   var fd=new FormData();
@@ -6497,6 +6515,7 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
   var xhr=new XMLHttpRequest();
   xhr.open('POST',baseUrl+token+'/sendMediaGroup',true);
   xhr.timeout=180000;
+  if(onProgress&&xhr.upload)xhr.upload.onprogress=function(e){if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100));};
   xhr.onload=function(){
     try{
       var r=JSON.parse(xhr.responseText);
@@ -6511,7 +6530,7 @@ function sendMediaGroupTo(baseUrl,token,chatId,mediaList,caption,cb){
   xhr.ontimeout=function(){cb('زمان تمام شد');};
   xhr.send(fd);
 }
-function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
+function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb,onProgress){
   var needsFollowup=!!(caption&&tgDisplayLen(caption)>TG_CAPTION_LIMIT);
   var useCaption=needsFollowup?'':caption;
   var fd=new FormData();
@@ -6523,6 +6542,7 @@ function sendSingleMediaTo(baseUrl,token,chatId,item,caption,cb){
   var xhr=new XMLHttpRequest();
   xhr.open('POST',baseUrl+token+'/'+method,true);
   xhr.timeout=120000;
+  if(onProgress&&xhr.upload)xhr.upload.onprogress=function(e){if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100));};
   xhr.onload=function(){
     try{
       var r=JSON.parse(xhr.responseText);
@@ -6648,14 +6668,15 @@ function sendToChannels(){
         return;
       }
       var t=targets[eidx];
-      stat.textContent='در حال ارسال به '+t.name+'...';stat.className='stat sload';
+      stat.textContent='در حال ارسال به '+t.name+'... 0٪';stat.className='stat sload';
       function done(err,msgId){
         if(!err){eOk++;eResults.push({cid:t.cid,msgId:msgId});trackChannelPost(t.cid);}else{eErrs.push(t.name+': '+err);console.error(t.name+': '+err);}
         eidx++;
         setTimeout(nextEdit,800);
       }
-      if(ordered.length===1)sendSingleMediaTo(t.base,t.token,t.cid,ordered[0],caption,done);
-      else sendMediaGroupTo(t.base,t.token,t.cid,ordered,caption,done);
+      function onProg(pct){stat.textContent='در حال ارسال به '+t.name+'... '+pct+'٪';}
+      if(ordered.length===1)sendSingleMediaTo(t.base,t.token,t.cid,ordered[0],caption,done,onProg);
+      else sendMediaGroupTo(t.base,t.token,t.cid,ordered,caption,done,onProg);
     }
     stat.textContent='در حال حذف پست قبلی از کانال‌ها...';stat.className='stat sload';
     deleteOldChannelPosts(EDITING_RID,function(){nextEdit();});
@@ -6687,17 +6708,18 @@ function sendToChannels(){
         return;
       }
       var t=targets[idx];
-      stat.textContent='در حال ارسال به '+t.name+'...';stat.className='stat sload';
+      stat.textContent='در حال ارسال به '+t.name+'... 0٪';stat.className='stat sload';
       function done(err,msgId){
         if(!err){okCount++;nResults.push({cid:t.cid,msgId:msgId});trackChannelPost(t.cid);}
         else{errMsgs.push(t.name+': '+err);console.error(t.name+': '+err);}
         idx++;
         setTimeout(next,800);
       }
+      function onProg(pct){stat.textContent='در حال ارسال به '+t.name+'... '+pct+'٪';}
       if(ordered.length===1){
-        sendSingleMediaTo(t.base,t.token,t.cid,ordered[0],caption,done);
+        sendSingleMediaTo(t.base,t.token,t.cid,ordered[0],caption,done,onProg);
       } else {
-        sendMediaGroupTo(t.base,t.token,t.cid,ordered,caption,done);
+        sendMediaGroupTo(t.base,t.token,t.cid,ordered,caption,done,onProg);
       }
     }
     next();
