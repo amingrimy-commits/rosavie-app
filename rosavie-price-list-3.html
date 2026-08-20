@@ -1117,6 +1117,19 @@ function toggleEditOrder(id){
   var box=document.getElementById('ORDEDIT_'+id);
   if(box)box.style.display=box.style.display==='none'?'block':'none';
 }
+function ordAddPushRow(orderId,item){
+  var wrap=document.getElementById('ORDEDIT_ITEMS_'+orderId);
+  if(!wrap)return;
+  var row=document.createElement('div');
+  row.className='ordedit-row';
+  row.setAttribute('data-new','1');
+  row.setAttribute('data-item',JSON.stringify(item));
+  row.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.72rem';
+  row.innerHTML='<span style="flex:1">'+item.title+(item.color?(' — '+item.color):'')+'</span>'+
+    '<input type="text" value="'+item.qty+'" data-newqty="1" class="fi" style="width:50px;padding:4px;text-align:center">'+
+    '<button onclick="this.parentElement.remove()" style="background:#e05a5a;color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button>';
+  wrap.appendChild(row);
+}
 function orderEditSearch(id,q){
   var el=document.getElementById('ORDEDIT_SEARCHRES_'+id);
   if(!el)return;
@@ -1135,27 +1148,135 @@ function orderEditSearch(id,q){
     '</div>';
   }).join('');
 }
-function orderEditAddProduct(id,code){
+var ORDADD_QTYS={},ORDADD_PROD=null,ORDADD_ORDER=null;
+function orderEditAddProduct(orderId,code){
   var p=allProds().find(function(x){return x.code===code;});
   if(!p)return;
-  var qtyRaw=prompt('تعداد این محصول رو وارد کن:','1');
-  if(qtyRaw===null)return;
-  var qty=parseInt(toEnDigits(qtyRaw))||0;
-  if(qty<=0){alert('تعداد نامعتبره');return;}
-  var colorNote=prompt('توضیح رنگ/سایز (اختیاری، خالی بذار اگه نیاز نیست):','')||'';
+  ORDADD_PROD=p;ORDADD_ORDER=orderId;ORDADD_QTYS={};
   var nm=p.title||(TLBL[p.type]||p.type);
-  var wrap=document.getElementById('ORDEDIT_ITEMS_'+id);
-  var row=document.createElement('div');
-  row.className='ordedit-row';
-  row.setAttribute('data-new','1');
-  row.setAttribute('data-item',JSON.stringify({code:p.code,title:nm,tab:p.tab,color:colorNote,price:p.price}));
-  row.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.72rem';
-  row.innerHTML='<span style="flex:1">'+nm+(colorNote?(' — '+colorNote):'')+'</span>'+
-    '<input type="text" value="'+qty+'" data-newqty="1" class="fi" style="width:50px;padding:4px;text-align:center">'+
-    '<button onclick="this.parentElement.remove()" style="background:#e05a5a;color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button>';
-  wrap.appendChild(row);
-  document.getElementById('ORDEDIT_SEARCH_'+id).value='';
-  document.getElementById('ORDEDIT_SEARCHRES_'+id).style.display='none';
+  var step=parseInt(toEnDigits(String(p.minO||'')).replace(/[^0-9]/g,''))||1;
+  var colorList=[];try{colorList=JSON.parse(p.colorlist||'[]');}catch(e){}
+  var sizeList=[];try{sizeList=JSON.parse(p.sizepricelist||'[]');}catch(e){}
+  var mixOn=p.mixenabled==='1'||p.mixenabled===true;
+  var mixStep=parseInt(toEnDigits(String(p.mixminorder||p.minO||'')).replace(/[^0-9]/g,''))||step;
+  var body='';
+  if(sizeList.length){
+    body+='<div style="font-size:0.72rem;font-weight:900;color:#3d2b1f;margin-bottom:6px">سایز و تعداد رو انتخاب کن:</div>';
+    sizeList.forEach(function(s){
+      if(s.stock==='out'){body+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.72rem;opacity:0.5"><span>'+s.size+' — '+fmtP(s.price)+' (ناموجود)</span></div>';return;}
+      var key='sz:'+s.size;ORDADD_QTYS[key]=0;
+      var safeKey=key.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
+      var escKey=key.replace(/'/g,"\\'");
+      body+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:0.72rem;border-bottom:1px solid #f0e6d8">'+
+        '<span>'+s.size+' — '+fmtP(s.price)+'</span>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+        '<button onclick="ordAddChQty(\''+escKey+'\','+(-step)+',\''+safeKey+'\')" style="width:26px;height:26px;border:none;border-radius:6px;background:#f0e6d8;font-weight:900">−</button>'+
+        '<span id="ORDADD_Q_'+safeKey+'" style="min-width:22px;text-align:center;font-weight:900">0</span>'+
+        '<button onclick="ordAddChQty(\''+escKey+'\','+step+',\''+safeKey+'\')" style="width:26px;height:26px;border:none;border-radius:6px;background:#f0e6d8;font-weight:900">+</button>'+
+        '</div></div>';
+    });
+  }else if(colorList.length||mixOn){
+    body+='<div style="font-size:0.72rem;font-weight:900;color:#3d2b1f;margin-bottom:6px">رنگ و تعداد رو انتخاب کن (ضریب: '+step+' تایی):</div>';
+    colorList.forEach(function(cRaw){
+      var c=(typeof cRaw==='string')?{name:cRaw,stock:'in'}:cRaw;
+      ORDADD_QTYS[c.name]=0;
+      var safeKey=c.name.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
+      var escName=c.name.replace(/'/g,"\\'");
+      if(c.stock==='out'){body+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.72rem;opacity:0.5"><span>'+(c.hex?('<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+c.hex+';margin-left:5px"></span>'):'')+c.name+' (ناموجود)</span></div>';return;}
+      body+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:0.72rem;border-bottom:1px solid #f0e6d8">'+
+        '<span>'+(c.hex?('<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+c.hex+';margin-left:5px;vertical-align:middle"></span>'):'')+c.name+'</span>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+        '<button onclick="ordAddChQty(\''+escName+'\','+(-step)+',\''+safeKey+'\')" style="width:26px;height:26px;border:none;border-radius:6px;background:#f0e6d8;font-weight:900">−</button>'+
+        '<span id="ORDADD_Q_'+safeKey+'" style="min-width:22px;text-align:center;font-weight:900">0</span>'+
+        '<button onclick="ordAddChQty(\''+escName+'\','+step+',\''+safeKey+'\')" style="width:26px;height:26px;border:none;border-radius:6px;background:#f0e6d8;font-weight:900">+</button>'+
+        '</div></div>';
+    });
+    if(mixOn){
+      ORDADD_QTYS['__mix__']=0;
+      body+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:0.72rem;border-bottom:1px solid #f0e6d8;background:#fbf6ee">'+
+        '<span>🎨 میکس'+(p.mixdesc?(' — '+p.mixdesc):'')+' (ضریب '+mixStep+')</span>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+        '<button onclick="ordAddChQty(\'__mix__\','+(-mixStep)+',\'__mix__\')" style="width:26px;height:26px;border:none;border-radius:6px;background:#f0e6d8;font-weight:900">−</button>'+
+        '<span id="ORDADD_Q___mix__" style="min-width:22px;text-align:center;font-weight:900">0</span>'+
+        '<button onclick="ordAddChQty(\'__mix__\','+mixStep+',\'__mix__\')" style="width:26px;height:26px;border:none;border-radius:6px;background:#f0e6d8;font-weight:900">+</button>'+
+        '</div></div>';
+    }
+  }else{
+    body+='<div style="font-size:0.72rem;color:#9a6e3a;margin-bottom:8px">این محصول رنگ/سایز تعریف‌شده‌ای نداره. تعداد رو با ضریب '+step+' تایی انتخاب کن:</div>'+
+      (p.colors&&p.colors!=='--'?('<div style="font-size:0.7rem;color:#9a6e3a;margin-bottom:6px">رنگ‌های موجود (برای اطلاع): '+p.colors+'</div>'):'')+
+      '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0">'+
+      '<button onclick="ordAddChQty(\'__single__\','+(-step)+',\'__single__\')" style="width:30px;height:30px;border:none;border-radius:8px;background:#f0e6d8;font-weight:900">−</button>'+
+      '<span id="ORDADD_Q___single__" style="min-width:26px;text-align:center;font-weight:900;font-size:0.9rem">0</span>'+
+      '<button onclick="ordAddChQty(\'__single__\','+step+',\'__single__\')" style="width:30px;height:30px;border:none;border-radius:8px;background:#f0e6d8;font-weight:900">+</button>'+
+      '</div>';
+    ORDADD_QTYS['__single__']=0;
+  }
+  var modal='<div id="ORDADD_MODAL" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:flex-end">'+
+    '<div style="background:#fff;border-radius:16px 16px 0 0;padding:16px;width:100%;max-height:85vh;overflow:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+      '<div style="font-weight:900;color:#3d2b1f">'+nm+' <span style="color:#2a9d5c;font-size:0.8rem">('+fmtP(p.price)+')</span></div>'+
+      '<button onclick="ordAddClose()" style="background:none;border:none;font-size:1.2rem;color:#9a6e3a">✕</button>'+
+    '</div>'+
+    body+
+    '<button onclick="ordAddConfirm()" style="width:100%;background:#2a9d5c;color:#fff;border:none;border-radius:8px;padding:10px;font-size:0.78rem;font-weight:900;margin-top:12px;cursor:pointer">✅ افزودن انتخاب‌ها به سفارش</button>'+
+    '<div style="border-top:1.5px dashed #d4a87a;margin:14px 0 10px;padding-top:10px">'+
+      '<div style="font-size:0.72rem;font-weight:900;color:#3d2b1f;margin-bottom:6px">یا افزودن دستی (رنگ/تعداد دلخواه):</div>'+
+      '<input type="text" id="ORDADD_MANUAL_NOTE" class="fi" placeholder="توضیح رنگ/سایز دلخواه (اختیاری)" style="font-size:0.72rem;margin-bottom:6px">'+
+      '<div style="display:flex;gap:6px">'+
+        '<input type="text" id="ORDADD_MANUAL_QTY" class="fi" placeholder="تعداد" value="1" style="font-size:0.72rem;flex:1;text-align:center">'+
+        '<button onclick="ordAddManualConfirm()" style="background:#4a9dff;color:#fff;border:none;border-radius:8px;padding:0 14px;font-size:0.72rem;font-weight:700;cursor:pointer">افزودن دستی</button>'+
+      '</div>'+
+    '</div>'+
+    '</div></div>';
+  document.body.insertAdjacentHTML('beforeend',modal);
+  document.getElementById('ORDEDIT_SEARCH_'+orderId).value='';
+  document.getElementById('ORDEDIT_SEARCHRES_'+orderId).style.display='none';
+}
+function ordAddChQty(key,delta,safeKey){
+  var cur=ORDADD_QTYS[key]||0;
+  var next=cur+delta;
+  if(next<0)next=0;
+  ORDADD_QTYS[key]=next;
+  var el=document.getElementById('ORDADD_Q_'+safeKey);
+  if(el)el.textContent=next;
+}
+function ordAddClose(){
+  var m=document.getElementById('ORDADD_MODAL');
+  if(m)m.remove();
+  ORDADD_PROD=null;ORDADD_ORDER=null;ORDADD_QTYS={};
+}
+function ordAddConfirm(){
+  var p=ORDADD_PROD,orderId=ORDADD_ORDER;
+  if(!p||!orderId)return;
+  var nm=p.title||(TLBL[p.type]||p.type);
+  var picked=Object.keys(ORDADD_QTYS).filter(function(k){return ORDADD_QTYS[k]>0;});
+  if(!picked.length){alert('حداقل یه گزینه رو با تعداد انتخاب کن');return;}
+  var sizeList=[];try{sizeList=JSON.parse(p.sizepricelist||'[]');}catch(e){}
+  picked.forEach(function(key){
+    var qty=ORDADD_QTYS[key];
+    var isMix=(key==='__mix__'),isSingle=(key==='__single__'),isSize=key.indexOf('sz:')===0;
+    var linePrice=p.price;
+    var colorNote='';
+    if(isMix)colorNote='میکس'+(p.mixdesc?(' — '+p.mixdesc):'');
+    else if(isSingle)colorNote='';
+    else if(isSize){
+      var sz=sizeList.find(function(s){return s.size===key.slice(3);});
+      linePrice=sz?sz.price:p.price;
+      colorNote='سایز '+key.slice(3);
+    }else colorNote=key;
+    ordAddPushRow(orderId,{code:p.code,title:nm,tab:p.tab,color:colorNote,price:linePrice,qty:qty});
+  });
+  ordAddClose();
+}
+function ordAddManualConfirm(){
+  var p=ORDADD_PROD,orderId=ORDADD_ORDER;
+  if(!p||!orderId)return;
+  var note=(document.getElementById('ORDADD_MANUAL_NOTE').value||'').trim();
+  var qty=parseInt(toEnDigits(document.getElementById('ORDADD_MANUAL_QTY').value))||0;
+  if(qty<=0){alert('تعداد نامعتبره');return;}
+  var nm=p.title||(TLBL[p.type]||p.type);
+  ordAddPushRow(orderId,{code:p.code,title:nm,tab:p.tab,color:note,price:p.price,qty:qty});
+  ordAddClose();
 }
 function saveOrderEdit(id){
   if(!fbDb)return;
@@ -1279,6 +1400,7 @@ function refreshDoneOrders(){
   });
 }
 function startOrdersListener(){
+  if(!ADMIN_IS_READY){whenAdminReady(startOrdersListener);return;}
   if(!initFirebase()){
     var el=document.getElementById('ORDERS_LIST');
     if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
@@ -1379,6 +1501,7 @@ function refreshDoneSupportMsgs(){
   });
 }
 function startSupportMsgListener(){
+  if(!ADMIN_IS_READY){whenAdminReady(startSupportMsgListener);return;}
   if(!initFirebase()){
     var el=document.getElementById('SUPPORTMSG_LIST');
     if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
@@ -1478,6 +1601,7 @@ function deleteReview(id){
   fbDb.collection('reviews').doc(id).delete().catch(function(err){console.error('deleteReview error',err);});
 }
 function startReviewsListener(){
+  if(!ADMIN_IS_READY){whenAdminReady(startReviewsListener);return;}
   if(!initFirebase()){
     var el=document.getElementById('REVIEWS_ADMIN_LIST');
     if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
@@ -1598,6 +1722,7 @@ function saveAddSiteCustomerForm(cid){
 }
 var CUSTOMERS2_SEEN_IDS={},CUSTOMERS2_FIRST_LOAD=true;
 function startCustomersListener(){
+  if(!ADMIN_IS_READY){whenAdminReady(startCustomersListener);return;}
   if(!initFirebase()){
     var el=document.getElementById('CUSTOMERS2_LIST');
     if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
@@ -2554,6 +2679,7 @@ function updateHomeTelegramWidgets(){
   }
 }
 function updateHomeContentWidget(){
+  if(!ADMIN_IS_READY){whenAdminReady(updateHomeContentWidget);return;}
   if(!initFirebase())return;
   var today=new Date().toISOString().slice(0,10);
   fbDb.collection('channelActivity').doc(today).onSnapshot(function(doc){
@@ -2567,6 +2693,7 @@ function updateHomeContentWidget(){
   });
 }
 function startHomeSiteVisitWidget(){
+  if(!ADMIN_IS_READY){whenAdminReady(startHomeSiteVisitWidget);return;}
   if(!initFirebase())return;
   var today=new Date().toISOString().slice(0,10);
   fbDb.collection('analytics').doc(today).onSnapshot(function(doc){
@@ -6798,9 +6925,17 @@ setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvIt
 <script>
 // ── قفل ورود ادمین ──
 var ADMIN_UID='5OEb6mBf4mOwDPdOcAx4ycAUc692';
+var ADMIN_IS_READY=false,ADMIN_READY_QUEUE=[];
+function whenAdminReady(cb){
+  if(ADMIN_IS_READY)cb();else ADMIN_READY_QUEUE.push(cb);
+}
 function adminShowApp(){
   document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
   document.getElementById('APP_ROOT').style.display='';
+  ADMIN_IS_READY=true;
+  var q=ADMIN_READY_QUEUE;ADMIN_READY_QUEUE=[];
+  q.forEach(function(fn){try{fn();}catch(e){console.error('admin ready queue error',e);}});
+  checkServerConnection();
 }
 function adminShowGate(msg){
   document.getElementById('APP_ROOT').style.display='none';

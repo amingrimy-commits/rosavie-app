@@ -603,6 +603,17 @@ function ensureCategoryLoaded(catKey){
   st.startedLoad=true;st.loading=true;
   renderGrid();
   loadInitialChunk(catKey,st,null);
+  setTimeout(function(){
+    if(st.loading&&!st.items.length){
+      var grid=document.getElementById('GRID');
+      if(grid)grid.innerHTML='<div class="nores">اتصال به سرور خیلی طول کشید. اگه از فیلترشکن استفاده می‌کنی، مطمئن شو روشنه، بعد دوباره امتحان کن.<br><br><button onclick="retryLoadCategory(\''+catKey+'\')" style="background:#3a2e29;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:0.78rem;cursor:pointer">🔄 تلاش دوباره</button></div>';
+    }
+  },15000);
+}
+function retryLoadCategory(catKey){
+  delete _catState[catKey];
+  ensureCategoryLoaded(catKey);
+  renderGrid();
 }
 function loadInitialChunk(catKey,st,afterDoc){
   var q=catQueryBase(catKey).limit(INITIAL_CHUNK_SIZE);
