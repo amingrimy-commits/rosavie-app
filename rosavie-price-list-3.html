@@ -658,6 +658,7 @@ input[type=file]{display:none}
     <div class="g1" id="CG_PANTY_SIZE_WRAP" style="display:none"><span class="lbl">سایز پیشنهادی شورت / گن / بادی / مایو</span>
       <div class="chips">
         <button type="button" class="chip" onclick="setCgSleepSize('L,XL')">(L,XL)</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('F')">F</button>
         <button type="button" class="chip" onclick="setCgSleepSize('XS')">XS</button>
         <button type="button" class="chip" onclick="setCgSleepSize('S')">S</button>
         <button type="button" class="chip" onclick="setCgSleepSize('M')">M</button>
@@ -701,11 +702,20 @@ input[type=file]{display:none}
       <div class="chips" id="CG_FABRIC_CHIPS"></div>
     </div>
 
-    <div class="g2">
-      <div><span class="lbl">۶. قیمت عمده هر عدد</span><input class="fi" type="text" id="CG_PRICE" placeholder="مثال: 780 یعنی ۷۸۰,۰۰۰ تومان"></div>
-      <div><span class="lbl">۷. حداقل سفارش (برای رنگ‌های تکی)</span><input class="fi" type="text" id="CG_MINORDER" placeholder="مثال: 2"></div>
+    <div class="g1" style="margin-top:4px">
+      <span class="lbl">نوع فروش این محصول</span>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="button" id="CG_SALETYPE_SINGLE" class="chip on" style="flex:1;padding:10px" onclick="setCgSaleType('single')">🎨 تک رنگ (قیمت ثابت)</button>
+        <button type="button" id="CG_SALETYPE_MIXPKG" class="chip" style="flex:1;padding:10px" onclick="setCgSaleType('mixpkg')">🎁 بسته میکس (قیمت از روی بسته)</button>
+      </div>
     </div>
-    <div class="g1"><span class="lbl">رنگ‌های قابل‌انتخاب جدا (اختیاری — تا مشتری بتونه هرکدوم رو با تعداد دلخواه جدا سفارش بده، و بتونی هرکدوم رو موجود/ناموجود کنی)</span>
+
+    <div class="g2" id="CG_SINGLE_PRICE_WRAP">
+      <div><span class="lbl">۶. قیمت عمده هر عدد</span><input class="fi" type="text" id="CG_PRICE" placeholder="مثال: 780 یعنی ۷۸۰,۰۰۰ تومان"></div>
+      <div><span class="lbl">۷. حداقل سفارش</span><input class="fi" type="text" id="CG_MINORDER" placeholder="مثال: 2"></div>
+    </div>
+
+    <div class="g1" id="CG_COLORLIST_SECTION"><span class="lbl">رنگ‌های قابل‌انتخاب جدا (اختیاری — تا مشتری بتونه هرکدوم رو با تعداد دلخواه جدا سفارش بده، و بتونی هرکدوم رو موجود/ناموجود کنی)</span>
       <div style="display:flex;gap:6px;margin-bottom:8px;position:relative">
         <input class="fi" type="text" id="CG_CL_NAME" placeholder="نام رنگ (مثال: صورتی)" style="flex:1" oninput="suggestColorList(this.value)" onfocus="suggestColorList(this.value)">
         <button type="button" class="sbig" style="width:auto;padding:0 16px;background:#3d2b1f;color:#f9f0e8" onclick="addCgColorItem()">+ افزودن</button>
@@ -714,27 +724,19 @@ input[type=file]{display:none}
       <div id="CG_COLORLIST_UI"></div>
       <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">اگه هیچی اضافه نکنی، فقط همون فیلد «رنگ» بالا به‌عنوان توضیح نمایش داده می‌شه و مشتری نمی‌تونه رنگ جدا انتخاب کنه.</p>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
-      <input type="checkbox" id="CG_MIX_ENABLED" style="width:17px;height:17px" onchange="toggleCgMixWrap(this.checked)">
-      این محصول یه گزینه‌ی «بسته میکس رنگ» هم داره (رنگ‌ها ثابت و از قبل ترکیب‌شده‌ن، مشتری نمی‌تونه انتخاب کنه)
-    </label>
-    <div id="CG_MIX_WRAP" style="display:none">
-      <div class="g1"><span class="lbl">توضیح رنگ‌های داخل بسته میکس</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
-      <div class="g1"><span class="lbl">حداقل سفارش بسته میکس (می‌تونه با حداقل رنگ‌های تکی فرق کنه)</span><input class="fi" type="text" id="CG_MIX_MINORDER" placeholder="مثال: 6"></div>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
-      <input type="checkbox" id="CG_SIZEPRICE_ENABLED" style="width:17px;height:17px" onchange="toggleCgSizePriceWrap(this.checked)">
-      هر سایز قیمت جدا داره (مثلاً بسته‌ی شورت که هر سایزش قیمت متفاوت داره — مشتری سایز رو جدا با قیمت خودش انتخاب می‌کنه)
-    </label>
-    <div id="CG_SIZEPRICE_WRAP" style="display:none">
-      <p style="font-size:0.68rem;color:#9a6e3a;margin:2px 0 8px">توجه: وقتی این روشنه، فیلد «۵. سایز» بالا و فیلد «۶. قیمت» دیگه استفاده نمی‌شن — به‌جاش سایز و قیمت هرکدوم رو اینجا جدا اضافه کن.</p>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input class="fi" type="text" id="CG_SP_SIZE" placeholder="سایز (مثال: L)" style="flex:1">
-        <input class="fi" type="text" id="CG_SP_PRICE" placeholder="قیمت (مثال: 2000)" style="flex:1">
+
+    <div id="CG_MIXPKG_WRAP" style="display:none">
+      <div class="g1"><span class="lbl">توضیح ترکیب بسته میکس (اختیاری)</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
+      <p style="font-size:0.68rem;color:#9a6e3a;margin:2px 0 8px">برای هر سایز، قیمت کل بسته و تعداد داخلش رو وارد کن — قیمت هر دونه خودکار حساب می‌شه.</p>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <input class="fi" type="text" id="CG_SP_SIZE" placeholder="سایز (مثال: L)" style="flex:1;min-width:70px">
+        <input class="fi" type="text" id="CG_SP_PKGPRICE" placeholder="قیمت کل بسته" style="flex:1;min-width:90px">
+        <input class="fi" type="text" id="CG_SP_PKGCOUNT" placeholder="تعداد در بسته" style="flex:1;min-width:90px">
         <button type="button" class="sbig" style="width:auto;padding:0 16px;background:#3d2b1f;color:#f9f0e8" onclick="addCgSizePrice()">+ افزودن</button>
       </div>
       <div id="CG_SIZEPRICE_LIST"></div>
     </div>
+
     <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin:6px 0 4px;cursor:pointer">
       <input type="checkbox" id="CG_SHOWPRICE_CAPTION" style="width:17px;height:17px">
       نمایش قیمت در متن کپشن (وگرنه بجاش «استعلام بگیرید» نوشته میشه؛ قیمت همیشه توی لیست قیمت ذخیره میشه)
@@ -5558,7 +5560,7 @@ var TYPE_FABRIC_TAGS={
   topw:['نخی','بندباریک','فانتزی'],
   panty_cotton:['اسلیپ','بکلس','کبریتی','کِلوی','گنی','کش‌پهن','چاپی','جنیفری','عینکی'],
   panty_laser:['پادار','اسلیپ','برزیلی','بکلس','لامبادا','اروپایی','گیپوردار'],
-  panty_shortex:['ویسکوز','نخی','جیبدار','گنی'],
+  panty_shortex:['ویسکوز','نخی','جیبدار','گنی','کبریتی'],
   panty_fantasy:['فاق‌باز','کِلوین','کش‌پهن','دامنی','توری','گیپور','ریش‌دار','یراق‌دار'],
   corset_slip:['اِسپاچ'],
   corset_waist:['گن ساعت‌شنی'],
@@ -5699,8 +5701,14 @@ function editCgSiteImg(){
   if(!CG_SITE_IMG)return;
   openEditor('sitephoto',CG_SITE_IMG);
 }
-function toggleCgMixWrap(checked){
-  document.getElementById('CG_MIX_WRAP').style.display=checked?'block':'none';
+var CG_SALE_TYPE='single';
+function setCgSaleType(type){
+  CG_SALE_TYPE=type;
+  document.getElementById('CG_SALETYPE_SINGLE').classList.toggle('on',type==='single');
+  document.getElementById('CG_SALETYPE_MIXPKG').classList.toggle('on',type==='mixpkg');
+  document.getElementById('CG_SINGLE_PRICE_WRAP').style.display=type==='single'?'':'none';
+  document.getElementById('CG_COLORLIST_SECTION').style.display=type==='single'?'':'none';
+  document.getElementById('CG_MIXPKG_WRAP').style.display=type==='mixpkg'?'block':'none';
 }
 var COLOR_HEX_MAP={
   'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
@@ -5764,18 +5772,33 @@ function renderCgColorListUI(){
   }).join('');
 }
 var CG_SIZEPRICE_LIST=[];
-function toggleCgSizePriceWrap(checked){
-  document.getElementById('CG_SIZEPRICE_WRAP').style.display=checked?'block':'none';
-  if(!checked){CG_SIZEPRICE_LIST=[];renderCgSizePriceList();}
+function computeUnitPrice(pkgPrice,count){
+  var p=Number(pkgPrice)||0,c=Number(count)||1;
+  if(c<=0)c=1;
+  var unit=p/c;
+  if(Math.abs(unit-Math.round(unit))<0.05)return Math.round(unit);
+  return Math.round(unit*10)/10;
+}
+function fmtUnitPriceDisplay(u){
+  u=Number(u)||0;
+  var isInt=(u===Math.round(u));
+  var str=isInt?String(Math.round(u)):u.toFixed(1);
+  var parts=str.split('.');
+  var intPart=Number(parts[0]).toLocaleString('fa-IR');
+  return (parts[1]?(intPart+'.'+parts[1]):intPart)+' تومان';
 }
 function addCgSizePrice(){
   var sz=(document.getElementById('CG_SP_SIZE').value||'').trim();
-  var pr=toEnDigits(document.getElementById('CG_SP_PRICE').value||'').trim();
-  if(!sz||!pr){alert('سایز و قیمت رو پر کن');return;}
-  pr=expandPriceShorthand(pr);
-  CG_SIZEPRICE_LIST.push({size:sz,price:pr,stock:'in'});
+  var pkgPriceRaw=toEnDigits(document.getElementById('CG_SP_PKGPRICE').value||'').trim();
+  var pkgCountRaw=toEnDigits(document.getElementById('CG_SP_PKGCOUNT').value||'').trim();
+  if(!sz||!pkgPriceRaw||!pkgCountRaw){alert('سایز، قیمت بسته و تعداد داخل بسته رو پر کن');return;}
+  var pkgPrice=Number(expandPriceShorthand(pkgPriceRaw));
+  var pkgCount=Number(pkgCountRaw.replace(/[^0-9.]/g,''))||1;
+  var unit=computeUnitPrice(pkgPrice,pkgCount);
+  CG_SIZEPRICE_LIST.push({size:sz,price:unit,pkgPrice:pkgPrice,pkgCount:pkgCount,stock:'in'});
   document.getElementById('CG_SP_SIZE').value='';
-  document.getElementById('CG_SP_PRICE').value='';
+  document.getElementById('CG_SP_PKGPRICE').value='';
+  document.getElementById('CG_SP_PKGCOUNT').value='';
   renderCgSizePriceList();
 }
 function delCgSizePrice(idx){
@@ -5791,8 +5814,9 @@ function renderCgSizePriceList(){
   if(!CG_SIZEPRICE_LIST.length){el.innerHTML='<p style="font-size:0.72rem;color:#bbb">هنوز سایزی اضافه نشده</p>';return;}
   el.innerHTML=CG_SIZEPRICE_LIST.map(function(sp,i){
     var isOut=sp.stock==='out';
+    var pkgInfo=(sp.pkgPrice&&sp.pkgCount)?(' — بسته '+fmtP(sp.pkgPrice)+' ('+sp.pkgCount+' تایی)'):'';
     return '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2cdb0;border-radius:8px;padding:8px 10px;margin-bottom:6px'+(isOut?';opacity:0.6':'')+'">'+
-      '<span style="font-weight:900;color:#3d2b1f">'+sp.size+' — '+fmtP(sp.price)+(isOut?' (ناموجود)':'')+'</span>'+
+      '<div style="font-weight:900;color:#3d2b1f">'+sp.size+' — واحد: '+fmtUnitPriceDisplay(sp.price)+(isOut?' (ناموجود)':'')+'<div style="font-size:0.66rem;color:#9a6e3a;font-weight:400">'+pkgInfo.replace(/^ — /,'')+'</div></div>'+
       '<div style="display:flex;gap:6px">'+
       '<button type="button" onclick="toggleCgSizeStock('+i+')" style="background:'+(isOut?'#e8f5ee':'#fde8e8')+';color:'+(isOut?'#1a6a3a':'#c04040')+';border:1px solid '+(isOut?'#a8d8b8':'#f5b8b8')+';border-radius:6px;padding:0 10px;height:26px;cursor:pointer;font-size:0.68rem">'+(isOut?'برگردون موجود':'ناموجود کن')+'</button>'+
       '<button type="button" onclick="delCgSizePrice('+i+')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:6px;width:26px;height:26px;cursor:pointer">✕</button>'+
@@ -5927,10 +5951,15 @@ function buildCaptionData(){
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
       sizeRange=V('CG_SIZE_RANGE'), priceRaw=V('CG_PRICE'), minOrder=V('CG_MINORDER'), material=V('CG_MATERIAL'),
       desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK'),
-      mixEnabled=!!(document.getElementById('CG_MIX_ENABLED')&&document.getElementById('CG_MIX_ENABLED').checked),
-      mixDesc=V('CG_MIX_DESC'), mixMinOrder=V('CG_MIX_MINORDER');
-  var colorList=CG_COLORLIST_ITEMS.slice();
-  var price=expandPriceShorthand(priceRaw);
+      mixEnabled=(CG_SALE_TYPE==='mixpkg'),
+      mixDesc=V('CG_MIX_DESC');
+  var colorList=mixEnabled?[]:CG_COLORLIST_ITEMS.slice();
+  var sizePriceEnabled=(CG_SALE_TYPE==='mixpkg');
+  var price=sizePriceEnabled?'':expandPriceShorthand(priceRaw);
+  if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
+    var minUnit=Math.min.apply(null,CG_SIZEPRICE_LIST.map(function(sp){return Number(sp.price)||Infinity;}));
+    if(isFinite(minUnit))price=String(minUnit);
+  }
   var showPriceInCaption=!!(document.getElementById('CG_SHOWPRICE_CAPTION')&&document.getElementById('CG_SHOWPRICE_CAPTION').checked);
 
   var expandedSize=expandBandRange(sizeRange);
@@ -5945,11 +5974,10 @@ function buildCaptionData(){
   if(brand)lines.push('⭐برند '+brand+'⭐');
   if(code)lines.push('🔖 کد: #'+code);
   if(color)lines.push('🎨 رنگ: '+color);
-  var sizePriceEnabled=!!(document.getElementById('CG_SIZEPRICE_ENABLED')&&document.getElementById('CG_SIZEPRICE_ENABLED').checked);
   if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    lines.push('📏 سایز و قیمت هر سایز:');
+    lines.push('📏 سایز و قیمت هر عدد (بسته میکس):');
     CG_SIZEPRICE_LIST.forEach(function(sp){
-      lines.push(sp.size+' → '+(showPriceInCaption?(Math.round(Number(sp.price)/1000)+'t'):'استعلام بگیرید'));
+      lines.push(sp.size+' → '+(showPriceInCaption?(fmtUnitPriceDisplay(sp.price)):'استعلام بگیرید'));
     });
   }else{
     if(finalSize)lines.push('📏 سایز: '+finalSize);
@@ -5958,7 +5986,8 @@ function buildCaptionData(){
       else lines.push('💰 قیمت عمده: استعلام بگیرید');
     }
   }
-  if(minOrder)lines.push('🛒 حداقل سفارش: '+minOrder+' عدد');
+  if(!sizePriceEnabled&&minOrder)lines.push('🛒 حداقل سفارش: '+minOrder+' عدد');
+  if(mixEnabled&&mixDesc)lines.push('🎁 '+mixDesc);
   if(material)lines.push('🌿 پارچه و کش '+material);
 
   var countryMap={
@@ -5998,7 +6027,7 @@ function buildCaptionData(){
   return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,fixedBottomHtml:fixedBottomHtml,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
-    colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:mixEnabled?mixMinOrder:'',
+    colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:'',
     sizePriceList:sizePriceEnabled?CG_SIZEPRICE_LIST.slice():[],
     fabricTags:CG_FABRIC_TAGS.slice(),
     siteImg:CG_SITE_IMG||'',
@@ -6093,23 +6122,25 @@ function loadProductForEdit(el){
   document.getElementById('CG_BRAND').value=p.brandName||'';
   document.getElementById('CG_CODE').value=(p.code&&p.code!=='--')?p.code:'';
   document.getElementById('CG_COLOR').value=(p.colors&&p.colors!=='--')?p.colors:'';
-  document.getElementById('CG_PRICE').value=(p.price&&p.price!=='--')?p.price:'';
-  document.getElementById('CG_MINORDER').value=(p.minO&&p.minO!=='--')?p.minO:'';
   document.getElementById('CG_MATERIAL').value=p.material||'';
   document.getElementById('CG_DESC1').value=p.desc1||'';
   document.getElementById('CG_DESC2').value=p.desc2||'';
   document.getElementById('CG_FULLDESC').value=p.fulldesc||'';
   document.getElementById('CG_TGLINK').value=p.tglink||'';
+  var _pSizePrice=[];try{_pSizePrice=JSON.parse(p.sizepricelist||'[]');}catch(e){}
+  var _isMixPkg=!!(p.mixenabled||_pSizePrice.length);
+  CG_SIZEPRICE_LIST=_pSizePrice.map(function(s){
+    return {size:s.size,price:s.price,stock:s.stock||'in',pkgPrice:(s.pkgPrice!=null?s.pkgPrice:s.price),pkgCount:(s.pkgCount!=null?s.pkgCount:1)};
+  });
+  document.getElementById('CG_MIX_DESC').value=p.mixdesc||'';
+  setCgSaleType(_isMixPkg?'mixpkg':'single');
+  document.getElementById('CG_PRICE').value=(!_isMixPkg&&p.price&&p.price!=='--')?p.price:'';
+  document.getElementById('CG_MINORDER').value=(p.minO&&p.minO!=='--')?p.minO:'';
   var _pColorList=[];try{_pColorList=JSON.parse(p.colorlist||'[]');}catch(e){}
   CG_COLORLIST_ITEMS=_pColorList.map(function(c){
     return (typeof c==='string')?{name:c,stock:'in'}:{name:c.name,stock:c.stock||'in'};
   });
   renderCgColorListUI();
-  var _mixChk=document.getElementById('CG_MIX_ENABLED');
-  _mixChk.checked=!!p.mixenabled;
-  toggleCgMixWrap(_mixChk.checked);
-  document.getElementById('CG_MIX_DESC').value=p.mixdesc||'';
-  document.getElementById('CG_MIX_MINORDER').value=p.mixminorder||'';
   if(p.siteimg){
     CG_SITE_IMG=p.siteimg;
     document.getElementById('CG_SITE_IMG_THUMB').src=p.siteimg;
@@ -6117,11 +6148,6 @@ function loadProductForEdit(el){
   }else{
     removeCgSiteImg();
   }
-  var _pSizePrice=[];try{_pSizePrice=JSON.parse(p.sizepricelist||'[]');}catch(e){}
-  CG_SIZEPRICE_LIST=_pSizePrice.map(function(s){return {size:s.size,price:s.price,stock:s.stock||'in'};});
-  var _spChk=document.getElementById('CG_SIZEPRICE_ENABLED');
-  _spChk.checked=!!_pSizePrice.length;
-  toggleCgSizePriceWrap(_spChk.checked);
   renderCgSizePriceList();
   var _pFabricTags=[];try{_pFabricTags=JSON.parse(p.fabrictags||'[]');}catch(e){}
   CG_FABRIC_TAGS=_pFabricTags.slice();
@@ -6195,6 +6221,9 @@ function cancelEdit(){
   document.getElementById('EDIT_BANNER').style.display='none';
   document.getElementById('SAVE_ONLY_BTN').style.display='none';
   resetSendMedia();
+  CG_SIZEPRICE_LIST=[];renderCgSizePriceList();
+  document.getElementById('CG_MIX_DESC').value='';
+  setCgSaleType('single');
 }
 function saveEditOnly(){
   var stat=document.getElementById('CG_STAT');
