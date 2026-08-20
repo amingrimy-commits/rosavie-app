@@ -331,7 +331,7 @@ input[type=file]{display:none}
   <button class="tab" onclick="hideSubNav();showTab('pcust',this);closeAdmDrawer()">👥 باشگاه مشتریان</button>
   <button class="tab" onclick="openContentGroup();closeAdmDrawer()">تولید محتوا</button>
   <button class="tab" onclick="openProductsGroup();closeAdmDrawer()">🛍️ محصولات</button>
-  <button class="tab" onclick="openSiteGroup();closeAdmDrawer()">🌐 سایت</button>
+  <button class="tab" onclick="openSiteGroup();closeAdmDrawer()">🌐 سایت <span class="new-badge" id="SITEDOT" style="position:static;display:none;margin-right:6px;vertical-align:middle">NEW</span></button>
 </div>
 <div class="notif-overlay" id="NOTIFOV" onclick="closeNotifPanel()"></div>
 <div class="notif-overlay" id="ORDERSOV" onclick="closeOrdersPanel()"></div>
@@ -883,6 +883,8 @@ input[type=file]{display:none}
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">مشتری‌هایی که توی سایت shop.html حساب کاربری ساختن، با شماره و آدرسشون اینجا نشون داده می‌شن.</p>
     <div class="g1"><input class="fi" type="text" id="CUST2_SEARCH" placeholder="جستجو با نام، شماره، استان یا شهر..." oninput="renderCustomers2()"></div>
     <div id="CUSTOMERS2_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px">در حال اتصال...</div>
+    <button class="sbig" style="margin-top:8px;background:#fde8e8;color:#c04040" onclick="toggleBlockedCustomers()" id="BLOCKED_TOGGLE_BTN">🚫 مشاهده شماره‌های بلاک‌شده</button>
+    <div id="BLOCKED_CUSTOMERS_LIST" style="font-size:0.78rem;color:#9a6e3a;margin-top:8px;display:none"></div>
   </div>
   <div class="card" style="border:2px solid #e0304f"><div class="ctitle">✉️ پیام‌های پشتیبانی از سایت</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">پیام‌هایی که مشتری‌ها از فرم «ارتباط با ما» توی سایت می‌فرستن، اینجا زنده نشون داده می‌شه.</p>
@@ -928,11 +930,21 @@ input[type=file]{display:none}
     <div class="stat" id="BCSTAT"></div>
     <p style="font-size:0.7rem;color:#aaa;margin-top:8px;line-height:1.9">راهنما: یه کانال تلگرام جدید و پرایوت فقط برای پشتیبان‌گیری بساز، ربات رو با یوزرنیمش ادمین کانال کن، یه پیام توی کانال بفرست، بعد دکمه بالا رو بزن.</p>
   </div>
+  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">☁️ همگام‌سازی ابری باشگاه مشتریان و فاکتورها</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">علاوه بر پشتیبان‌گیری تلگرامی، باشگاه مشتریان و فاکتورها خودکار (چند ثانیه بعد از هر تغییر) با فضای ابری فایربیس هم همگام می‌شن — یعنی اگه گوشیت خراب/گم بشه، این اطلاعات از بین نمی‌رن.</p>
+    <button class="sbig" style="background:#4a9dff;color:#fff" onclick="pushCustomerDataToFirestore()">⬆️ ارسال دستی وضعیت فعلی به فضای ابری</button>
+    <button class="sbig" style="margin-top:8px;background:#eddfc9;color:#9a6e3a" onclick="if(confirm('این کار اطلاعات فعلی گوشیت رو با نسخه‌ی ابری جایگزین می‌کنه. مطمئنی؟'))pullCustomerDataFromFirestore()">⬇️ دریافت دستی نسخه‌ی ابری (جایگزین وضعیت فعلی)</button>
+  </div>
   <div class="card"><div class="ctitle">تنظیمات تلگرام</div>
     <div class="g1"><span class="lbl">Token ربات (مشترک)</span><input class="fi" type="text" id="TGK" autocomplete="off" style="direction:ltr" value="8835510367:AAFQ0NgeCZO_twZGWbNqNNK6WrxRoeof3O8"></div>
     <div class="g2">
       <div><span class="lbl">Chat ID کانال 1 (لباس زیر)</span><input class="fi" type="text" id="TGCID" autocomplete="off" style="direction:ltr" value="@rozavie_underwear"></div>
       <div><span class="lbl">Chat ID کانال 2 (لباس خواب)</span><input class="fi" type="text" id="TGCID2" autocomplete="off" style="direction:ltr" value="@rozavie_sleepwear"></div>
+    </div>
+    <div class="g1" style="margin-top:12px;background:#eef7ee;border:1.5px dashed #9ac89a;border-radius:10px;padding:10px">
+      <span class="lbl">🖼️ Chat ID کانال گالری VIP (عکس تمیز و بدون واترمارک، فقط برای مشتری‌های خریدار)</span>
+      <input class="fi" type="text" id="GALLERYCID" autocomplete="off" style="direction:ltr" value="-1003987788681" placeholder="مثال: -1001234567890">
+      <p style="font-size:0.68rem;color:#5a8a5a;margin-top:4px">اگه این رو پر کنی، موقع ارسال محصول به کانال‌های عمومی، نسخه‌ی تمیز (بدون واترمارک) هم خودکار به این کانال فرستاده می‌شه.</p>
     </div>
   </div>
   <div class="card"><div class="ctitle">📥 دریافت سفارش مشتری</div>
@@ -1644,6 +1656,7 @@ function renderCustomers2(){
   var el=document.getElementById('CUSTOMERS2_LIST');
   if(!el)return;
   var list=CUSTOMERS2.filter(function(c){
+    if(c.blocked)return false;
     if(!q)return true;
     return [c.name,c.phone,c.province,c.city].some(function(v){return (v||'').toLowerCase().indexOf(q)>-1;});
   });
@@ -1652,19 +1665,61 @@ function renderCustomers2(){
     list.map(function(c){
       var addrLine=[c.province,c.city].filter(Boolean).join(' - ');
       var termsLine=c.termsAccepted?('پذیرش قوانین: '+(c.termsAcceptedAt&&c.termsAcceptedAt.toDate?c.termsAcceptedAt.toDate().toLocaleDateString('fa-IR'):'بله')):'قوانین را نپذیرفته';
-      return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
-        '<div style="font-weight:900;color:#3d2b1f">'+(c.name||'—')+'</div>'+
+      var inClub=!!(findCustomerByPhone(c.phone)||findCustomerByName(c.name));
+      var isBlocked=!!c.blocked;
+      var badge=isBlocked?'<span style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:20px;padding:2px 9px;font-size:0.64rem;font-weight:900;margin-right:6px">🚫 بلاک‌شده</span>':(!inClub?'<span style="background:#fff3cd;color:#8a6d1a;border:1px solid #e8d48a;border-radius:20px;padding:2px 9px;font-size:0.64rem;font-weight:900;margin-right:6px">🆕 بررسی‌نشده</span>':'');
+      return '<div style="background:#fff;border:1px solid '+(isBlocked?'#f5b8b8':'#d4a87a')+';border-radius:10px;padding:10px 12px;margin-bottom:8px'+(isBlocked?';opacity:0.7':'')+'">'+
+        '<div style="font-weight:900;color:#3d2b1f">'+(c.name||'—')+badge+'</div>'+
         '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px;direction:ltr;text-align:right">'+(c.phone||'—')+'</div>'+
         (addrLine?'<div style="color:#3d2b1f;font-size:0.74rem;margin-top:4px">'+addrLine+'</div>':'')+
         (c.address?'<div style="color:#3d2b1f;font-size:0.72rem;margin-top:3px">'+c.address+(c.postal?' — کدپستی '+c.postal:'')+'</div>':'')+
         '<div style="color:#9a6e3a;font-size:0.68rem;margin-top:5px">'+termsLine+'</div>'+
-        '<div style="display:flex;gap:6px;margin-top:7px">'+
+        '<div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">'+
         '<a href="tel:'+(c.phone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:6px;border-radius:8px;text-decoration:none;font-size:0.7rem">☎️ تماس</a>'+
         '<button onclick="showAddSiteCustomerForm(\''+c._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:6px">✏️ ویرایش و ورود به باشگاه</button>'+
+        (isBlocked?
+          '<button onclick="unblockSiteCustomer(\''+c._id+'\')" style="flex:1;background:#e8f5ee;color:#1a6a3a;border:1px solid #a8d8b8;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:6px">✅ رفع بلاک</button>':
+          '<button onclick="blockSiteCustomer(\''+c._id+'\',\''+escAttr(c.name||c.phone||'')+'\')" style="flex:1;background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:6px">🚫 بلاک کردن</button>')+
         '</div>'+
         '<div id="SCFORM_'+c._id+'" style="display:none;margin-top:9px;padding:9px;background:#f0f6ff;border-radius:8px;border:1.5px dashed #4a9dff"></div>'+
         '</div>';
     }).join('');
+}
+var BLOCKED_CUSTOMERS_OPEN=false;
+function toggleBlockedCustomers(){
+  var box=document.getElementById('BLOCKED_CUSTOMERS_LIST');
+  var btn=document.getElementById('BLOCKED_TOGGLE_BTN');
+  BLOCKED_CUSTOMERS_OPEN=!BLOCKED_CUSTOMERS_OPEN;
+  if(!BLOCKED_CUSTOMERS_OPEN){box.style.display='none';btn.textContent='🚫 مشاهده شماره‌های بلاک‌شده';return;}
+  refreshBlockedCustomers();
+}
+function refreshBlockedCustomers(){
+  var box=document.getElementById('BLOCKED_CUSTOMERS_LIST');
+  var btn=document.getElementById('BLOCKED_TOGGLE_BTN');
+  var list=CUSTOMERS2.filter(function(c){return !!c.blocked;});
+  if(!list.length){box.innerHTML='<p style="color:#9a6e3a">هیچ شماره‌ی بلاک‌شده‌ای نیست.</p>';}
+  else{
+    box.innerHTML='<div style="font-size:0.72rem;color:#c04040;margin-bottom:6px">'+list.length+' شماره بلاک‌شده</div>'+list.map(function(c){
+      return '<div style="background:#fff5f5;border:1px solid #f5b8b8;border-radius:10px;padding:10px 12px;margin-bottom:8px;opacity:0.85">'+
+        '<div style="font-weight:900;color:#3d2b1f">'+(c.name||'—')+'</div>'+
+        '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px;direction:ltr;text-align:right">'+(c.phone||'—')+'</div>'+
+        '<button onclick="unblockSiteCustomer(\''+c._id+'\')" style="margin-top:8px;width:100%;background:#e8f5ee;color:#1a6a3a;border:1px solid #a8d8b8;border-radius:8px;font-size:0.72rem;padding:7px;cursor:pointer">✅ رفع بلاک</button>'+
+        '</div>';
+    }).join('');
+  }
+  box.style.display='block';
+  btn.textContent='🙈 پنهان کردن شماره‌های بلاک‌شده';
+}
+function blockSiteCustomer(cid,name){
+  if(!confirm('مطمئنی می‌خوای «'+name+'» رو بلاک کنی؟ این شماره دیگه نمی‌تونه وارد حسابش تو سایت بشه.'))return;
+  if(!fbDb)return;
+  fbDb.collection('customers').doc(cid).update({blocked:true,blockedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    addNotif('🚫 «'+name+'» بلاک شد');
+  }).catch(function(err){console.error('blockSiteCustomer error',err);alert('خطا در بلاک کردن');});
+}
+function unblockSiteCustomer(cid){
+  if(!fbDb)return;
+  fbDb.collection('customers').doc(cid).update({blocked:false}).catch(function(err){console.error('unblockSiteCustomer error',err);alert('خطا در رفع بلاک');});
 }
 function showAddSiteCustomerForm(cid){
   var c=CUSTOMERS2.find(function(x){return x._id===cid;});
@@ -1734,14 +1789,13 @@ function startCustomersListener(){
     CUSTOMERS2=[];
     snap.forEach(function(doc){CUSTOMERS2.push(Object.assign({_id:doc.id},doc.data()));});
     renderCustomers2();
+    if(BLOCKED_CUSTOMERS_OPEN)refreshBlockedCustomers();
     mergeWebsiteCustomersIntoClub(CUSTOMERS2);
-    if(!CUSTOMERS2_FIRST_LOAD){
-      snap.docChanges().forEach(function(ch){
-        if(ch.type==='added'&&!CUSTOMERS2_SEEN_IDS[ch.doc.id])NEW_CUSTOMERS_COUNT++;
-      });
-      updateOrdersDot();
-    }
-    snap.forEach(function(doc){CUSTOMERS2_SEEN_IDS[doc.id]=true;});
+    NEW_CUSTOMERS_COUNT=CUSTOMERS2.filter(function(c){
+      var inClub=!!(findCustomerByPhone(c.phone)||findCustomerByName(c.name));
+      return !inClub&&!c.blocked;
+    }).length;
+    updateOrdersDot();
     CUSTOMERS2_FIRST_LOAD=false;
   },function(err){
     var el=document.getElementById('CUSTOMERS2_LIST');
@@ -2243,10 +2297,36 @@ function showBackupNotice(msg,isErr){
   clearTimeout(window._abToastTimer);
   window._abToastTimer=setTimeout(function(){el.style.display='none';},6000);
 }
+function pushCustomerDataToFirestore(){
+  if(!initFirebase())return;
+  fbDb.collection('adminData').doc('customerClub').set({
+    customers:CUSTOMERS,invoiceLog:INVOICE_LOG,updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    addNotif('☁️ باشگاه مشتریان و فاکتورها با فضای ابری همگام شد');
+  }).catch(function(err){
+    console.error('pushCustomerDataToFirestore error',err);
+    addNotif('⚠️ همگام‌سازی ابری مشتریان/فاکتورها ناموفق بود: '+(err&&err.message?err.message:err));
+  });
+}
+function pullCustomerDataFromFirestore(){
+  if(!ADMIN_IS_READY){whenAdminReady(pullCustomerDataFromFirestore);return;}
+  if(!initFirebase())return;
+  fbDb.collection('adminData').doc('customerClub').get().then(function(doc){
+    if(!doc.exists)return;
+    var d=doc.data();
+    if(Array.isArray(d.customers))CUSTOMERS=d.customers;
+    if(Array.isArray(d.invoiceLog))INVOICE_LOG=d.invoiceLog;
+    try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}
+    try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}
+    if(typeof renderCustomerList==='function')renderCustomerList();
+    if(typeof renderInvItems==='function')renderInvItems();
+    addNotif('☁️ باشگاه مشتریان و فاکتورها از فضای ابری بارگذاری شد ('+CUSTOMERS.length+' مشتری، '+INVOICE_LOG.length+' فاکتور)');
+  }).catch(function(err){console.error('pullCustomerDataFromFirestore error',err);});
+}
 var _eventBackupTimer=null;
 function scheduleEventBackup(){
   if(_eventBackupTimer)clearTimeout(_eventBackupTimer);
-  _eventBackupTimer=setTimeout(silentEventBackup,8000);
+  _eventBackupTimer=setTimeout(function(){silentEventBackup();pushCustomerDataToFirestore();},8000);
 }
 function silentEventBackup(){
   var token=V('TGK'),backupCid=V('BACKUPCID');
@@ -2611,16 +2691,14 @@ function updateNotifDot(){
 var NEW_ORDERS_COUNT=0,NEW_SUPPORTMSG_COUNT=0,NEW_REVIEWS_COUNT=0,NEW_CUSTOMERS_COUNT=0;
 function updateOrdersDot(){
   var dot=document.getElementById('ORDERSDOT');
-  if(!dot)return;
-  var total=NEW_ORDERS_COUNT+NEW_SUPPORTMSG_COUNT+NEW_REVIEWS_COUNT;
-  dot.style.display=total>0?'inline-block':'none';
+  if(dot)dot.style.display=NEW_ORDERS_COUNT>0?'inline-block':'none';
+  var sdot=document.getElementById('SITEDOT');
+  if(sdot)sdot.style.display=(NEW_SUPPORTMSG_COUNT+NEW_REVIEWS_COUNT+NEW_CUSTOMERS_COUNT)>0?'inline-block':'none';
 }
 function openOrdersPanel(){
   document.getElementById('ORDERSPANEL').classList.add('open');
   document.getElementById('ORDERSOV').classList.add('open');
   document.body.style.overflow='hidden';
-  NEW_CUSTOMERS_COUNT=0;
-  updateOrdersDot();
   renderInvItems();
 }
 function closeOrdersPanel(){
@@ -4360,8 +4438,51 @@ function logInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer
 }
 
 // ── باشگاه مشتریان (CRM) ──
-function loadCustomers(){try{var raw=localStorage.getItem('rv_customers');CUSTOMERS=raw?JSON.parse(raw):[];}catch(e){CUSTOMERS=[];}}
-function saveCustomers(){try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}scheduleEventBackup();}
+function loadCustomers(){
+  try{var raw=localStorage.getItem('rv_customers');CUSTOMERS=raw?JSON.parse(raw):[];}catch(e){CUSTOMERS=[];}
+  whenAdminReady(startCustomerClubSync);
+}
+function saveCustomers(){
+  try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}
+  scheduleEventBackup();
+  whenAdminReady(syncCustomerClubToFirestore);
+}
+var CUSTOMER_CLUB_FIRST_LOAD=true,CUSTOMER_CLUB_SYNC_TIMER=null;
+function startCustomerClubSync(){
+  if(!initFirebase())return;
+  fbDb.collection('customerClub').onSnapshot(function(snap){
+    if(CUSTOMER_CLUB_FIRST_LOAD&&snap.empty&&CUSTOMERS.length){
+      // اولین اجرا بعد از آپدیت: فایربیس خالیه ولی گوشی داده‌ی قدیمی داره → آپلودشون کن
+      CUSTOMER_CLUB_FIRST_LOAD=false;
+      syncCustomerClubToFirestore();
+      return;
+    }
+    var remote=[];
+    snap.forEach(function(doc){remote.push(doc.data());});
+    CUSTOMERS=remote;
+    try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}
+    var pg=document.getElementById('pcust');
+    if(pg&&pg.classList.contains('on')&&typeof renderCustomerList==='function')renderCustomerList();
+    CUSTOMER_CLUB_FIRST_LOAD=false;
+  },function(err){console.error('customerClub listener error',err);});
+}
+function syncCustomerClubToFirestore(){
+  if(!initFirebase())return;
+  clearTimeout(CUSTOMER_CLUB_SYNC_TIMER);
+  CUSTOMER_CLUB_SYNC_TIMER=setTimeout(function(){
+    var chunks=[];
+    for(var i=0;i<CUSTOMERS.length;i+=400)chunks.push(CUSTOMERS.slice(i,i+400));
+    if(!chunks.length)return;
+    chunks.forEach(function(chunk){
+      var batch=fbDb.batch();
+      chunk.forEach(function(c){
+        if(!c.id)return;
+        batch.set(fbDb.collection('customerClub').doc(c.id),c);
+      });
+      batch.commit().catch(function(e){console.error('customerClub sync error',e);});
+    });
+  },1500);
+}
 function custUid(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function showToast(msg){
   var old=document.querySelector('.toast');if(old)old.remove();
@@ -4769,6 +4890,7 @@ function deleteCustomer(id){
   if(!confirm('این مشتری و تمام تاریخچه خریدش برای همیشه حذف میشه. مطمئنی؟'))return;
   CUSTOMERS=CUSTOMERS.filter(function(x){return x.id!==id;});
   saveCustomers();renderCustomerList();closeCustDetail();autoSyncCustomerChannel();
+  if(initFirebase())fbDb.collection('customerClub').doc(id).delete().catch(function(e){console.error('deleteCustomer firestore error',e);});
 }
 var RECEIPT_TARGET=null;
 function pickReceiptPhoto(custId,purId){
@@ -5316,8 +5438,50 @@ function renderInvNumBadge(){
 // ── REPORTS ──
 var INVOICE_LOG=[];
 var CUR_REPORT_PERIOD='day';
-function loadInvoiceLog(){try{var raw=localStorage.getItem('rv_invoice_log');INVOICE_LOG=raw?JSON.parse(raw):[];}catch(e){INVOICE_LOG=[];}}
-function saveInvoiceLog(){try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}scheduleEventBackup();}
+function loadInvoiceLog(){
+  try{var raw=localStorage.getItem('rv_invoice_log');INVOICE_LOG=raw?JSON.parse(raw):[];}catch(e){INVOICE_LOG=[];}
+  whenAdminReady(startInvoiceLogSync);
+}
+function saveInvoiceLog(){
+  try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}
+  scheduleEventBackup();
+  whenAdminReady(syncInvoiceLogToFirestore);
+}
+var INVOICE_LOG_FIRST_LOAD=true,INVOICE_LOG_SYNC_TIMER=null;
+function startInvoiceLogSync(){
+  if(!initFirebase())return;
+  fbDb.collection('invoiceLog').onSnapshot(function(snap){
+    if(INVOICE_LOG_FIRST_LOAD&&snap.empty&&INVOICE_LOG.length){
+      INVOICE_LOG_FIRST_LOAD=false;
+      syncInvoiceLogToFirestore();
+      return;
+    }
+    var remote=[];
+    snap.forEach(function(doc){remote.push(doc.data());});
+    remote.sort(function(a,b){return (b.date||0)-(a.date||0);});
+    INVOICE_LOG=remote;
+    try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}
+    if(typeof renderInvoiceList==='function')renderInvoiceList();
+    INVOICE_LOG_FIRST_LOAD=false;
+  },function(err){console.error('invoiceLog listener error',err);});
+}
+function syncInvoiceLogToFirestore(){
+  if(!initFirebase())return;
+  clearTimeout(INVOICE_LOG_SYNC_TIMER);
+  INVOICE_LOG_SYNC_TIMER=setTimeout(function(){
+    var chunks=[];
+    for(var i=0;i<INVOICE_LOG.length;i+=400)chunks.push(INVOICE_LOG.slice(i,i+400));
+    if(!chunks.length)return;
+    chunks.forEach(function(chunk){
+      var batch=fbDb.batch();
+      chunk.forEach(function(inv){
+        if(!inv.invoiceNumber)return;
+        batch.set(fbDb.collection('invoiceLog').doc(String(inv.invoiceNumber)),inv);
+      });
+      batch.commit().catch(function(e){console.error('invoiceLog sync error',e);});
+    });
+  },1500);
+}
 function setReportPeriod(period,btn){
   CUR_REPORT_PERIOD=period;
   document.querySelectorAll('#pf .chip').forEach(function(c){c.classList.remove('on');});
@@ -6394,6 +6558,57 @@ function copyGeneratedCaption(){
 
 // ── UNIFIED SEND (تلگرام + بله + واتساپ) ──
 var SEND_MEDIA=[]; // {type:'image'|'video', blob:Blob, previewUrl:string, primary:bool}
+var WATERMARK_TEXT='@rozavie_underwear';
+function watermarkBlob(blob,cb){
+  var fr=new FileReader();
+  fr.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var cv=document.createElement('canvas');
+        cv.width=img.width;cv.height=img.height;
+        var ctx=cv.getContext('2d');
+        ctx.drawImage(img,0,0);
+        var fontSize=Math.max(18,Math.round(img.width*0.032));
+        ctx.font='bold '+fontSize+'px Arial, sans-serif';
+        ctx.fillStyle='rgba(255,255,255,0.13)';
+        ctx.textBaseline='alphabetic';
+        var text=WATERMARK_TEXT;
+        var tw=ctx.measureText(text).width;
+        var gapX=tw+140,gapY=fontSize+110;
+        var diag=Math.sqrt(img.width*img.width+img.height*img.height)+200;
+        ctx.save();
+        ctx.translate(img.width/2,img.height/2);
+        ctx.rotate(-30*Math.PI/180);
+        for(var y=-diag/2;y<diag/2;y+=gapY){
+          for(var x=-diag/2;x<diag/2;x+=gapX){
+            ctx.fillText(text,x,y);
+          }
+        }
+        ctx.restore();
+        cv.toBlob(function(outBlob){cb(outBlob||blob);},'image/jpeg',0.92);
+      }catch(err){console.error('watermark error',err);cb(blob);}
+    };
+    img.onerror=function(){cb(blob);};
+    img.src=e.target.result;
+  };
+  fr.onerror=function(){cb(blob);};
+  fr.readAsDataURL(blob);
+}
+function watermarkMediaList(list,cb){
+  var out=[];
+  var i=0;
+  function next(){
+    if(i>=list.length){cb(out);return;}
+    var item=list[i];
+    if(item.type==='video'){out.push(item);i++;next();return;}
+    watermarkBlob(item.blob,function(wmBlob){
+      out.push(Object.assign({},item,{blob:wmBlob}));
+      i++;next();
+    });
+  }
+  next();
+}
 function resetSendMedia(){
   SEND_MEDIA.forEach(function(m){if(m.previewUrl)URL.revokeObjectURL(m.previewUrl);});
   SEND_MEDIA=[];
@@ -6604,6 +6819,20 @@ function trackChannelPost(cid){
   upd.lastUpdate=firebase.firestore.FieldValue.serverTimestamp();
   fbDb.collection('channelActivity').doc(today).set(upd,{merge:true}).catch(function(e){console.error('trackChannelPost error',e);});
 }
+function sendToGalleryChannel(cleanOrdered,data){
+  var galleryCid=V('GALLERYCID');
+  if(!galleryCid||!cleanOrdered.length)return;
+  var tgToken=V('TGK');
+  if(!tgToken)return;
+  var galCaption='🔖 کد: '+(data.code||'—')+(data.brand?('\n⭐ برند: '+data.brand):'')+(data.title?('\n'+data.title):'');
+  var base='https://api.telegram.org/bot';
+  function done(err){
+    if(err)addNotif('⚠️ ارسال به کانال گالری VIP ناموفق بود: '+err);
+    else addNotif('🖼️ نسخه‌ی تمیز محصول «'+(data.code||'')+'» به کانال گالری VIP ارسال شد');
+  }
+  if(cleanOrdered.length===1)sendSingleMediaTo(base,tgToken,galleryCid,cleanOrdered[0],galCaption,done);
+  else sendMediaGroupTo(base,tgToken,galleryCid,cleanOrdered,galCaption,done);
+}
 function sendToChannels(){
   var stat=document.getElementById('SEND_STAT');
   if(!SEND_MEDIA.length){stat.textContent='لطفاً حداقل یک عکس یا فیلم اضافه کن';stat.className='stat serr';return;}
@@ -6657,8 +6886,8 @@ function sendToChannels(){
       stat.className=updated?'stat sok':'stat serr';
       return;
     }
-    var eidx=0,eErrs=[],eOk=0,eResults=[];
-    stat.textContent='محصول به‌روزرسانی شد، در حال ارسال...';stat.className='stat sload';
+    var eidx=0,eErrs=[],eOk=0,eResults=[];var orderedWm=ordered;
+    stat.textContent='محصول به‌روزرسانی شد، در حال آماده‌سازی عکس‌ها...';stat.className='stat sload';
     function nextEdit(){
       if(eidx>=targets.length){
         saveTgLinkForRow(EDITING_RID,data.category,eResults);
@@ -6675,16 +6904,22 @@ function sendToChannels(){
         setTimeout(nextEdit,800);
       }
       function onProg(pct){stat.textContent='در حال ارسال به '+t.name+'... '+pct+'٪';}
-      if(ordered.length===1)sendSingleMediaTo(t.base,t.token,t.cid,ordered[0],caption,done,onProg);
-      else sendMediaGroupTo(t.base,t.token,t.cid,ordered,caption,done,onProg);
+      if(orderedWm.length===1)sendSingleMediaTo(t.base,t.token,t.cid,orderedWm[0],caption,done,onProg);
+      else sendMediaGroupTo(t.base,t.token,t.cid,orderedWm,caption,done,onProg);
     }
     stat.textContent='در حال حذف پست قبلی از کانال‌ها...';stat.className='stat sload';
-    deleteOldChannelPosts(EDITING_RID,function(){nextEdit();});
+    deleteOldChannelPosts(EDITING_RID,function(){
+      sendToGalleryChannel(ordered,data);
+      watermarkMediaList(ordered,function(wm){orderedWm=wm;nextEdit();});
+    });
     return;
   }
 
   if(!targets.length){stat.textContent='هیچ کانالی انتخاب نشده، تیک‌ها یا تنظیمات تلگرام رو چک کن';stat.className='stat serr';return;}
 
+  stat.textContent='در حال آماده‌سازی عکس‌ها (واترمارک)...';stat.className='stat sload';
+  sendToGalleryChannel(ordered,data);
+  watermarkMediaList(ordered,function(orderedWm){
   stat.textContent='در حال بررسی و ذخیره در لیست قیمت...';stat.className='stat sload';
 
   saveProductWithDuplicateCheck(data,function(saved,mode){
@@ -6716,13 +6951,14 @@ function sendToChannels(){
         setTimeout(next,800);
       }
       function onProg(pct){stat.textContent='در حال ارسال به '+t.name+'... '+pct+'٪';}
-      if(ordered.length===1){
-        sendSingleMediaTo(t.base,t.token,t.cid,ordered[0],caption,done,onProg);
+      if(orderedWm.length===1){
+        sendSingleMediaTo(t.base,t.token,t.cid,orderedWm[0],caption,done,onProg);
       } else {
-        sendMediaGroupTo(t.base,t.token,t.cid,ordered,caption,done,onProg);
+        sendMediaGroupTo(t.base,t.token,t.cid,orderedWm,caption,done,onProg);
       }
     }
     next();
+  });
   });
 }
 function downloadAndCopyFallback(ordered,caption,stat,platformName){
@@ -6821,7 +7057,7 @@ function save(){
   if(_loading)return;
   try{
     var sel={};[1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
-    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,autoSync:AUTO_SYNC_ENABLED};
+    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,autoSync:AUTO_SYNC_ENABLED};
     TABS.forEach(function(tab){
       var brands=[];
       document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
@@ -6855,6 +7091,7 @@ function load(){
     if(d.tgk)document.getElementById('TGK').value=d.tgk;
     if(d.tgcid)document.getElementById('TGCID').value=d.tgcid;
     if(d.tgcid2)document.getElementById('TGCID2').value=d.tgcid2;
+    if(d.galleryCid)document.getElementById('GALLERYCID').value=d.galleryCid;
     setTimeout(function(){
       var bad=[];
       if(looksLikeBotToken(d.tgcid))bad.push('کانال ۱');
@@ -6974,6 +7211,7 @@ window.addEventListener('message',function(e){
 // auto-save checkboxes and fields
 [1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(c){var cb=document.getElementById('S'+n+'C'+c);if(cb)cb.onchange=save;});});
 document.getElementById('TGCID2').oninput=save;
+document.getElementById('GALLERYCID').oninput=save;
 document.getElementById('ORDERCID').oninput=save;
 document.getElementById('ORDERCID2').oninput=save;
 document.getElementById('REPORTCID').oninput=save;
@@ -6996,6 +7234,7 @@ loadNotifs();
 
 loadInvoiceLog();
 loadCustomers();
+if(!CUSTOMERS.length&&!INVOICE_LOG.length)pullCustomerDataFromFirestore();
 renderCgTypeChips();
 var _cgPriceEl=document.getElementById('CG_PRICE');
 if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});

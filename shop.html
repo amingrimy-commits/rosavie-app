@@ -1771,7 +1771,8 @@ function doLogin(){
     return loadCustomerProfile(cred.user.uid).then(function(){renderAccountView();});
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ورود';
-    err.textContent=authErrMsg(e.code);
+    if(e&&e.code==='auth/blocked'){err.textContent='دسترسی این حساب توسط مدیریت مسدود شده. برای اطلاع بیشتر با پشتیبانی تماس بگیر.';}
+    else err.textContent=authErrMsg(e.code);
   });
 }
 function forgotPassword(){
@@ -1827,16 +1828,20 @@ function loadCustomerProfile(uid){
   return db.collection('customers').doc(uid).get().then(function(doc){
     if(doc.exists){
       var d=doc.data();
+      if(d.blocked){
+        CUR_CUSTOMER=null;
+        return fbAuth.signOut().then(function(){return Promise.reject({code:'auth/blocked'});});
+      }
       var acceptedAt=(d.termsAcceptedAt&&d.termsAcceptedAt.toDate)?d.termsAcceptedAt.toDate():null;
       CUR_CUSTOMER={uid:uid,name:d.name||'',phone:d.phone||'',province:d.province||'',city:d.city||'',address:d.address||'',postal:d.postal||'',birthdate:d.birthdate||'',termsAccepted:!!d.termsAccepted,termsAcceptedAt:acceptedAt};
     }
-  }).catch(function(){});
+  });
 }
 function watchAuthState(){
   try{
     if(!initAuth())return;
     fbAuth.onAuthStateChanged(function(user){
-      if(user)loadCustomerProfile(user.uid);
+      if(user)loadCustomerProfile(user.uid).catch(function(){});
       else CUR_CUSTOMER=null;
     });
   }catch(e){console.error('watchAuthState error',e);}
