@@ -2023,14 +2023,19 @@ function fillOFCityOptions(selectedCity){
 var OF_INVOICE_WANTED=true,OF_INVOICE_APP='telegram';
 function setInvoiceWanted(v){
   OF_INVOICE_WANTED=v;
-  document.getElementById('OF_INV_YES').classList.toggle('on',v);
-  document.getElementById('OF_INV_NO').classList.toggle('on',!v);
-  document.getElementById('OF_INV_DETAILS').style.display=v?'block':'none';
+  var yesBtn=document.getElementById('OF_INV_YES'),noBtn=document.getElementById('OF_INV_NO');
+  if(yesBtn)yesBtn.style.cssText=v?'flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700':'flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45';
+  if(noBtn)noBtn.style.cssText=(!v)?'flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700':'flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45';
+  var det=document.getElementById('OF_INV_DETAILS');
+  if(det)det.style.display=v?'block':'none';
 }
 function setInvoiceApp(app,btn){
   OF_INVOICE_APP=app;
-  btn.parentElement.querySelectorAll('.chip').forEach(function(b){b.classList.remove('on');});
-  btn.classList.add('on');
+  var all=document.querySelectorAll('.of-inv-app');
+  for(var i=0;i<all.length;i++){
+    all[i].style.cssText='flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45';
+  }
+  btn.style.cssText='flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700';
 }
 function renderCheckout(){
   OF_INVOICE_WANTED=true;OF_INVOICE_APP='telegram';
@@ -2056,14 +2061,14 @@ function renderCheckout(){
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
       '<label style="margin-bottom:8px;display:block">📨 پیش‌فاکتور از طریق پیام‌رسان براتون ارسال بشه؟</label>'+
       '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-        '<button type="button" id="OF_INV_YES" class="chip on" style="flex:1;padding:8px" onclick="setInvoiceWanted(true)">بله</button>'+
-        '<button type="button" id="OF_INV_NO" class="chip" style="flex:1;padding:8px" onclick="setInvoiceWanted(false)">نه، لازم نیست</button>'+
+        '<button type="button" id="OF_INV_YES" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700" onclick="setInvoiceWanted(true)">بله</button>'+
+        '<button type="button" id="OF_INV_NO" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45" onclick="setInvoiceWanted(false)">نه، لازم نیست</button>'+
       '</div>'+
       '<div id="OF_INV_DETAILS">'+
         '<div style="display:flex;gap:6px;margin-bottom:8px">'+
-          '<button type="button" class="chip on" onclick="setInvoiceApp(\'telegram\',this)">تلگرام</button>'+
-          '<button type="button" class="chip" onclick="setInvoiceApp(\'whatsapp\',this)">واتساپ</button>'+
-          '<button type="button" class="chip" onclick="setInvoiceApp(\'bale\',this)">بله</button>'+
+          '<button type="button" class="of-inv-app" data-app="telegram" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700" onclick="setInvoiceApp(\'telegram\',this)">تلگرام</button>'+
+          '<button type="button" class="of-inv-app" data-app="whatsapp" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45" onclick="setInvoiceApp(\'whatsapp\',this)">واتساپ</button>'+
+          '<button type="button" class="of-inv-app" data-app="bale" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45" onclick="setInvoiceApp(\'bale\',this)">بله</button>'+
         '</div>'+
         '<input id="OF_INV_CONTACT" type="text" placeholder="آیدی یا همون شماره تماس بالا" style="direction:ltr;text-align:left">'+
         '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:4px">اگه آیدیت با شماره تماس فرق داره اینجا بنویس، وگرنه خالی بذار.</div>'+
