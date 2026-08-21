@@ -834,7 +834,10 @@ function setCatFromHome(v){
   body.classList.remove('open');
   chev.classList.remove('open');
 }
-function setCat(v){CUR_CAT=v;CUR_BRAND='all';CUR_FABRIC_TAGS=[];renderChips();renderGrid();}
+function setCat(v){
+  if(v!=='all'&&!requireLoginGate())return;
+  CUR_CAT=v;CUR_BRAND='all';CUR_FABRIC_TAGS=[];renderChips();renderGrid();
+}
 
 function productCardHTML(p,clickExpr,groupCount){
   var st=p.stock==='in'?'<span class="badge-in">موجود</span>':p.stock==='call'?'<span class="badge-call">تماس بگیرید</span>':'<span class="badge-out">ناموجود</span>';
@@ -1266,12 +1269,19 @@ function fetchProductByCodeDirect(code,discountPrice){
     if(body)body.innerHTML='<button class="modal-close" onclick="goHome()">✕</button><div style="clear:both"></div><div style="text-align:center;padding:40px 20px;color:#c0304a">خطا در دریافت محصول. اینترنت یا فیلترشکنت رو چک کن و دوباره امتحان کن.</div>';
   });
 }
+function requireLoginGate(){
+  if(CUR_CUSTOMER)return true;
+  showToast('برای مشاهده‌ی این بخش، لطفاً اول ثبت‌نام یا وارد حسابت شو');
+  navTo('account');
+  return false;
+}
 function renderRoute(){
   var hash=(location.hash||'').replace(/^#/,'');
   hideAllModals();
   if(!hash)return;
   var parts=hash.split('~').map(function(s){try{return decodeURIComponent(s);}catch(e){return s;}});
   var type=parts[0];
+  if((type==='p'||type==='list')&&!requireLoginGate())return;
   if(type==='p'){
     var code=parts[1];
     var group=_ROUTING_READY?PRODUCTS.filter(function(pp){return pp.code===code;}):[];
