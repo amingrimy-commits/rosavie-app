@@ -301,6 +301,10 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 </style>
 </head>
 <body>
+<div id="INAPP_BROWSER_BANNER" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#3a2e29;color:#fff;padding:10px 14px;font-size:0.76rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
+  <span>برای عملکرد درست، سایت رو تو مرورگر واقعی باز کن</span>
+  <button onclick="openInRealBrowser()" style="background:#d4789a;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.74rem;font-weight:700;white-space:nowrap;cursor:pointer">باز کردن</button>
+</div>
 <div id="INIT_LOADER">
   <div id="INIT_TIP_CARD">
     <div id="INIT_TIP_ICON"></div>
@@ -431,6 +435,36 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script>
+(function(){
+  var ua=navigator.userAgent||'';
+  var isTelegramInApp=/Telegram/i.test(ua)||!!window.TelegramWebviewProxy||!!window.TelegramWebview||(window.Telegram&&window.Telegram.WebView);
+  if(!isTelegramInApp)return;
+  var isAndroid=/Android/i.test(ua);
+  var isIOS=/iPhone|iPad|iPod/i.test(ua);
+  var fullUrl=location.href;
+  if(isAndroid){
+    try{
+      var withoutScheme=fullUrl.replace(/^https?:\/\//,'');
+      var intentUrl='intent://'+withoutScheme+'#Intent;scheme=https;package=com.android.chrome;end';
+      location.href=intentUrl;
+    }catch(e){}
+  }
+  var banner=document.getElementById('INAPP_BROWSER_BANNER');
+  if(banner)banner.style.display='flex';
+  window._REAL_BROWSER_URL=fullUrl;
+})();
+function openInRealBrowser(){
+  var url=window._REAL_BROWSER_URL||location.href;
+  var ua=navigator.userAgent||'';
+  if(/iPhone|iPad|iPod/i.test(ua)){
+    window.open(url,'_blank');
+  }else{
+    try{
+      var withoutScheme=url.replace(/^https?:\/\//,'');
+      location.href='intent://'+withoutScheme+'#Intent;scheme=https;package=com.android.chrome;end';
+    }catch(e){window.open(url,'_blank');}
+  }
+}
 var firebaseConfig={apiKey:"AIzaSyCNFSPZFDSCrhVloy-3yv0rUGcKIzSz50A",authDomain:"rosavie-app.firebaseapp.com",projectId:"rosavie-app",storageBucket:"rosavie-app.firebasestorage.app",messagingSenderId:"559569944295",appId:"1:559569944295:web:ffee7e8bd00ae61ed12c42"};
 firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore();
