@@ -4440,12 +4440,12 @@ function logInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer
 // ── باشگاه مشتریان (CRM) ──
 function loadCustomers(){
   try{var raw=localStorage.getItem('rv_customers');CUSTOMERS=raw?JSON.parse(raw):[];}catch(e){CUSTOMERS=[];}
-  whenAdminReady(startCustomerClubSync);
+  setTimeout(function(){whenAdminReady(startCustomerClubSync);},0);
 }
 function saveCustomers(){
   try{localStorage.setItem('rv_customers',JSON.stringify(CUSTOMERS));}catch(e){}
   scheduleEventBackup();
-  whenAdminReady(syncCustomerClubToFirestore);
+  setTimeout(function(){whenAdminReady(syncCustomerClubToFirestore);},0);
 }
 var CUSTOMER_CLUB_FIRST_LOAD=true,CUSTOMER_CLUB_SYNC_TIMER=null;
 function startCustomerClubSync(){
@@ -5440,12 +5440,12 @@ var INVOICE_LOG=[];
 var CUR_REPORT_PERIOD='day';
 function loadInvoiceLog(){
   try{var raw=localStorage.getItem('rv_invoice_log');INVOICE_LOG=raw?JSON.parse(raw):[];}catch(e){INVOICE_LOG=[];}
-  whenAdminReady(startInvoiceLogSync);
+  setTimeout(function(){whenAdminReady(startInvoiceLogSync);},0);
 }
 function saveInvoiceLog(){
   try{localStorage.setItem('rv_invoice_log',JSON.stringify(INVOICE_LOG));}catch(e){}
   scheduleEventBackup();
-  whenAdminReady(syncInvoiceLogToFirestore);
+  setTimeout(function(){whenAdminReady(syncInvoiceLogToFirestore);},0);
 }
 var INVOICE_LOG_FIRST_LOAD=true,INVOICE_LOG_SYNC_TIMER=null;
 function startInvoiceLogSync(){
@@ -7234,7 +7234,7 @@ loadNotifs();
 
 loadInvoiceLog();
 loadCustomers();
-if(!CUSTOMERS.length&&!INVOICE_LOG.length)pullCustomerDataFromFirestore();
+if(!CUSTOMERS.length&&!INVOICE_LOG.length)setTimeout(function(){whenAdminReady(pullCustomerDataFromFirestore);},0);
 renderCgTypeChips();
 var _cgPriceEl=document.getElementById('CG_PRICE');
 if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});
