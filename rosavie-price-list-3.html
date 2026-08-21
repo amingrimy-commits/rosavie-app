@@ -327,7 +327,7 @@ input[type=file]{display:none}
 <div class="adm-drawer-overlay" id="ADMOV" onclick="closeAdmDrawer()"></div>
 <div class="adm-drawer" id="ADMDR">
   <div class="adm-drawer-head"><span>منو</span><button class="adm-drawer-x" onclick="closeAdmDrawer()">✕</button></div>
-  <button class="tab on" onclick="hideSubNav();showTab('pf',this);closeAdmDrawer()">فاکتور</button>
+  <button class="tab on" onclick="hideSubNav();showTab('pf',this);closeAdmDrawer()">خانه</button>
   <button class="tab" onclick="hideSubNav();showTab('pcust',this);closeAdmDrawer()">👥 باشگاه مشتریان</button>
   <button class="tab" onclick="openContentGroup();closeAdmDrawer()">تولید محتوا</button>
   <button class="tab" onclick="openProductsGroup();closeAdmDrawer()">🛍️ محصولات</button>
@@ -393,7 +393,7 @@ input[type=file]{display:none}
         </label>
       </div>
       <div class="settings-section">
-        <button class="sett-qbtn" onclick="closeSettingsPanel();hideSubNav();showTab('pstats',null);">📊 آمار</button>
+        <button class="sett-qbtn" onclick="closeSettingsPanel();hideSubNav();showTab('pf',null);">📊 آمار</button>
         <button class="sett-qbtn" onclick="closeSettingsPanel();openSiteGroup();setTimeout(function(){var b=document.querySelector('#SUBNAV .tab:last-child');if(b)showTab('psettings',b);},50);">تنظیمات اتصال</button>
         <button class="sett-qbtn" onclick="closeSettingsPanel();openProductsGroup();showTab('pa',document.querySelector('#SUBNAV .tab:last-child'));">آرشیو</button>
       </div>
@@ -511,9 +511,6 @@ input[type=file]{display:none}
     </div>
   </div>
 
-</div>
-
-<div class="pg" id="pstats">
   <div class="stats-outer">
     <div class="stats-outer-title">📊 آمارها</div>
     <div class="stats-group">
@@ -560,7 +557,9 @@ input[type=file]{display:none}
       </div>
     </div>
   </div>
+
 </div>
+
 <div class="pg" id="pcust">
   <div class="card">
     <div class="ctitle">👥 باشگاه مشتریان</div>
@@ -2609,7 +2608,10 @@ function showTab(id,btn){
   document.getElementById(id).classList.add('on');if(btn)btn.classList.add('on');
   if(id==='ps')doSearch();
   if(id==='pa'){checkArchive();renderArchive();}
-  if(id==='pstats'){
+  if(id==='pcat'){initBanners();renderVipList();}
+  if(id==='psitecontent'){initBanners();renderVipList();}
+  if(id==='pf'){
+    initHomeStatWidgets();
     loadSiteAnalytics();
     loadTelegramMemberCounts();
     loadContentActivity();
@@ -2617,9 +2619,6 @@ function showTab(id,btn){
     renderReport(CUR_REPORT_PERIOD);
     updateLastReportInfo();
   }
-  if(id==='pcat'){initBanners();renderVipList();}
-  if(id==='psitecontent'){initBanners();renderVipList();}
-  if(id==='pf'){initHomeStatWidgets();}
   if(id==='pcust'){renderCustomerList();}
 }
 function hideSubNav(){var el=document.getElementById('SUBNAV');if(el)el.style.display='none';}
