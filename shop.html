@@ -2040,9 +2040,25 @@ function renderCheckout(){
     '<div class="form-field"><label>کد پستی (اختیاری)</label><input id="OF_POSTAL" type="text" style="direction:ltr;text-align:left" value="'+pfPostal+'" placeholder="۱۰ رقم"></div>'+
     '<div class="form-field"><label>ایمیل (اختیاری)</label><input id="OF_EMAIL" type="email" style="direction:ltr;text-align:left" value="'+pfEmail+'" placeholder="example@gmail.com"></div>'+
     '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
+    '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
+      '<label style="margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:pointer">'+
+        '<input type="checkbox" id="OF_INV_CHK" checked onchange="document.getElementById(\'OF_INV_DETAILS\').style.display=this.checked?\'block\':\'none\'" style="width:18px;height:18px">'+
+        '📨 پیش‌فاکتور از طریق پیام‌رسان براتون ارسال بشه؟'+
+      '</label>'+
+      '<div id="OF_INV_DETAILS">'+
+        '<select id="OF_INV_APP" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #ecdfd2;margin-bottom:8px;background:#fff">'+
+          '<option value="telegram">تلگرام</option>'+
+          '<option value="whatsapp">واتساپ</option>'+
+          '<option value="bale">بله</option>'+
+        '</select>'+
+        '<input id="OF_INV_CONTACT" type="text" placeholder="آیدی یا همون شماره تماس بالا" style="direction:ltr;text-align:left">'+
+        '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:4px">اگه آیدیت با شماره تماس فرق داره اینجا بنویس، وگرنه خالی بذار.</div>'+
+      '</div>'+
+    '</div>'+
     '<div id="OF_ERR" style="color:#e57373;font-size:0.76rem;margin-bottom:8px"></div>'+
     '<button class="checkout-btn" id="OF_SUBMIT" onclick="submitOrder()">✅ ثبت نهایی سفارش</button>'+
     '<div style="text-align:center;color:#777;font-size:0.68rem;margin-top:10px">بعد از ثبت، از طریق شماره تماس باهات هماهنگ می‌کنیم.</div>';
+  body.scrollTop=0;
   renderOFProvinceOptions(pfProvince);
   fillOFCityOptions(pfCity);
 }
@@ -2082,6 +2098,12 @@ function submitOrder(){
   var postal=(document.getElementById('OF_POSTAL').value||'').trim();
   var email=(document.getElementById('OF_EMAIL').value||'').trim();
   var note=(document.getElementById('OF_NOTE').value||'').trim();
+  var invChk=document.getElementById('OF_INV_CHK');
+  var invWanted=invChk?invChk.checked:false;
+  var invAppSel=document.getElementById('OF_INV_APP');
+  var invApp=invWanted?((invAppSel&&invAppSel.value)||'telegram'):'';
+  var invContactRaw=document.getElementById('OF_INV_CONTACT');
+  var invContact=invWanted?((invContactRaw&&invContactRaw.value.trim())||phone):'';
   var errEl=document.getElementById('OF_ERR');
   if(!name){errEl.textContent='لطفاً نام رو وارد کن';return;}
   if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
@@ -2104,6 +2126,9 @@ function submitOrder(){
     customerAddress:addr,
     customerPostal:postal,
     customerEmail:email,
+    invoiceWanted:invWanted,
+    invoiceApp:invApp,
+    invoiceContact:invContact,
     customerUid:(CUR_CUSTOMER&&CUR_CUSTOMER.uid)||null,
     note:note,
     status:'new',
@@ -2124,6 +2149,7 @@ function submitOrder(){
       '<div class="onum" id="ORDNO_TXT">'+orderNo+'</div>'+
       '<button class="checkout-btn" style="background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29" onclick="copyOrderNo(\''+orderNo+'\')" id="COPY_BTN">📋 کپی شماره سفارش</button>'+
       '<div style="color:#999;font-size:0.78rem;margin-top:10px">این شماره رو نگه‌دار. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>';
+    document.getElementById('CART_BODY').scrollTop=0;
   }).catch(function(err){
     btn.disabled=false;btn.textContent='✅ ثبت نهایی سفارش';
     errEl.textContent='خطا در ثبت سفارش: '+(err&&err.message?err.message:err);
