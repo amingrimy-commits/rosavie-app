@@ -1281,7 +1281,7 @@ function renderRoute(){
   if(!hash)return;
   var parts=hash.split('~').map(function(s){try{return decodeURIComponent(s);}catch(e){return s;}});
   var type=parts[0];
-  if((type==='p'||type==='list')&&!requireLoginGate())return;
+  if(type==='list'&&!requireLoginGate())return;
   if(type==='p'){
     var code=parts[1];
     var group=_ROUTING_READY?PRODUCTS.filter(function(pp){return pp.code===code;}):[];
