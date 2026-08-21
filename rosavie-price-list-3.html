@@ -1096,13 +1096,15 @@ function renderOrdersList(list){
       '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+fmtP(o.total)+'</span></div>'+
       '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">شماره سفارش: '+o.orderNo+'</div>'+
       (o.customerAddress?('<div style="color:#3d2b1f;font-size:0.72rem;margin-top:4px;background:#fbf6ee;border-radius:6px;padding:6px 8px">📍 '+(o.customerProvince||'')+(o.customerCity?(' - '+o.customerCity):'')+' — '+o.customerAddress+(o.customerPostal?(' — کدپستی: '+o.customerPostal):'')+'</div>'):'')+
+      (o.invoiceWanted?('<div style="color:#3d2b1f;font-size:0.7rem;margin-top:4px;background:#eef7ee;border-radius:6px;padding:6px 8px">📨 درخواست پیش‌فاکتور از طریق '+({telegram:'تلگرام',whatsapp:'واتساپ',bale:'بله'}[o.invoiceApp]||o.invoiceApp)+' به '+(o.invoiceContact||o.customerPhone)+(o.preInvoiceSentAt?' — <b style="color:#2a9d5c">✅ ارسال شد</b>':'')+'</div>'):'')+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       (o.note?'<div style="color:#9a6e3a;font-size:0.72rem;margin-top:4px">یادداشت: '+o.note+'</div>':'')+
-      '<div style="display:flex;gap:6px;margin-top:8px">'+
+      '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
         '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
         '<button onclick="toggleEditOrder(\''+o._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✏️ ویرایش</button>'+
         '<button onclick="cancelOrder(\''+o._id+'\')" style="flex:1;background:#e05a5a;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">❌ لغو</button>'+
         '<button onclick="showConfirmOrderForm(\''+o._id+'\')" style="flex:1;background:#2a9d5c;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✅ تایید سفارش</button>'+
+        (o.invoiceWanted?('<button onclick="sharePreInvoice(\''+o._id+'\')" style="flex:1 1 100%;background:#9a6e3a;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">📤 اشتراک پیش‌فاکتور</button>'):'')+
       '</div>'+
       '<div id="ORDEDIT_'+o._id+'" style="display:none;margin-top:8px;padding:9px;background:#f0f6ff;border-radius:8px;border:1.5px dashed #4a9dff">'+
         '<div id="ORDEDIT_ITEMS_'+o._id+'">'+(o.items||[]).map(function(it,i){
@@ -1125,6 +1127,38 @@ function renderOrdersList(list){
       '</div>'+
     '</div>';
   }).join('');
+}
+function sharePreInvoice(orderId){
+  if(!fbDb)return;
+  fbDb.collection('orders').doc(orderId).get().then(function(doc){
+    if(!doc.exists)return;
+    var o=doc.data();
+    var cart=(o.items||[]).map(function(it){return {title:it.title,code:it.code||'--',qty:it.qty,price:it.price,minO:'1',colors:it.color||''};});
+    showToast('در حال ساخت پیش‌فاکتور...');
+    var html=buildManualInvoiceHTML(o.customerName,o.customerPhone,o.orderNo,cart);
+    renderGenericPDF(html,function(err,blob){
+      if(err){alert('خطا در ساخت پیش‌فاکتور: '+err);return;}
+      var fname='PreInvoice-RosaVie-'+o.orderNo+'.pdf';
+      var caption='🧾 پیش‌فاکتور سفارش شما از رُزاوی\nشماره سفارش: '+o.orderNo+'\nجمع کل: '+fmtP(o.total)+
+        '\n\nاگه سفارش تأیید بود لطفاً مبلغ رو به شماره کارت زیر واریز کنید و رسیدش رو برامون بفرستید:'+
+        '\n💳 '+RV_CARD_NUMBER+
+        '\n🏦 شبا: '+RV_SHEBA_NUMBER+
+        '\n\nاگه تغییری تو سفارش می‌خواید بگید تا اصلاحش کنیم.';
+      var finish=function(){
+        fbDb.collection('orders').doc(orderId).update({preInvoiceSentAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(e){console.error('markPreInvoiceSent error',e);});
+      };
+      try{
+        var file=new File([blob],fname,{type:'application/pdf'});
+        var canShareFile=navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}));
+        if(canShareFile){
+          navigator.share({files:[file],text:caption,title:'پیش‌فاکتور RosaVie #'+o.orderNo}).then(finish).catch(function(){});
+          return;
+        }
+      }catch(e){}
+      downloadBlobDirect(blob,fname);
+      finish();
+    });
+  });
 }
 function toggleEditOrder(id){
   var box=document.getElementById('ORDEDIT_'+id);
@@ -1337,6 +1371,24 @@ function cancelOrder(id){
     addNotif('❌ سفارش لغو شد');
   }).catch(function(err){console.error('cancelOrder error',err);});
 }
+function createGalleryInviteLink(cb){
+  var galleryCid=V('GALLERYCID'),tgToken=V('TGK');
+  if(!galleryCid||!tgToken){cb(null);return;}
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','https://api.telegram.org/bot'+tgToken+'/createChatInviteLink',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.timeout=15000;
+  xhr.onload=function(){
+    try{
+      var r=JSON.parse(xhr.responseText);
+      if(r.ok&&r.result&&r.result.invite_link)cb(r.result.invite_link);
+      else cb(null);
+    }catch(e){cb(null);}
+  };
+  xhr.onerror=function(){cb(null);};
+  xhr.ontimeout=function(){cb(null);};
+  xhr.send(JSON.stringify({chat_id:galleryCid,member_limit:1,name:'مشتری-'+new Date().toISOString().slice(0,10)}));
+}
 function confirmOrderFinal(id){
   var rcptEl=document.getElementById('ORDRCPT_'+id);
   var rcpt=rcptEl?rcptEl.value.trim():'';
@@ -1356,6 +1408,14 @@ function confirmOrderFinal(id){
     fbDb.collection('orders').doc(id).update({status:'confirmed',receiptRef:rcpt,confirmedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
       logInvoice(o.customerName,o.customerPhone,itemsSummary,o.total,o.orderNo,cartForInvoice,forceNew);
       addNotif('✅ سفارش «'+o.orderNo+'» تایید و به فاکتور و باشگاه مشتریان اضافه شد');
+      if(o.customerUid){
+        createGalleryInviteLink(function(link){
+          if(!link)return;
+          fbDb.collection('customers').doc(o.customerUid).set({galleryLink:link,galleryLinkUsed:false,galleryLinkAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).then(function(){
+            addNotif('🎁 لینک گالری VIP برای مشتری ساخته و تو پروفایلش گذاشته شد');
+          }).catch(function(e){console.error('save gallery link error',e);});
+        });
+      }
     }).catch(function(err){console.error('confirmOrderFinal error',err);});
   });
 }
@@ -4809,6 +4869,7 @@ function renderCustomerDetail(id){
       h+='<div style="font-size:0.76rem;color:#6a5a4a">'+escHtml(p.itemsSummary||'')+'</div>';
       h+='<div style="display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap">';
       h+='<button class="cap-btn cap-edit" style="padding:5px 10px;font-size:0.64rem;flex:none" onclick="viewFullInvoice(\''+c.id+'\',\''+p.id+'\')">📄 مشاهده فاکتور کامل</button>';
+      h+='<button class="cap-btn" style="padding:5px 10px;font-size:0.64rem;flex:none;background:#3d2b1f;color:#f9f0e8" onclick="shareCustomerPurchase(\''+c.id+'\',\''+p.id+'\')">📤 اشتراک فاکتور</button>';
       h+='<button class="cap-btn" style="padding:5px 10px;font-size:0.64rem;flex:none" onclick="pickReceiptPhoto(\''+c.id+'\',\''+p.id+'\')">📎 '+(p.receiptImageId?'تعویض عکس فیش':'افزودن عکس فیش واریزی')+'</button>';
       if(p.receiptImageId){
         h+='<div id="RCT_'+p.id+'" onclick="viewReceiptPhoto(\''+p.receiptImageId+'\')" style="width:38px;height:38px;border-radius:8px;overflow:hidden;background:#eee;cursor:pointer;flex-shrink:0"></div>';
@@ -4957,6 +5018,34 @@ function viewFullInvoice(custId,purId){
     if(err){alert('خطا در ساخت فاکتور: '+err);return;}
     downloadBlobDirect(blob,'Invoice-RosaVie-'+p.invoiceNumber+'.pdf');
     showToast('فاکتور کامل #'+p.invoiceNumber+' دانلود شد');
+  });
+}
+function shareCustomerPurchase(custId,purId){
+  var c=CUSTOMERS.find(function(x){return x.id===custId;});if(!c)return;
+  var p=(c.purchases||[]).find(function(x){return x.id===purId;});if(!p)return;
+  showToast('در حال ساخت فاکتور...');
+  var html;
+  if(p.cart&&p.cart.length)html=buildManualInvoiceHTML(c.name,c.phone,p.invoiceNumber,p.cart);
+  else html=buildManualInvoiceHTML(c.name,c.phone,p.invoiceNumber);
+  renderGenericPDF(html,function(err,blob){
+    if(err){alert('خطا در ساخت فاکتور: '+err);return;}
+    var fname='Invoice-RosaVie-'+p.invoiceNumber+'.pdf';
+    var caption='🧾 فاکتور خرید شما از رُزاوی\nشماره فاکتور: '+p.invoiceNumber+'\nجمع کل: '+fmtP(p.total)+
+      '\n\n💳 شماره کارت: '+RV_CARD_NUMBER+
+      '\n🏦 شماره شبا: '+RV_SHEBA_NUMBER+
+      '\n\nبا تشکر از خرید شما 🌹';
+    try{
+      var file=new File([blob],fname,{type:'application/pdf'});
+      var canShareFile=navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}));
+      if(canShareFile){
+        navigator.share({files:[file],text:caption,title:'فاکتور RosaVie #'+p.invoiceNumber}).then(function(){
+          showToast('فاکتور برای اشتراک‌گذاری باز شد');
+        }).catch(function(){});
+        return;
+      }
+    }catch(e){}
+    downloadBlobDirect(blob,fname);
+    showToast('اشتراک مستقیم پشتیبانی نشد — فاکتور دانلود شد، از اونجا بفرست');
   });
 }
 function deletePurchase(custId,purId){
