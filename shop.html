@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="color-scheme" content="light only">
+<meta name="color-scheme" content="only light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Rosa Vie | رُزاوی</title>
 <link rel="icon" href="icon-192.png">
@@ -2020,25 +2020,7 @@ function fillOFCityOptions(selectedCity){
   cities.forEach(function(c){h+='<option value="'+c+'"'+(c===selectedCity?' selected':'')+'>'+c+'</option>';});
   citySel.innerHTML=h;
 }
-var OF_INVOICE_WANTED=true,OF_INVOICE_APP='telegram';
-function setInvoiceWanted(v){
-  OF_INVOICE_WANTED=v;
-  var yesBtn=document.getElementById('OF_INV_YES'),noBtn=document.getElementById('OF_INV_NO');
-  if(yesBtn)yesBtn.style.cssText=v?'flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700':'flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45';
-  if(noBtn)noBtn.style.cssText=(!v)?'flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700':'flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45';
-  var det=document.getElementById('OF_INV_DETAILS');
-  if(det)det.style.display=v?'block':'none';
-}
-function setInvoiceApp(app,btn){
-  OF_INVOICE_APP=app;
-  var all=document.querySelectorAll('.of-inv-app');
-  for(var i=0;i<all.length;i++){
-    all[i].style.cssText='flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45';
-  }
-  btn.style.cssText='flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700';
-}
 function renderCheckout(){
-  OF_INVOICE_WANTED=true;OF_INVOICE_APP='telegram';
   var body=document.getElementById('CART_BODY');
   var pfName=(CUR_CUSTOMER&&CUR_CUSTOMER.name)||'';
   var pfPhone=(CUR_CUSTOMER&&CUR_CUSTOMER.phone)||'';
@@ -2059,17 +2041,16 @@ function renderCheckout(){
     '<div class="form-field"><label>ایمیل (اختیاری)</label><input id="OF_EMAIL" type="email" style="direction:ltr;text-align:left" value="'+pfEmail+'" placeholder="example@gmail.com"></div>'+
     '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
-      '<label style="margin-bottom:8px;display:block">📨 پیش‌فاکتور از طریق پیام‌رسان براتون ارسال بشه؟</label>'+
-      '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-        '<button type="button" id="OF_INV_YES" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700" onclick="setInvoiceWanted(true)">بله</button>'+
-        '<button type="button" id="OF_INV_NO" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45" onclick="setInvoiceWanted(false)">نه، لازم نیست</button>'+
-      '</div>'+
+      '<label style="margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:pointer">'+
+        '<input type="checkbox" id="OF_INV_CHK" checked onchange="document.getElementById(\'OF_INV_DETAILS\').style.display=this.checked?\'block\':\'none\'" style="width:18px;height:18px">'+
+        '📨 پیش‌فاکتور از طریق پیام‌رسان براتون ارسال بشه؟'+
+      '</label>'+
       '<div id="OF_INV_DETAILS">'+
-        '<div style="display:flex;gap:6px;margin-bottom:8px">'+
-          '<button type="button" class="of-inv-app" data-app="telegram" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #d4789a;background:#fbe8ee;color:#b0517a;font-weight:700" onclick="setInvoiceApp(\'telegram\',this)">تلگرام</button>'+
-          '<button type="button" class="of-inv-app" data-app="whatsapp" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45" onclick="setInvoiceApp(\'whatsapp\',this)">واتساپ</button>'+
-          '<button type="button" class="of-inv-app" data-app="bale" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff;color:#5a4d45" onclick="setInvoiceApp(\'bale\',this)">بله</button>'+
-        '</div>'+
+        '<select id="OF_INV_APP" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #ecdfd2;margin-bottom:8px;background:#fff">'+
+          '<option value="telegram">تلگرام</option>'+
+          '<option value="whatsapp">واتساپ</option>'+
+          '<option value="bale">بله</option>'+
+        '</select>'+
         '<input id="OF_INV_CONTACT" type="text" placeholder="آیدی یا همون شماره تماس بالا" style="direction:ltr;text-align:left">'+
         '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:4px">اگه آیدیت با شماره تماس فرق داره اینجا بنویس، وگرنه خالی بذار.</div>'+
       '</div>'+
@@ -2116,8 +2097,10 @@ function submitOrder(){
   var postal=(document.getElementById('OF_POSTAL').value||'').trim();
   var email=(document.getElementById('OF_EMAIL').value||'').trim();
   var note=(document.getElementById('OF_NOTE').value||'').trim();
-  var invWanted=OF_INVOICE_WANTED;
-  var invApp=invWanted?OF_INVOICE_APP:'';
+  var invChk=document.getElementById('OF_INV_CHK');
+  var invWanted=invChk?invChk.checked:false;
+  var invAppSel=document.getElementById('OF_INV_APP');
+  var invApp=invWanted?((invAppSel&&invAppSel.value)||'telegram'):'';
   var invContactRaw=document.getElementById('OF_INV_CONTACT');
   var invContact=invWanted?((invContactRaw&&invContactRaw.value.trim())||phone):'';
   var errEl=document.getElementById('OF_ERR');
