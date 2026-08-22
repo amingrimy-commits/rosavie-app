@@ -829,6 +829,11 @@ input[type=file]{display:none}
     </div>
     <div id="VIP_LIST"></div>
     <div class="stat" id="VSTAT"></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2cdb0">
+      <div style="font-size:0.72rem;color:#9a6e3a;font-weight:700;margin-bottom:6px">📢 پیام اعلان پیشنهادهای ویژه (اختیاری — اگه بفرستی، به‌عنوان نوتیف برای مشتری‌های سایت می‌ره)</div>
+      <textarea class="fi" id="VIP_MSG" placeholder="مثال: چندتا پیشنهاد ویژه‌ی جدید اضافه شد!" style="min-height:50px"></textarea>
+      <button class="ba-btn ba-pick" style="margin-top:6px;width:100%" onclick="sendVipAnnouncement()">📢 ارسال به‌عنوان اعلان به مشتری‌ها</button>
+    </div>
   </div>
 </div>
 <div class="pg" id="pcat">
@@ -1104,7 +1109,7 @@ function renderOrdersList(list){
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       (o.note?'<div style="color:#9a6e3a;font-size:0.72rem;margin-top:4px">یادداشت: '+o.note+'</div>':'')+
       '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
-        '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
+        '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
         '<button onclick="toggleEditOrder(\''+o._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✏️ ویرایش</button>'+
         '<button onclick="cancelOrder(\''+o._id+'\')" style="flex:1;background:#e05a5a;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">❌ لغو</button>'+
         '<button onclick="showConfirmOrderForm(\''+o._id+'\')" style="flex:1;background:#2a9d5c;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✅ تایید سفارش</button>'+
@@ -1375,6 +1380,13 @@ function cancelOrder(id){
     addNotif('❌ سفارش لغو شد');
   }).catch(function(err){console.error('cancelOrder error',err);});
 }
+function createCustomerNotification(uid,type,title,message,actionData){
+  if(!fbDb||!uid)return;
+  fbDb.collection('customerNotifications').add({
+    customerUid:uid,type:type,title:title,message:message,actionData:actionData||null,
+    read:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){console.error('createCustomerNotification error',e);});
+}
 function createGalleryInviteLink(cb){
   var galleryCid=V('GALLERYCID'),tgToken=V('TGK');
   if(!galleryCid||!tgToken){cb(null);return;}
@@ -1417,6 +1429,7 @@ function confirmOrderFinal(id){
           if(!link)return;
           fbDb.collection('customers').doc(o.customerUid).set({galleryLink:link,galleryLinkUsed:false,galleryLinkAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).then(function(){
             addNotif('🎁 لینک گالری VIP برای مشتری ساخته و تو پروفایلش گذاشته شد');
+            createCustomerNotification(o.customerUid,'gallery_ready','🎁 گالری VIP فعال شد','چون ازمون خرید کردی، دسترسی به گالری تصاویر باکیفیت و بدون واترمارک برات فعال شد!',{});
           }).catch(function(e){console.error('save gallery link error',e);});
         });
       }
@@ -1479,7 +1492,7 @@ function refreshDoneOrders(){
     btn.textContent='📋 مشاهده سفارش‌های انجام‌شده';
   });
 }
-var CONFIRMED_ORDERS_COUNT=0;
+var CONFIRMED_ORDERS_COUNT=0,CONFIRMED_ORDERS_CACHE=[];
 function startConfirmedOrdersListener(){
   if(!ADMIN_IS_READY){whenAdminReady(startConfirmedOrdersListener);return;}
   if(!initFirebase()){
@@ -1495,13 +1508,29 @@ function startConfirmedOrdersListener(){
       var tb=b.confirmedAt&&b.confirmedAt.toMillis?b.confirmedAt.toMillis():0;
       return tb-ta;
     });
+    CONFIRMED_ORDERS_CACHE=list;
     renderConfirmedOrdersList(list);
     CONFIRMED_ORDERS_COUNT=list.length;updateOrdersDot();
+    checkDeliveryTimers();
   },function(err){
     var el=document.getElementById('CONFIRMED_ORDERS_LIST');
     if(el)el.innerHTML='خطا در دریافت سفارش‌ها: '+(err&&err.message?err.message:err);
   });
 }
+function checkDeliveryTimers(){
+  if(!fbDb)return;
+  var now=Date.now();
+  CONFIRMED_ORDERS_CACHE.forEach(function(o){
+    if(!o.estimatedDeliveryAt||!o.estimatedDeliveryAt.toMillis)return;
+    if(o.deliveryCheckSent)return;
+    if(o.estimatedDeliveryAt.toMillis()>now)return;
+    fbDb.collection('orders').doc(o._id).update({deliveryCheckSent:true}).catch(function(e){console.error(e);});
+    if(o.customerUid){
+      createCustomerNotification(o.customerUid,'delivery_check','📦 بسته‌تون رو تحویل گرفتین؟','سفارش «'+o.orderNo+'» طبق زمان‌بندی باید بهتون رسیده باشه. لطفاً تأیید کنید که بسته رو تحویل گرفتین.',{orderId:o._id,orderNo:o.orderNo});
+    }
+  });
+}
+setInterval(checkDeliveryTimers,60000);
 function renderConfirmedOrdersList(list){
   var el=document.getElementById('CONFIRMED_ORDERS_LIST');
   if(!el)return;
@@ -1519,7 +1548,7 @@ function renderConfirmedOrdersList(list){
       if(o.estimatedDeliveryAt&&o.estimatedDeliveryAt.toDate){
         etaTxt=' — تحویل تخمینی: '+o.estimatedDeliveryAt.toDate().toLocaleDateString('fa-IR')+' ساعت '+o.estimatedDeliveryAt.toDate().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
       }
-      var shipLbl={tipax:'تیپاکس',post:'پست',courier:'پیک'};
+      var shipLbl={tipax:'تیپاکس',freight:'باربری',courier:'پیک'};
       shipInfo='<div style="color:#1a6a8a;font-size:0.7rem;margin-top:5px;background:#eaf4fb;border-radius:6px;padding:6px 8px">🚚 ارسال با '+(shipLbl[o.shippingMethod]||o.shippingMethod)+etaTxt+'</div>';
     }
     return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
@@ -1530,8 +1559,8 @@ function renderConfirmedOrdersList(list){
       shipInfo+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
         '<button onclick="setShippingMethod(\''+o._id+'\',\'tipax\',this)" style="flex:1;background:'+(o.shippingMethod==='tipax'?'#3d2b1f':'#eee2d0')+';color:'+(o.shippingMethod==='tipax'?'#fff':'#3d2b1f')+';border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:6px">📦 تیپاکس</button>'+
-        '<button onclick="setShippingMethod(\''+o._id+'\',\'post\',this)" style="flex:1;background:'+(o.shippingMethod==='post'?'#3d2b1f':'#eee2d0')+';color:'+(o.shippingMethod==='post'?'#fff':'#3d2b1f')+';border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:6px">✉️ پست</button>'+
-        '<button onclick="setShippingMethod(\''+o._id+'\',\'courier\',this)" style="flex:1;background:'+(o.shippingMethod==='courier'?'#3d2b1f':'#eee2d0')+';color:'+(o.shippingMethod==='courier'?'#fff':'#3d2b1f')+';border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:6px">🏍️ پیک</button>'+
+        '<button onclick="setShippingMethod(\''+o._id+'\',\'freight\',this)" style="flex:1;background:'+(o.shippingMethod==='freight'?'#3d2b1f':'#eee2d0')+';color:'+(o.shippingMethod==='freight'?'#fff':'#3d2b1f')+';border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:6px">🚛 باربری</button>'+
+        '<button onclick="setShippingMethod(\''+o._id+'\',\'courier\',this)" style="flex:1;background:'+(o.shippingMethod==='courier'?'#3d2b1f':'#eee2d0')+';color:'+(o.shippingMethod==='courier'?'#fff':'#3d2b1f')+';border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:6px">🛵 پیک</button>'+
       '</div>'+
       '<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">'+
         etaOpts.map(function(opt){
@@ -1539,7 +1568,7 @@ function renderConfirmedOrdersList(list){
         }).join('')+
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
+        '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
         '<button onclick="markOrderDone(\''+o._id+'\')" style="flex:2;background:#2a9d5c;color:#fff;border:none;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:7px">✅ تحویل داده شد</button>'+
       '</div>'+
       '</div>';
@@ -1819,7 +1848,7 @@ function renderCustomers2(){
         (c.address?'<div style="color:#3d2b1f;font-size:0.72rem;margin-top:3px">'+c.address+(c.postal?' — کدپستی '+c.postal:'')+'</div>':'')+
         '<div style="color:#9a6e3a;font-size:0.68rem;margin-top:5px">'+termsLine+'</div>'+
         '<div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">'+
-        '<a href="tel:'+(c.phone||'')+'" style="flex:1;text-align:center;background:#3d2b1f;color:#fff;padding:6px;border-radius:8px;text-decoration:none;font-size:0.7rem">☎️ تماس</a>'+
+        '<a href="tel:'+(c.phone||'')+'" style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;background:#3d2b1f;color:#fff;padding:6px;border-radius:8px;text-decoration:none;font-size:0.7rem">☎️ تماس</a>'+
         '<button onclick="showAddSiteCustomerForm(\''+c._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:6px">✏️ ویرایش و ورود به باشگاه</button>'+
         '<button onclick="grantGalleryAccess(\''+c._id+'\',\''+escAttr(c.name||c.phone||'')+'\')" style="flex:1;background:#f9e0ea;color:#b0517a;border:1px solid #e0a8c0;border-radius:8px;font-size:0.7rem;cursor:pointer;padding:6px">🎁 فعال‌سازی گالری VIP</button>'+
         (isBlocked?
@@ -1863,6 +1892,7 @@ function grantGalleryAccess(uid,name){
     if(!link){alert('ساخت لینک ناموفق بود — تنظیمات کانال گالری/توکن تلگرام رو چک کن');return;}
     fbDb.collection('customers').doc(uid).set({galleryLink:link,galleryLinkUsed:false,galleryLinkAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).then(function(){
       addNotif('🎁 لینک گالری VIP دستی برای «'+name+'» ساخته شد');
+      createCustomerNotification(uid,'gallery_ready','🎁 گالری VIP فعال شد','دسترسی به گالری تصاویر باکیفیت و بدون واترمارک برات فعال شد!',{});
     }).catch(function(e){console.error('grantGalleryAccess error',e);alert('خطا در ذخیره لینک');});
   });
 }
@@ -4156,6 +4186,7 @@ var BANNERS=[null,null,null,null],BANNER_IDS=[null,null,null,null];
 
 var BANNER_PRODUCT_CODE=[null,null,null,null]; // اتصال هر بنر: {type:'code'|'brand',value:'...',tab:'p1'} یا null
 var BANNER_LINK_MODE=['code','code','code','code']; // حالت انتخاب فعلی فرم (فقط UI، ذخیره نمیشه)
+var BANNER_MESSAGE=['','','',''];
 
 function initBanners(){
   var el=document.getElementById('BANNERS');if(!el)return;
@@ -4204,9 +4235,46 @@ function initBanners(){
       }
     }
     h+='</div>';
+    h+='<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2cdb0">';
+    h+='<div style="font-size:0.72rem;color:#9a6e3a;font-weight:700;margin-bottom:6px">📢 پیام اعلان (اختیاری — اگه بفرستی، به‌عنوان نوتیف برای مشتری‌های سایت می‌ره)</div>';
+    h+='<textarea class="fi" id="BMSG'+i+'" placeholder="مثال: پیشنهاد ویژه‌ی امروز رو از دست نده!" oninput="BANNER_MESSAGE['+i+']=this.value;save()" style="min-height:50px">'+(BANNER_MESSAGE[i]||'')+'</textarea>';
+    h+='<button class="ba-btn ba-pick" style="margin-top:6px;width:100%" onclick="sendBannerAnnouncement('+i+')">📢 ارسال به‌عنوان اعلان به مشتری‌ها</button>';
+    h+='</div>';
     h+='</div>';
   }
   el.innerHTML=h;
+}
+function sendVipAnnouncement(){
+  if(!fbDb)return;
+  var msgEl=document.getElementById('VIP_MSG');
+  var msg=(msgEl&&msgEl.value||'').trim();
+  if(!msg){alert('اول یه پیام بنویس');return;}
+  if(!confirm('این پیام برای همه‌ی مشتری‌های سایت به‌عنوان اعلان ارسال بشه؟'))return;
+  fbDb.collection('siteAnnouncements').add({
+    type:'offer',title:'⭐ پیشنهاد ویژه',message:msg,
+    actionData:null,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    addNotif('📢 اعلان پیشنهاد ویژه برای مشتری‌های سایت ارسال شد');
+    showToast('اعلان ارسال شد');
+    if(msgEl)msgEl.value='';
+  }).catch(function(e){console.error('sendVipAnnouncement error',e);alert('خطا در ارسال اعلان');});
+}
+function sendBannerAnnouncement(i){
+  if(!fbDb)return;
+  var msg=(BANNER_MESSAGE[i]||'').trim();
+  if(!msg){alert('اول یه پیام برای این بنر بنویس');return;}
+  if(!confirm('این پیام برای همه‌ی مشتری‌های سایت به‌عنوان اعلان ارسال بشه؟'))return;
+  var curLink=BANNER_PRODUCT_CODE[i];
+  if(curLink&&typeof curLink==='string')curLink={type:'code',value:curLink};
+  fbDb.collection('siteAnnouncements').add({
+    type:'banner',title:'📢 پیشنهاد ویژه جدید',message:msg,
+    actionData:curLink||null,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    addNotif('📢 اعلان بنر '+(i+1)+' برای مشتری‌های سایت ارسال شد');
+    showToast('اعلان ارسال شد');
+  }).catch(function(e){console.error('sendBannerAnnouncement error',e);alert('خطا در ارسال اعلان');});
 }
 function setBannerLinkMode(i,mode,btn){
   BANNER_LINK_MODE[i]=mode;
@@ -7242,7 +7310,7 @@ function save(){
   if(_loading)return;
   try{
     var sel={};[1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
-    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,autoSync:AUTO_SYNC_ENABLED};
+    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,bannerMessages:BANNER_MESSAGE,autoSync:AUTO_SYNC_ENABLED};
     TABS.forEach(function(tab){
       var brands=[];
       document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
@@ -7299,6 +7367,7 @@ function load(){
     var _asChk=document.getElementById('AUTOSYNC_CHK');if(_asChk)_asChk.checked=AUTO_SYNC_ENABLED;
     syncAutoSyncCheckboxes();
     if(d.bannerProdCodes&&Array.isArray(d.bannerProdCodes))BANNER_PRODUCT_CODE=d.bannerProdCodes;
+    if(d.bannerMessages&&Array.isArray(d.bannerMessages))BANNER_MESSAGE=d.bannerMessages;
     if(d.bannerIds&&Array.isArray(d.bannerIds)){
       BANNER_IDS=d.bannerIds;
       var bTotal=d.bannerIds.filter(function(x){return x;}).length;

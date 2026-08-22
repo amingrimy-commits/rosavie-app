@@ -322,6 +322,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
     </div>
     <div class="topnav-side">
       <button class="topnav-btn" id="HEADCARTBTN" onclick="openCart()" aria-label="سبد خرید"><img class="nav-ico" style="width:39px;height:39px" src="data:image/png;base64,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"><span class="topnav-cart-badge" id="HEADCARTBADGE" style="display:none">0</span></button>
+      <button class="topnav-btn" onclick="openNotifList()" aria-label="اعلان‌ها" style="position:relative">🔔<span id="NOTIF_NEW_BADGE" style="display:none;position:absolute;top:2px;right:2px;background:#3ecf6a;color:#fff;font-size:0.5rem;font-weight:900;padding:1px 5px;border-radius:20px;border:1.5px solid #fff">NEW</span></button>
       <button class="topnav-btn" onclick="openAccount()" aria-label="حساب کاربری" style="position:relative"><img class="nav-ico" src="data:image/png;base64,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"><span id="ACC_NEW_BADGE" style="display:none;position:absolute;top:2px;right:2px;background:#3ecf6a;color:#fff;font-size:0.5rem;font-weight:900;padding:1px 5px;border-radius:20px;border:1.5px solid #fff">NEW</span></button>
     </div>
   </div>
@@ -356,6 +357,14 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
     <div class="list-view-title">حساب کاربری</div>
   </div>
   <div class="info-page-body" id="ACCOUNT_BODY"></div>
+</div>
+
+<div class="info-page" id="NOTIF_OV">
+  <div class="info-page-head">
+    <button class="list-view-back" onclick="closeNotifList()">→ بازگشت</button>
+    <div class="list-view-title">🔔 اعلان‌ها</div>
+  </div>
+  <div class="info-page-body" id="NOTIF_BODY"></div>
 </div>
 
 <div class="info-page" id="MAG_OV">
@@ -1281,7 +1290,7 @@ window.addEventListener('popstate',function(){
 });
 
 // ── روتینگ صفحات: هر صفحه لینک مستقل و قابل اشتراک‌گذاری داره ──
-var ROUTE_OVERLAY_IDS=['MODAL_OV','ACCOUNT_OV','INFO_OV','MAG_OV','CART_OV','LIST_VIEW','SUPPORT_OV'];
+var ROUTE_OVERLAY_IDS=['MODAL_OV','ACCOUNT_OV','INFO_OV','MAG_OV','CART_OV','LIST_VIEW','SUPPORT_OV','NOTIF_OV'];
 var _ROUTING_READY=false;
 function hideAllModals(){
   ROUTE_OVERLAY_IDS.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('open');});
@@ -1333,6 +1342,7 @@ function renderRoute(){
   var parts=hash.split('~').map(function(s){try{return decodeURIComponent(s);}catch(e){return s;}});
   var type=parts[0];
   if(type==='list'&&!requireLoginGate())return;
+  if((type==='notifications'||type==='deliverycheck')&&!requireLoginGate())return;
   if(type==='p'){
     var code=parts[1];
     var group=_ROUTING_READY?PRODUCTS.filter(function(pp){return pp.code===code;}):[];
@@ -1352,6 +1362,12 @@ function renderRoute(){
   }else if(type==='account'){
     renderAccountView();
     showOverlay('ACCOUNT_OV');
+  }else if(type==='notifications'){
+    renderNotifList();
+    showOverlay('NOTIF_OV');
+  }else if(type==='deliverycheck'){
+    renderDeliveryCheckView(parts[1]);
+    showOverlay('NOTIF_OV');
   }else if(type==='support'){
     renderSupportPanel();
     showOverlay('SUPPORT_OV');
@@ -1709,14 +1725,170 @@ function renderOrdHistList(){
       if(o.estimatedDeliveryAt&&o.estimatedDeliveryAt.toDate){
         etaTxt=' — تحویل تخمینی: '+o.estimatedDeliveryAt.toDate().toLocaleDateString('fa-IR')+' ساعت '+o.estimatedDeliveryAt.toDate().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
       }
-      shipInfo='<div class="order-hist-sub" style="color:#1a6a8a">🚚 ارسال با '+(o.shippingMethod==='tipax'?'تیپاکس':'پست')+etaTxt+'</div>';
+      var shipLbl={tipax:'تیپاکس',freight:'باربری',courier:'پیک'};
+      shipInfo='<div class="order-hist-sub" style="color:#1a6a8a">🚚 ارسال با '+(shipLbl[o.shippingMethod]||o.shippingMethod)+etaTxt+'</div>';
     }
     return '<div class="order-hist-item"><div class="order-hist-row"><span>'+o.orderNo+'</span><span>'+fmtP(o.total)+'</span></div>'+
       (hasInvoice?'<div class="order-hist-sub" style="color:#2a9d5c;font-weight:700">🧾 شماره فاکتور: '+o.orderNo+'</div>':'')+
       shipInfo+
+      (o.status==='confirmed'&&o.estimatedDeliveryAt&&o.estimatedDeliveryAt.toDate?('<div class="order-hist-sub ord-countdown" data-eta="'+o.estimatedDeliveryAt.toDate().getTime()+'" style="color:#b0517a;font-weight:700"></div>'):'')+
       '<div class="order-hist-sub">'+itemsTxt+'</div>'+
       '<div class="order-hist-sub">وضعیت: '+(stLbl[o.status]||o.status||'—')+'</div></div>';
   }).join('');
+  tickCountdowns();
+}
+function fmtCountdownFa(ms){
+  if(ms<=0)return 'تحویل تخمینی رسیده — به‌زودی بهت می‌رسه';
+  var totalMin=Math.floor(ms/60000);
+  var days=Math.floor(totalMin/1440);
+  var hours=Math.floor((totalMin%1440)/60);
+  var mins=totalMin%60;
+  var parts=[];
+  if(days>0)parts.push(days+' روز');
+  if(hours>0)parts.push(hours+' ساعت');
+  if(days===0&&mins>0)parts.push(mins+' دقیقه');
+  return '⏱ تحویل تخمینی تا '+(parts.join(' و ')||'چند لحظه')+' دیگه';
+}
+var COUNTDOWN_TIMER=null;
+function tickCountdowns(){
+  var els=document.querySelectorAll('.ord-countdown');
+  if(!els.length)return;
+  els.forEach(function(el){
+    var eta=Number(el.getAttribute('data-eta'));
+    el.textContent=fmtCountdownFa(eta-Date.now());
+  });
+  if(!COUNTDOWN_TIMER)COUNTDOWN_TIMER=setInterval(tickCountdowns,60000);
+}
+
+// ══════ سیستم اعلان‌ها ══════
+var NOTIF_CACHE=[];
+function openNotifList(){navTo('notifications');}
+function closeNotifList(){goBack();}
+function lastSeenAnnouncementTime(){
+  try{return Number(localStorage.getItem('rv_last_seen_ann')||0);}catch(e){return 0;}
+}
+function setLastSeenAnnouncementTime(t){
+  try{localStorage.setItem('rv_last_seen_ann',String(t));}catch(e){}
+}
+function loadNotificationsData(cb){
+  var user=fbAuth&&fbAuth.currentUser;
+  if(!user){cb([]);return;}
+  var personal=[],announcements=[];
+  var pending=2;
+  function done(){
+    pending--;
+    if(pending>0)return;
+    var merged=personal.concat(announcements);
+    merged.sort(function(a,b){return (b._time||0)-(a._time||0);});
+    NOTIF_CACHE=merged;
+    cb(merged);
+  }
+  db.collection('customerNotifications').where('customerUid','==',user.uid).get().then(function(snap){
+    snap.forEach(function(doc){
+      var d=doc.data();
+      personal.push(Object.assign({_id:doc.id,_kind:'personal',_time:(d.createdAt&&d.createdAt.toMillis)?d.createdAt.toMillis():0},d));
+    });
+    done();
+  }).catch(function(){done();});
+  db.collection('siteAnnouncements').orderBy('createdAt','desc').limit(20).get().then(function(snap){
+    snap.forEach(function(doc){
+      var d=doc.data();
+      announcements.push(Object.assign({_id:doc.id,_kind:'announcement',_time:(d.createdAt&&d.createdAt.toMillis)?d.createdAt.toMillis():0},d));
+    });
+    done();
+  }).catch(function(){done();});
+}
+function updateNotifBadge(){
+  var b=document.getElementById('NOTIF_NEW_BADGE');
+  if(!b)return;
+  var user=fbAuth&&fbAuth.currentUser;
+  if(!user){b.style.display='none';return;}
+  loadNotificationsData(function(list){
+    var lastSeen=lastSeenAnnouncementTime();
+    var hasUnread=list.some(function(n){
+      if(n._kind==='personal')return !n.read;
+      return n._time>lastSeen;
+    });
+    b.style.display=hasUnread?'block':'none';
+  });
+}
+function renderNotifList(){
+  var body=document.getElementById('NOTIF_BODY');
+  if(!body)return;
+  body.innerHTML='<div style="text-align:center;color:#bbb;padding:30px 0">در حال دریافت اعلان‌ها...</div>';
+  loadNotificationsData(function(list){
+    var lastSeen=lastSeenAnnouncementTime();
+    var maxAnnTime=lastSeen;
+    if(!list.length){body.innerHTML='<div style="text-align:center;color:#bbb;padding:30px 0">هنوز اعلانی نداری</div>';return;}
+    var iconMap={delivery_check:'📦',gallery_ready:'🎁',banner:'📢',offer:'⭐'};
+    body.innerHTML=list.map(function(n,idx){
+      var isUnread=(n._kind==='personal')?!n.read:(n._time>lastSeen);
+      if(n._kind==='announcement'&&n._time>maxAnnTime)maxAnnTime=n._time;
+      var dateStr='';
+      try{dateStr=new Date(n._time).toLocaleDateString('fa-IR')+' - '+new Date(n._time).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
+      return '<div onclick="handleNotifTap('+idx+')" style="background:'+(isUnread?'#fdf2f6':'#fff')+';border:1.5px solid '+(isUnread?'#e0a8c0':'#ecdfd2')+';border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;position:relative">'+
+        (isUnread?'<span style="position:absolute;top:10px;left:10px;background:#3ecf6a;color:#fff;font-size:0.58rem;font-weight:900;padding:2px 7px;border-radius:20px">NEW</span>':'')+
+        '<div style="font-weight:900;color:#3a2e29;font-size:0.85rem">'+(iconMap[n.type]||'🔔')+' '+(n.title||'')+'</div>'+
+        '<div style="color:#5a4d45;font-size:0.78rem;margin-top:5px;line-height:1.7">'+(n.message||'')+'</div>'+
+        '<div style="color:#bbb;font-size:0.66rem;margin-top:6px">'+dateStr+'</div>'+
+      '</div>';
+    }).join('');
+    if(maxAnnTime>lastSeen)setLastSeenAnnouncementTime(maxAnnTime);
+    updateNotifBadge();
+  });
+}
+function handleNotifTap(idx){
+  var n=NOTIF_CACHE[idx];
+  if(!n)return;
+  if(n._kind==='personal'&&!n.read){
+    db.collection('customerNotifications').doc(n._id).update({read:true,readAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(e){console.error(e);});
+    n.read=true;
+  }
+  if(n.type==='delivery_check'){
+    navTo('deliverycheck~'+encodeURIComponent((n.actionData&&n.actionData.orderId)||''));
+  }else if(n.type==='gallery_ready'){
+    navTo('account');
+  }else if(n.type==='banner'||n.type==='offer'){
+    if(n.actionData&&n.actionData.value){
+      closeNotifList();
+      setTimeout(function(){bannerClick(n.actionData);},250);
+    }
+  }
+}
+function renderDeliveryCheckView(orderId){
+  var body=document.getElementById('NOTIF_BODY');
+  if(!body)return;
+  if(!orderId){body.innerHTML='<div style="text-align:center;color:#bbb;padding:30px 0">سفارش پیدا نشد</div>';return;}
+  body.innerHTML='<div style="text-align:center;padding:20px 0">در حال دریافت اطلاعات سفارش...</div>';
+  db.collection('orders').doc(orderId).get().then(function(doc){
+    if(!doc.exists){body.innerHTML='<div style="text-align:center;color:#bbb;padding:30px 0">سفارش پیدا نشد</div>';return;}
+    var o=doc.data();
+    if(o.status==='done'){
+      body.innerHTML='<div style="text-align:center;padding:30px 10px"><div style="font-size:2.4rem">✅</div><div style="font-weight:900;margin-top:10px">این سفارش قبلاً تحویل‌شده ثبت شده</div></div>';
+      return;
+    }
+    body.innerHTML='<div style="text-align:center;padding:20px 10px">'+
+      '<div style="font-size:2.4rem">📦</div>'+
+      '<div style="font-weight:900;font-size:0.95rem;margin-top:10px">بسته‌ی سفارش «'+(o.orderNo||'')+'» رو تحویل گرفتی؟</div>'+
+      '<div style="color:#8a7a6c;font-size:0.78rem;margin-top:8px">با تأیید، این سفارش «تحویل‌شده» ثبت می‌شه.</div>'+
+      '<button class="acc-btn" style="margin-top:18px" onclick="confirmDelivery(\''+orderId+'\')">✅ بله، تحویل گرفتم</button>'+
+      '<div style="margin-top:12px"><span onclick="closeNotifList()" style="color:#8a7a6c;font-size:0.78rem;text-decoration:underline;cursor:pointer">هنوز نگرفتم، بعداً</span></div>'+
+      '</div>';
+  }).catch(function(e){
+    body.innerHTML='<div style="text-align:center;color:#e57373;padding:30px 0">خطا در دریافت سفارش</div>';
+  });
+}
+function confirmDelivery(orderId){
+  var user=fbAuth&&fbAuth.currentUser;
+  if(!user)return;
+  db.collection('orders').doc(orderId).update({status:'done',deliveredAt:firebase.firestore.FieldValue.serverTimestamp(),deliveredByCustomer:true}).then(function(){
+    var body=document.getElementById('NOTIF_BODY');
+    if(body)body.innerHTML='<div style="text-align:center;padding:30px 10px"><div style="font-size:2.4rem">🎉</div><div style="font-weight:900;margin-top:10px">ممنون! سفارش تحویل‌شده ثبت شد</div></div>';
+    showToast('تحویل سفارش ثبت شد');
+  }).catch(function(e){
+    console.error('confirmDelivery error',e);
+    alert('خطا در ثبت تحویل — لطفاً بعداً دوباره امتحان کن');
+  });
 }
 var TERMS_TEXT='۱. پذیرش شرایط\nبا ورود به وب‌سایت فروشگاه رُزاوی و استفاده از خدمات آن، شما موافقت خود را با تمامی شرایط و قوانین مندرج در این صفحه اعلام می‌دارید. در صورت عدم پذیرش، لطفاً از خدمات فروشگاه استفاده نکنید.\n\n۲. ثبت سفارش\nمشتریان موظف‌اند اطلاعات دقیق و صحیح را هنگام ثبت سفارش وارد کنند. ثبت سفارش به منزله‌ی عقد قرارداد قطعی نیست و فروشگاه در صورت بروز مشکل، حق لغو سفارش را برای خود محفوظ می‌داند.\n\n۳. قیمت‌ها و شرایط پرداخت\nقیمت کالاها به‌صورت روزانه به‌روزرسانی می‌شود و ممکن است بدون اطلاع قبلی تغییر کند.\nفروشگاه رُزاوی در حال حاضر درگاه پرداخت اینترنتی ندارد و پرداخت فقط از طریق کارت‌به‌کارت انجام می‌شود. پس از ثبت سفارش، شماره کارت از طریق تلگرام یا بله در اختیارتان قرار می‌گیرد؛ لطفاً پس از واریز، تصویر رسید پرداخت را ارسال کنید تا سفارش نهایی و پردازش شود.\n\n۴. ارسال و تحویل\nفروشگاه ما سفارش‌ها را از طریق روش زیر ارسال می‌کند:\n۱. ارسال با تیپاکس: مناسب برای شهرهای بزرگ و مراکز استان‌ها. زمان تحویل معمولاً ۱ تا ۲ روز کاری است.\n۲. ارسال با اسنپ (حتماً از تلگرام پیگیری شود): مناسب برای داخل شهر. فروشگاه مسئولیتی در قبال تأخیر ناشی از عوامل خارج از کنترل (مانند شرایط جوی یا ترافیک) ندارد.\n\n۵. بازگشت کالا\nبه دلیل رعایت اصول بهداشتی و سلامت مشتریان محترم، امکان مرجوع یا تعویض لباس زیر زنانه (از جمله سوتین، شورت، بادی و ست‌های لباس زیر) پس از ارسال وجود ندارد.\nبا این حال، در شرایط زیر مرجوعی پذیرفته می‌شود:\n۱. اگر محصول ارسالی با سفارش ثبت‌شده مغایرت داشته باشد (مثلاً رنگ یا سایز اشتباه ارسال شده باشد)\n۲. اگر کالا در زمان تحویل دارای نقص فیزیکی یا ایراد ظاهری باشد\nدر صورت مغایرت، مشتری باید حداکثر تا ۲۴ ساعت پس از تحویل، از طریق پشتیبانی تلگرام موضوع را اعلام و تصویر محصول را ارسال کند.\n\n۶. حفظ حریم خصوصی\nاطلاعات شخصی مشتریان نزد فروشگاه محفوظ است و بدون رضایت آن‌ها در اختیار شخص ثالث قرار نمی‌گیرد.\n\n۷. مالکیت معنوی\nتمامی محتوا، تصاویر، لوگو و طراحی‌های موجود در وب‌سایت متعلق به فروشگاه رُزاوی بوده و هرگونه استفاده غیرمجاز پیگرد قانونی دارد.\n\n۸. تغییرات در قوانین\nفروشگاه حق دارد در هر زمان این قوانین را تغییر دهد. نسخه‌ی به‌روزرسانی‌شده در همین صفحه منتشر خواهد شد و ادامه‌ی استفاده از خدمات به منزله‌ی پذیرش تغییرات است.';
 function openTermsPage(){navTo('terms');}
@@ -2002,6 +2174,7 @@ function loadCustomerProfile(uid){
       var acceptedAt=(d.termsAcceptedAt&&d.termsAcceptedAt.toDate)?d.termsAcceptedAt.toDate():null;
       CUR_CUSTOMER={uid:uid,name:d.name||'',phone:d.phone||'',province:d.province||'',city:d.city||'',address:d.address||'',postal:d.postal||'',birthdate:d.birthdate||'',termsAccepted:!!d.termsAccepted,termsAcceptedAt:acceptedAt,galleryLink:d.galleryLink||'',galleryLinkUsed:!!d.galleryLinkUsed};
       updateAccountNewBadge();
+      updateNotifBadge();
     }
   });
 }
@@ -2116,11 +2289,11 @@ function renderCheckout(){
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
       '<label style="margin-bottom:8px;display:block">🚚 روش ارسال</label>'+
       '<select id="OF_SHIP_METHOD" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff">'+
-        '<option value="tipax">📦 تیپاکس/باربری (مناسب شهرستان)</option>'+
-        '<option value="post">✉️ پست</option>'+
-        '<option value="courier">🏍️ پیک (فقط تهران — تحویل فوری)</option>'+
+        '<option value="tipax">📦 تیپاکس</option>'+
+        '<option value="freight">🚛 باربری</option>'+
+        '<option value="courier">🛵 پیک (فقط تهران — تحویل فوری)</option>'+
       '</select>'+
-      '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:5px">تیپاکس و باربری معمولاً برای شهرستان مناسب‌تره؛ پیک فقط داخل تهران و برای تحویل سریع‌تره.</div>'+
+      '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:5px">تیپاکس و باربری معمولاً برای شهرستان مناسب‌ترن؛ پیک فقط داخل تهران و برای تحویل سریع‌تره.</div>'+
     '</div>'+
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
       '<label style="margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:pointer">'+
