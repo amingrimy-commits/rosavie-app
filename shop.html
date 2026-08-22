@@ -1703,8 +1703,17 @@ function renderOrdHistList(){
   list.innerHTML=orders.map(function(o){
     var itemsTxt=(o.items||[]).map(function(it){return it.title+' ×'+it.qty;}).join('، ');
     var hasInvoice=(o.status==='confirmed'||o.status==='done');
+    var shipInfo='';
+    if(o.status==='confirmed'&&o.shippingMethod){
+      var etaTxt='';
+      if(o.estimatedDeliveryAt&&o.estimatedDeliveryAt.toDate){
+        etaTxt=' — تحویل تخمینی: '+o.estimatedDeliveryAt.toDate().toLocaleDateString('fa-IR')+' ساعت '+o.estimatedDeliveryAt.toDate().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+      }
+      shipInfo='<div class="order-hist-sub" style="color:#1a6a8a">🚚 ارسال با '+(o.shippingMethod==='tipax'?'تیپاکس':'پست')+etaTxt+'</div>';
+    }
     return '<div class="order-hist-item"><div class="order-hist-row"><span>'+o.orderNo+'</span><span>'+fmtP(o.total)+'</span></div>'+
       (hasInvoice?'<div class="order-hist-sub" style="color:#2a9d5c;font-weight:700">🧾 شماره فاکتور: '+o.orderNo+'</div>':'')+
+      shipInfo+
       '<div class="order-hist-sub">'+itemsTxt+'</div>'+
       '<div class="order-hist-sub">وضعیت: '+(stLbl[o.status]||o.status||'—')+'</div></div>';
   }).join('');
@@ -2105,6 +2114,15 @@ function renderCheckout(){
     '<div class="form-field"><label>ایمیل (اختیاری)</label><input id="OF_EMAIL" type="email" style="direction:ltr;text-align:left" value="'+pfEmail+'" placeholder="example@gmail.com"></div>'+
     '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
+      '<label style="margin-bottom:8px;display:block">🚚 روش ارسال</label>'+
+      '<select id="OF_SHIP_METHOD" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff">'+
+        '<option value="tipax">📦 تیپاکس/باربری (مناسب شهرستان)</option>'+
+        '<option value="post">✉️ پست</option>'+
+        '<option value="courier">🏍️ پیک (فقط تهران — تحویل فوری)</option>'+
+      '</select>'+
+      '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:5px">تیپاکس و باربری معمولاً برای شهرستان مناسب‌تره؛ پیک فقط داخل تهران و برای تحویل سریع‌تره.</div>'+
+    '</div>'+
+    '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
       '<label style="margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:pointer">'+
         '<input type="checkbox" id="OF_INV_CHK" checked onchange="document.getElementById(\'OF_INV_DETAILS\').style.display=this.checked?\'block\':\'none\'" style="width:18px;height:18px">'+
         '📨 پیش‌فاکتور از طریق پیام‌رسان براتون ارسال بشه؟'+
@@ -2166,6 +2184,8 @@ function submitOrder(){
   var postal=(document.getElementById('OF_POSTAL').value||'').trim();
   var email=(document.getElementById('OF_EMAIL').value||'').trim();
   var note=(document.getElementById('OF_NOTE').value||'').trim();
+  var shipMethodSel=document.getElementById('OF_SHIP_METHOD');
+  var shipMethod=(shipMethodSel&&shipMethodSel.value)||'tipax';
   var invChk=document.getElementById('OF_INV_CHK');
   var invWanted=invChk?invChk.checked:false;
   var invAppSel=document.getElementById('OF_INV_APP');
@@ -2195,6 +2215,7 @@ function submitOrder(){
     customerPostal:postal,
     customerEmail:email,
     invoiceWanted:invWanted,
+    shippingMethod:shipMethod,
     invoiceApp:invApp,
     invoiceContact:invContact,
     customerUid:(CUR_CUSTOMER&&CUR_CUSTOMER.uid)||null,
