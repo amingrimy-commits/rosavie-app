@@ -6403,25 +6403,36 @@ function buildCaptionData(){
     var titleTag='#'+title.trim().replace(/\s+/g,'_');
     lines.push(titleTag+' 💝😍');
   }
-  if(brand)lines.push('⭐برند '+brand+'⭐');
-  if(code)lines.push('🔖 کد: #'+code);
-  if(color)lines.push('🎨 رنگ: '+color);
-  if(CG_SALE_SINGLE){
-    if(finalSize)lines.push('📏 سایز: '+finalSize);
-    if(price){
-      if(showPriceInCaption)lines.push('💰 قیمت تک‌رنگ: '+Math.round(Number(price)/1000)+'t');
-      else lines.push('💰 قیمت تک‌رنگ: استعلام بگیرید');
+  if(brand){
+    if(title)lines.push('');
+    lines.push('⭐برند '+brand+'⭐');
+  }
+  var infoStarted=false;
+  function pushInfoLine(line){
+    if(!infoStarted){
+      if(brand){lines.push('');lines.push('');}
+      infoStarted=true;
     }
-    if(minOrder)lines.push('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
+    lines.push(line);
+  }
+  if(code)pushInfoLine('🔖 کد: #'+code);
+  if(color)pushInfoLine('🎨 رنگ: '+color);
+  if(CG_SALE_SINGLE){
+    if(finalSize)pushInfoLine('📏 سایز: '+finalSize);
+    if(price){
+      if(showPriceInCaption)pushInfoLine('💰 قیمت تک‌رنگ: '+Math.round(Number(price)/1000)+'t');
+      else pushInfoLine('💰 قیمت تک‌رنگ: استعلام بگیرید');
+    }
+    if(minOrder)pushInfoLine('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
   }
   if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    lines.push('🎁 سایز و قیمت هر عدد (بسته میکس):');
+    pushInfoLine('🎁 سایز و قیمت هر عدد (بسته میکس):');
     CG_SIZEPRICE_LIST.forEach(function(sp){
       lines.push(sp.size+' → '+(showPriceInCaption?(fmtUnitPriceDisplay(sp.price)):'استعلام بگیرید'));
     });
   }
-  if(mixEnabled&&mixDesc)lines.push('🎨 '+mixDesc);
-  if(material)lines.push('🌿 پارچه و کش '+material);
+  if(mixEnabled&&mixDesc)pushInfoLine('🎨 '+mixDesc);
+  if(material)pushInfoLine('🌿 پارچه و کش '+material);
 
   var countryMap={
     iran:'🇮🇷 تولید ایران',
@@ -6429,10 +6440,10 @@ function buildCaptionData(){
     china:'🇨🇳 تولید چین',
     europe:'🇪🇺 سفارش اروپا'
   };
-  if(CG_COUNTRY&&countryMap[CG_COUNTRY])lines.push(countryMap[CG_COUNTRY]);
+  if(CG_COUNTRY&&countryMap[CG_COUNTRY])pushInfoLine(countryMap[CG_COUNTRY]);
 
-  if(desc1)lines.push('💎 '+desc1);
-  if(desc2)lines.push('✨ '+desc2);
+  if(desc1){lines.push('');lines.push('💎 '+desc1);}
+  if(desc2){lines.push('');lines.push('');lines.push('✨ '+desc2);}
 
   var topSection=lines.join('\n');
 
