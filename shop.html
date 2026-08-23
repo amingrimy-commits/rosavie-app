@@ -159,6 +159,10 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .chev-svg{transition:transform 0.25s;color:#8a7a6c;flex-shrink:0}
 .chev-svg.open{transform:rotate(180deg)}
 .home-prod-acc-body{max-width:960px;margin:0 auto;padding:0 14px;max-height:0;overflow:hidden;transition:max-height 0.3s ease}
+.home-prod-brand-search{margin-bottom:10px}
+.home-prod-brand-search input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #d4789a;background:#fbe8ee;color:#8a3a5a;font-size:0.82rem;font-weight:700;box-sizing:border-box}
+.home-prod-brand-search input::placeholder{color:#b0517a}
+.home-prod-brand-search-item{padding:10px 14px;background:#fff;border:1px solid #ecdfd2;border-radius:10px;margin-top:6px;font-size:0.8rem;color:#3a2e29;cursor:pointer}
 .home-prod-acc-body.open{max-height:340px;margin-top:8px;overflow-y:auto}
 .home-prod-item{display:block;padding:11px 14px;margin-bottom:6px;border-radius:10px;background:#fff;border:1px solid #ecdfd2;color:#3a2e29;font-size:0.8rem;font-weight:700;cursor:pointer}
 .home-prod-subgroup{max-height:0;overflow:hidden;transition:max-height 0.25s ease}
@@ -379,6 +383,14 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
     <div class="list-view-title">🔔 اعلان‌ها</div>
   </div>
   <div class="info-page-body" id="NOTIF_BODY"></div>
+</div>
+
+<div class="info-page" id="LINKS_OV">
+  <div class="info-page-head">
+    <button class="list-view-back" onclick="goBack()">→ بازگشت</button>
+    <div class="list-view-title">راه‌های ارتباطی</div>
+  </div>
+  <div class="info-page-body" id="LINKS_BODY"></div>
 </div>
 
 <div class="info-page" id="MAG_OV">
@@ -865,6 +877,24 @@ function buildCatGroups(){
   });
   return groups;
 }
+function filterHomeBrandSearch(q){
+  var resEl=document.getElementById('HOME_BRAND_SEARCH_RES');
+  if(!resEl)return;
+  q=(q||'').trim();
+  if(!q){resEl.innerHTML='';return;}
+  var brands=[];
+  PRODUCTS.forEach(function(p){
+    if(p.brand&&brands.indexOf(p.brand)===-1&&p.brand.indexOf(q)>-1)brands.push(p.brand);
+  });
+  if(!brands.length){resEl.innerHTML='<div class="home-prod-brand-search-item" style="color:#9a8a80;cursor:default">برندی پیدا نشد</div>';return;}
+  resEl.innerHTML=brands.slice(0,8).map(function(b){
+    return '<div class="home-prod-brand-search-item" onclick="selectHomeBrandSearch(\''+b.replace(/'/g,"\\'")+'\')">🏷️ '+b+'</div>';
+  }).join('');
+}
+function selectHomeBrandSearch(brand){
+  toggleHomeProdAcc();
+  navTo('list~brand~'+encodeURIComponent(brand)+'~_');
+}
 function toggleCatGroup(tab){
   _catAccOpen[tab]=!_catAccOpen[tab];
   renderHomeProdAccList();renderProductsAccList();
@@ -872,7 +902,11 @@ function toggleCatGroup(tab){
 function renderHomeProdAccList(){
   var body=document.getElementById('HOME_PROD_ACC_BODY');
   var groups=buildCatGroups();
-  body.innerHTML=groups.map(function(g){
+  var searchRow='<div class="home-prod-brand-search">'+
+    '<input id="HOME_BRAND_SEARCH" type="text" placeholder="🔍 جستجو برند" oninput="filterHomeBrandSearch(this.value)">'+
+    '<div id="HOME_BRAND_SEARCH_RES"></div>'+
+  '</div>';
+  body.innerHTML=searchRow+groups.map(function(g){
     var hasKids=g.children.length>0;
     var isOpen=!!_catAccOpen[g.tab];
     var kidsHTML=hasKids?('<div class="home-prod-subgroup'+(isOpen?' open':'')+'">'+g.children.map(function(c){
@@ -1304,7 +1338,7 @@ window.addEventListener('popstate',function(){
 });
 
 // ── روتینگ صفحات: هر صفحه لینک مستقل و قابل اشتراک‌گذاری داره ──
-var ROUTE_OVERLAY_IDS=['MODAL_OV','ACCOUNT_OV','INFO_OV','MAG_OV','CART_OV','LIST_VIEW','SUPPORT_OV','NOTIF_OV'];
+var ROUTE_OVERLAY_IDS=['MODAL_OV','ACCOUNT_OV','INFO_OV','MAG_OV','CART_OV','LIST_VIEW','SUPPORT_OV','NOTIF_OV','LINKS_OV'];
 var _ROUTING_READY=false;
 function hideAllModals(){
   ROUTE_OVERLAY_IDS.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('open');});
@@ -1383,6 +1417,9 @@ function renderRoute(){
   }else if(type==='notifications'){
     renderNotifList();
     showOverlay('NOTIF_OV');
+  }else if(type==='links'){
+    renderLinksPage();
+    showOverlay('LINKS_OV');
   }else if(type==='deliverycheck'){
     renderDeliveryCheckView(parts[1]);
     showOverlay('NOTIF_OV');
@@ -1781,6 +1818,21 @@ function tickCountdowns(){
 // ══════ سیستم اعلان‌ها ══════
 var NOTIF_CACHE=[];
 function openNotifList(){navTo('notifications');}
+function renderLinksPage(){
+  var body=document.getElementById('LINKS_BODY');
+  if(!body)return;
+  var items=[
+    {icon:'👤',label:'ادمین (سفارش و پشتیبانی)',url:'https://t.me/amin_beik_mohammady'},
+    {icon:'☎️',label:'تماس تلفنی: 09190134599',url:'tel:09190134599'},
+    {icon:'📸',label:'اینستاگرام',url:'https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA=='},
+    {icon:'👗',label:'کانال لباس زیر',url:'https://t.me/rozavie_underwear'},
+    {icon:'🌙',label:'کانال لباس خواب',url:'https://t.me/lebasziryammi_sleepware'},
+    {icon:'✅',label:'کانال بله',url:'https://ble.ir/rozavie_underwear'}
+  ];
+  body.innerHTML='<div class="support-panel-list">'+items.map(function(it){
+    return '<a href="'+it.url+'" target="_blank" rel="noopener">'+it.icon+' '+it.label+'</a>';
+  }).join('')+'</div>';
+}
 function closeNotifList(){goBack();}
 function lastSeenAnnouncementTime(){
   try{return Number(localStorage.getItem('rv_last_seen_ann')||0);}catch(e){return 0;}

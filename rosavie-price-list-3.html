@@ -5920,7 +5920,7 @@ function suggestBrands(q){
   q=(q||'').trim();
   if(!q){el.innerHTML='';el.style.display='none';CG_BRAND_SUGGESTIONS=[];return;}
   var brands=[];
-  document.querySelectorAll('[id^="B"][data-tab="'+CG_CATEGORY+'"]').forEach(function(bl){
+  document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){
     var bnEl=document.getElementById('BN'+bl.id.slice(1));
     var name=bnEl?bnEl.value.trim():'';
     if(name&&brands.indexOf(name)===-1)brands.push(name);
@@ -6449,21 +6449,12 @@ function buildCaptionData(){
 
   var fixedBottom=[
     '➡️ جهت ثبت سفارش و اطلاع از قیمت محصولات در خدمتتون هستیم 👇😊',
-    '👤 ادمین: @amin_beik_mohammady',
-    '☎️ تماس: 09190134599',
-    '📸 اینستاگرام',
-    '👗 کانال لباس زیر',
-    '🌙 کانال لباس خواب',
-    '✅ کانال بله'
+    '🔗 همه‌ی راه‌های ارتباطی (ادمین، تماس، اینستاگرام، کانال‌ها):',
+    SITE_BASE_URL+'#links'
   ].join('\n');
   var fixedBottomHtml=[
     '➡️ جهت ثبت سفارش و اطلاع از قیمت محصولات در خدمتتون هستیم 👇😊',
-    '👤 ادمین: <a href="https://t.me/amin_beik_mohammady">@amin_beik_mohammady</a>',
-    '☎️ تماس: 09190134599',
-    '<a href="https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA==">📸 اینستاگرام</a>',
-    '<a href="https://t.me/rozavie_underwear">👗 کانال لباس زیر</a>',
-    '<a href="https://t.me/lebasziryammi_sleepware">🌙 کانال لباس خواب</a>',
-    '<a href="https://ble.ir/rozavie_underwear">✅ کانال بله</a>'
+    '<a href="'+SITE_BASE_URL+'#links">🔗 همه‌ی راه‌های ارتباطی (ادمین، تماس، اینستاگرام، کانال‌ها)</a>'
   ].join('\n');
 
   var fullCaption=topSection+(topSection?'\n':'')+fixedBottom;
@@ -7108,7 +7099,8 @@ function sendToChannels(){
   var isManuallyEdited=!!(manualText&&manualText.trim()!==data.text.trim());
   var caption=isManuallyEdited?manualText:data.text;
   var siteLinkText='🛍️✨ «برای خرید و بازدید در سایت کلیک کن» 🌟🎀';
-  var displayLen=caption.length+(data.code?('\n\n'+siteLinkText).length:0);
+  var vpnWarnText='⚠️ برای باز شدن لینک، فیلترشکن‌تون رو روشن کنید';
+  var displayLen=caption.length+(data.code?('\n\n'+vpnWarnText+'\n'+siteLinkText).length:0);
   if(displayLen>1024){
     stat.textContent='⚠️ کپشن '+displayLen+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(displayLen-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
     stat.className='stat serr';
@@ -7117,13 +7109,13 @@ function sendToChannels(){
   if(isManuallyEdited){
     if(data.code){
       var siteUrlM=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
-      caption=escapeHtmlCaption(manualText)+'\n\n<a href="'+siteUrlM+'">'+siteLinkText+'</a>';
+      caption=escapeHtmlCaption(manualText)+'\n\n'+vpnWarnText+'\n<a href="'+siteUrlM+'">'+siteLinkText+'</a>';
     }else{
       caption=escapeHtmlCaption(manualText);
     }
   }else if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
-    var linkLine='<a href="'+siteUrl+'">'+siteLinkText+'</a>';
+    var linkLine=vpnWarnText+'\n<a href="'+siteUrl+'">'+siteLinkText+'</a>';
     caption=escapeHtmlCaption(data.topSection)+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml;
   }else{
     caption=escapeHtmlCaption(data.topSection)+(data.topSection?'\n\n':'')+data.fixedBottomHtml;
