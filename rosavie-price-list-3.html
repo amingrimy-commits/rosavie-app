@@ -6534,6 +6534,7 @@ function resolveDupChoice(choice){
   if(cb)cb(choice);
 }
 var EDITING_RID=null;
+var EDIT_ORIGINAL_CODE='',EDIT_ORIGINAL_BRAND='',EDIT_ORIGINAL_TITLE='';
 function editSearch(q){
   var el=document.getElementById('EDITSRCH_RES');
   if(!q||q.trim().length<1){el.style.display='none';return;}
@@ -6554,6 +6555,9 @@ function loadProductForEdit(el){
   if(!p)return;
   resetSendMedia();
   EDITING_RID=rid;
+  EDIT_ORIGINAL_CODE=(p.code&&p.code!=='--')?p.code:'';
+  EDIT_ORIGINAL_BRAND=p.brandName||'';
+  EDIT_ORIGINAL_TITLE=p.title||'';
   document.getElementById('SAVE_ONLY_BTN').style.display='block';
 
   var catBtn=null;
@@ -6835,7 +6839,7 @@ function watermarkBlob(blob,cb){
         ctx.drawImage(img,0,0);
         var fontSize=Math.max(18,Math.round(img.width*0.032));
         ctx.font='bold '+fontSize+'px Arial, sans-serif';
-        ctx.fillStyle='rgba(255,255,255,0.13)';
+        ctx.fillStyle='rgba(255,255,255,0.11)';
         ctx.textBaseline='alphabetic';
         var text=WATERMARK_TEXT;
         var tw=ctx.measureText(text).width;
@@ -7174,7 +7178,14 @@ function sendToChannels(){
     }
     stat.textContent='در حال حذف پست قبلی از کانال‌ها...';stat.className='stat sload';
     deleteOldChannelPosts(EDITING_RID,function(){
-      sendToGalleryChannel(ordered,data);
+      var codeChanged=(data.code||'')!==EDIT_ORIGINAL_CODE;
+      var brandChanged=(data.brand||'')!==EDIT_ORIGINAL_BRAND;
+      var titleChanged=(data.title||'')!==EDIT_ORIGINAL_TITLE;
+      if(codeChanged||brandChanged||titleChanged){
+        sendToGalleryChannel(ordered,data);
+      }else{
+        addNotif('ℹ️ کد/برند/اسم محصول عوض نشده — دوباره به کانال گالری VIP فرستاده نشد');
+      }
       watermarkMediaList(ordered,function(wm){orderedWm=wm;nextEdit();});
     });
     return;
