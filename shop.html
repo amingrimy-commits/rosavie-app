@@ -1383,6 +1383,33 @@ function requireLoginGate(){
   navTo('account');
   return false;
 }
+var GUEST_FREE_VIEW_LIMIT=4;
+function getGuestId(){
+  try{
+    var id=localStorage.getItem('rv_guest_id');
+    if(!id){
+      id='g_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+      localStorage.setItem('rv_guest_id',id);
+    }
+    return id;
+  }catch(e){return null;}
+}
+function getGuestSeenProducts(){
+  try{return JSON.parse(localStorage.getItem('rv_guest_seen_products')||'[]');}catch(e){return [];}
+}
+function saveGuestSeenProducts(arr){
+  try{localStorage.setItem('rv_guest_seen_products',JSON.stringify(arr));}catch(e){}
+}
+function checkGuestFreeView(code){
+  if(CUR_CUSTOMER)return true;
+  getGuestId();
+  var seen=getGuestSeenProducts();
+  if(seen.indexOf(code)>-1)return true;
+  if(seen.length>=GUEST_FREE_VIEW_LIMIT)return false;
+  seen.push(code);
+  saveGuestSeenProducts(seen);
+  return true;
+}
 var FIRST_ROUTE_DONE=false;
 function renderRoute(){
   var hash=(location.hash||'').replace(/^#/,'');
@@ -1394,9 +1421,17 @@ function renderRoute(){
   FIRST_ROUTE_DONE=true;
   if(type==='list'&&!requireLoginGate())return;
   if((type==='notifications'||type==='deliverycheck')&&!requireLoginGate())return;
-  if(type==='p'&&!isExternalDeepLink&&!requireLoginGate())return;
   if(type==='p'){
     var code=parts[1];
+    if(isExternalDeepLink){
+      if(!checkGuestFreeView(code)){
+        showToast('۴ محصول رایگانت رو دیدی 🎁 برای دیدن بقیه، ثبت‌نام کن');
+        navTo('account');
+        return;
+      }
+    }else{
+      if(!requireLoginGate())return;
+    }
     var group=_ROUTING_READY?PRODUCTS.filter(function(pp){return pp.code===code;}):[];
     if(!group.length){
       fetchProductByCodeDirect(code,parts[2]);
