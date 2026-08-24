@@ -6839,7 +6839,7 @@ function watermarkBlob(blob,cb){
         ctx.drawImage(img,0,0);
         var fontSize=Math.max(18,Math.round(img.width*0.032));
         ctx.font='bold '+fontSize+'px Arial, sans-serif';
-        ctx.fillStyle='rgba(255,255,255,0.11)';
+        ctx.fillStyle='rgba(255,255,255,0.10)';
         ctx.textBaseline='alphabetic';
         var text=WATERMARK_TEXT;
         var tw=ctx.measureText(text).width;
