@@ -853,6 +853,7 @@ function renderBrandAccList(list){
   el.innerHTML=html;
 }
 function setBrand(b){
+  if(b!=='all'&&!requireLoginGate())return;
   CUR_BRAND=b;
   renderBrandFilter();
   renderGrid();
@@ -932,6 +933,7 @@ function renderProductsAccList(){
   }).join('');
 }
 function setCatFromHome(v){
+  if(v!=='all'&&!requireLoginGate())return;
   CUR_CAT=v;
   CUR_BRAND='all';
   CUR_FABRIC_TAGS=[];
@@ -1541,6 +1543,7 @@ function toggleProductsAcc(){
   chev.classList.toggle('open',willOpen);
 }
 function selectDrawerCat(catValue){
+  if(catValue!=='all'&&!requireLoginGate())return;
   silentCloseDrawer();
   CUR_CAT=catValue;
   CUR_BRAND='all';
