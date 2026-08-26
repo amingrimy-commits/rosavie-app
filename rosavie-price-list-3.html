@@ -3217,30 +3217,6 @@ function renderFxCard(prefix,newPrice){
   FX_LAST[key]=newPrice;
   saveFxLast();
 }
-function fxExtractPrice(obj){
-  if(obj==null)return null;
-  if(typeof obj==='number')return obj;
-  var candidates=['price','Price','value','Value','p','rate','Rate','sell','Sell','last','Last','close','Close'];
-  for(var i=0;i<candidates.length;i++){
-    var v=obj[candidates[i]];
-    if(typeof v==='number')return v;
-    if(typeof v==='string'){
-      var n=parseFloat(v.replace(/,/g,''));
-      if(!isNaN(n))return n;
-    }
-  }
-  return null;
-}
-function fxFindEntry(list,keywords){
-  if(!Array.isArray(list))return null;
-  for(var i=0;i<list.length;i++){
-    var hay=JSON.stringify(list[i]).toLowerCase();
-    for(var k=0;k<keywords.length;k++){
-      if(hay.indexOf(keywords[k].toLowerCase())>-1)return list[i];
-    }
-  }
-  return null;
-}
 function fxShowDebug(raw){
   var box=document.getElementById('FX_DEBUG_BOX');
   if(!box)return;
@@ -3249,27 +3225,22 @@ function fxShowDebug(raw){
 }
 function loadFxWidgets(){
   loadFxLast();
-  fetch('https://brsapi.ir/FreeTsetmcBourseApi/Api_Free_Gold_Currency_v2.json')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      var currList=Array.isArray(data)?data:(data.currency||data.rates||data.data||null);
-      var goldList=Array.isArray(data)?data:(data.gold||data.rates||data.data||null);
-      var usdEntry=fxFindEntry(currList,['usd','دلار']);
-      var goldEntry=fxFindEntry(goldList,['geram18','gram18','18 عیار','18عیار','هجده عیار','gold_18']);
-      var usdPrice=fxExtractPrice(usdEntry);
-      var goldPrice=fxExtractPrice(goldEntry);
-      if(usdPrice&&usdPrice>300000)usdPrice=usdPrice/10;
-      if(goldPrice&&goldPrice>15000000)goldPrice=goldPrice/10;
-      if(usdPrice==null||goldPrice==null)fxShowDebug(data);
-      renderFxCard('USD',usdPrice);
-      renderFxCard('GOLD',goldPrice);
-    })
-    .catch(function(e){
-      renderFxCard('USD',null);
-      renderFxCard('GOLD',null);
-      var box=document.getElementById('FX_DEBUG_BOX');
-      if(box){box.style.display='block';box.innerHTML='<div style="background:#fde8e8;border:1px solid #f5b8b8;border-radius:8px;padding:8px;font-size:0.68rem;color:#c04040">⚠️ خطا در اتصال به سرویس قیمت: '+(e&&e.message?e.message:e)+'<br>این پیام رو برام بفرست</div>';}
-    });
+  Promise.all([
+    fetch('https://raw.githubusercontent.com/HosseinOdd/Navasan-API/main/data/fiat.json').then(function(r){return r.json();}),
+    fetch('https://raw.githubusercontent.com/HosseinOdd/Navasan-API/main/data/gold.json').then(function(r){return r.json();})
+  ]).then(function(results){
+    var fiat=results[0],gold=results[1];
+    var usdPrice=(fiat&&fiat.usd&&typeof fiat.usd.value==='number')?fiat.usd.value:null;
+    var goldPrice=(gold&&gold['18ayar']&&typeof gold['18ayar'].value==='number')?gold['18ayar'].value:null;
+    if(usdPrice==null||goldPrice==null)fxShowDebug({fiat:fiat,gold:gold});
+    renderFxCard('USD',usdPrice);
+    renderFxCard('GOLD',goldPrice);
+  }).catch(function(e){
+    renderFxCard('USD',null);
+    renderFxCard('GOLD',null);
+    var box=document.getElementById('FX_DEBUG_BOX');
+    if(box){box.style.display='block';box.innerHTML='<div style="background:#fde8e8;border:1px solid #f5b8b8;border-radius:8px;padding:8px;font-size:0.68rem;color:#c04040">⚠️ خطا در اتصال به سرویس قیمت: '+(e&&e.message?e.message:e)+'<br>این پیام رو برام بفرست</div>';}
+  });
 }
 setTimeout(loadFxWidgets,400);
 setInterval(loadFxWidgets,300000);
