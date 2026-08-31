@@ -218,6 +218,9 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 @media(min-width:640px){.modal-ov{align-items:center}.modal{border-radius:16px}}
 .modal-close{width:42px;height:42px;border-radius:50%;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;font-size:1.3rem;float:left;cursor:pointer}
 .modal-img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;margin-top:8px;background:#f3e9de}
+.modal-img-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px}
+.modal-img-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.55);border:1.5px solid rgba(0,0,0,0.15);cursor:pointer}
+.modal-img-dot.on{background:#d4789a;border-color:#d4789a}
 .modal-name{font-size:1.05rem;font-weight:900;color:#2e2320;margin-top:6px}
 .modal-brand{font-size:0.825rem;color:#9c8a7c;margin-top:2px}
 .modal-price{font-size:1.2rem;color:#c25a80;font-weight:900;margin-top:12px}
@@ -1053,6 +1056,15 @@ function openModalForProduct(p){
   if(!p)return;
   navTo('p~'+encodeURIComponent(p.code));
 }
+function setModalImgIdx(i){
+  var p=window._CURGROUP&&window._CURGROUP[window._CURVARIANT];
+  if(!p)return;
+  var imgs=[p.img,p.img2].filter(Boolean);
+  if(!imgs[i])return;
+  var el=document.getElementById('MODAL_IMG_EL');
+  if(el)el.src=imgs[i];
+  document.querySelectorAll('.modal-img-dot').forEach(function(d,idx){d.classList.toggle('on',idx===i);});
+}
 function switchVariant(idx){
   window._CURVARIANT=idx;
   renderModalContent();
@@ -1134,7 +1146,10 @@ function renderModalContent(){
     '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>');
   }
   var html='<button class="modal-close" onclick="goHome()" style="margin-top:-6px">✕</button><div style="clear:both"></div>'+
-    (p.img?'<img class="modal-img" src="'+p.img+'">':'')+
+    (p.img?('<div style="position:relative">'+
+      '<img class="modal-img" id="MODAL_IMG_EL" src="'+p.img+'">'+
+      (p.img2?('<div class="modal-img-dots"><span class="modal-img-dot on" onclick="setModalImgIdx(0)"></span><span class="modal-img-dot" onclick="setModalImgIdx(1)"></span></div>'):'')+
+      '</div>'):'')+
     '<div class="modal-name">'+nm+'</div>'+
     (p.brand?'<div class="modal-brand" style="cursor:pointer;text-decoration:underline" onclick="navTo(\'list~brand~\'+encodeURIComponent(\''+p.brand.replace(/'/g,"\\'")+'\')+\'~_\')">'+p.brand+'</div>':'')+
     '<div class="modal-price">'+fmtP(p.price)+'</div>'+
