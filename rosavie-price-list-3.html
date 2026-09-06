@@ -2397,7 +2397,7 @@ var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','b
     'sexy_twopiece','sexy_fantasy','sexy_costume','sexy_topshort','sexy_onepiece','sexy_babydoll',
     'tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker',
     'game_snake','game_love','game_flower','game_map','game_challenge','game_cards'],
-  p5:['acc_lift','acc_solar','acc_perfume','acc_lotion','acc_basket'],p6:['swim_slip','swim_padded_wire','swim_bikini','swim_paar','swim_skirted','swim_2piece','swim_3piece','swim_cover','swim_cap'],p7:['crop'],p8:['topw'],p9:['bodycotton','bodysilk','bodyfishnet','bodysexy'],
+  p5:['acc_lift','acc_solar','acc_perfume','acc_lotion','acc_basket','acc_rabet'],p6:['swim_slip','swim_padded_wire','swim_bikini','swim_paar','swim_skirted','swim_2piece','swim_3piece','swim_cover','swim_cap'],p7:['crop'],p8:['topw'],p9:['bodycotton','bodysilk','bodyfishnet','bodysexy'],
   p11:['prosthetic_hipdip','prosthetic_hips','prosthetic_thigh'],
   p10:['corset_slip','corset_waist','corset_top','corset_cotton','corset_laser'],
 };
@@ -2410,7 +2410,7 @@ var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شو
   sexy_twopiece:'دو تیکه',sexy_fantasy:'بادی فانتزی',sexy_costume:'کاستوم',sexy_topshort:'تاپ شورتک',sexy_onepiece:'سرهمی',sexy_babydoll:'بیبی‌دال',sexy_disco:'دیسکویی',
   tool_mask:'نقاب',tool_whip:'شلاق',tool_buttplug:'بات\u200cپلاگ',tool_hat:'کلاه',tool_bracelet:'دستبند',tool_garter:'گارتر',tool_tiara:'تل',tool_choker:'چوکر',
   accessory:'لوازم جانبی',
-  acc_lift:'لیفت',acc_solar:'سولار',acc_perfume:'عطر بیکینی',acc_lotion:'لوسیون',acc_basket:'سبد',
+  acc_lift:'لیفت',acc_solar:'سولار',acc_perfume:'عطر بیکینی',acc_lotion:'لوسیون',acc_basket:'سبد',acc_rabet:'رابط',
   prosthetic_hipdip:'هیپ‌دیپ',prosthetic_hips:'باسن',prosthetic_thigh:'بغل‌ران',
   swim_slip:'اسلیپ',swim_padded_wire:'کاپدار فنردار',swim_bikini:'بیکینی',swim_paar:'پادار',swim_skirted:'دامنی',swim_2piece:'دوتیکه',swim_3piece:'سه‌تیکه',swim_cover:'کاورمایو',swim_cap:'کلاه‌شنا',
   crop:'کراپ',topw:'تاپ',
@@ -2426,7 +2426,7 @@ var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',
   sexy_twopiece:'tbtn t-set',sexy_fantasy:'tbtn t-c1',sexy_costume:'tbtn t-c2',sexy_topshort:'tbtn t-c5',sexy_onepiece:'tbtn t-c6',sexy_babydoll:'tbtn t-c5',sexy_disco:'tbtn t-c4',
   tool_mask:'tbtn t-c2',tool_whip:'tbtn t-c6',tool_buttplug:'tbtn t-c4',tool_hat:'tbtn t-c1',tool_bracelet:'tbtn t-c3',tool_garter:'tbtn t-c4',tool_tiara:'tbtn t-c5',tool_choker:'tbtn t-c6',
   accessory:'tbtn t-c2',
-  acc_lift:'tbtn t-c1',acc_solar:'tbtn t-c2',acc_perfume:'tbtn t-c3',acc_lotion:'tbtn t-c4',acc_basket:'tbtn t-c5',
+  acc_lift:'tbtn t-c1',acc_solar:'tbtn t-c2',acc_perfume:'tbtn t-c3',acc_lotion:'tbtn t-c4',acc_basket:'tbtn t-c5',acc_rabet:'tbtn t-c1',
   prosthetic_hipdip:'tbtn t-c1',prosthetic_hips:'tbtn t-c2',prosthetic_thigh:'tbtn t-c3',
   swim_slip:'tbtn t-set',swim_padded_wire:'tbtn t-bra',swim_bikini:'tbtn t-c1',swim_paar:'tbtn t-c2',swim_skirted:'tbtn t-c3',swim_2piece:'tbtn t-c4',swim_3piece:'tbtn t-c5',swim_cover:'tbtn t-c6',swim_cap:'tbtn t-c1',
   crop:'tbtn t-set',topw:'tbtn t-top',
@@ -3314,7 +3314,7 @@ function addBrand(tab,nm,sRows,sLogoId,sLogo){
   document.getElementById('BN'+bid).oninput=save;
   if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
   else if(sLogoId){LOGO_IDS[bid]=sLogoId;idbGet(sLogoId,function(d){if(d){LOGOS[bid]=d;var lp2=document.getElementById('LP'+bid);if(lp2){lp2.src=d;lp2.style.display='block';}}});}
-  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',tgmsgids:r.tgmsgids||'[]',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',fabrictags:r.fabrictags||'[]'});});}
+  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',tgmsgids:r.tgmsgids||'[]',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',siteimg2:r.siteimg2||'',fabrictags:r.fabrictags||'[]',patterntags:r.patterntags||'[]'});});}
   else if(!sRows){addRow(bid,tab);}
   save();
 }
@@ -3349,7 +3349,9 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   div.dataset.mixminorder=extra.mixminorder||'';
   div.dataset.sizepricelist=extra.sizepricelist||'[]';
   div.dataset.siteimg=extra.siteimg||'';
+  div.dataset.siteimg2=extra.siteimg2||'';
   div.dataset.fabrictags=extra.fabrictags||'[]';
+  div.dataset.patterntags=extra.patterntags||'[]';
   div.dataset.extraImgIds=extra.extraImgIds||'[]';
   div.dataset.tglink=extra.tglink||'';
   div.dataset.tgmsgids=extra.tgmsgids||'[]';
@@ -4282,7 +4284,7 @@ function buildSearchHTML(){
   js+='var SL='+slp+';';
   js+='var SW='+swp+';';
   js+='var BO='+bop+';';
-  js+='var LBL={set:"ست",bra:"سوتین",tset:"ست",top:"نیمتنه",panty:"شورت",panty_cotton:"شورت نخی",panty_laser:"شورت لیزری",panty_shortex:"شورتکس",panty_fantasy:"شورت فانتزی سکسی",setpad_wire:"ست — اسفنجی فنردار",setpad_nowire:"ست — اسفنجی بدون فنر",setnopad_wire:"ست — بدون اسفنج فنردار",setnopad_nowire:"ست — بدون اسفنج بدون فنر",brapad_wire:"سوتین — اسفنجی فنردار",brapad_nowire:"سوتین — اسفنجی بدون فنر",branopad_wire:"سوتین — بدون اسفنج فنردار",branopad_nowire:"سوتین — بدون اسفنج بدون فنر",brajelly:"سوتین ژله‌ای",braplastic:"سوتین طلقی",brabutterfly:"سوتین پروانه‌ای",pajama:"پیژامه",nightgown:"نایتگان",nightgownset:"ست نایتگان",robe:"روبدوشام",sexy_twopiece:"دو تیکه",sexy_fantasy:"بادی فانتزی",sexy_costume:"کاستوم",sexy_topshort:"تاپ شورتک",sexy_onepiece:"سرهمی",sexy_babydoll:"بیبی‌دال",tool_mask:"نقاب",tool_whip:"شلاق",tool_buttplug:"بات\u200cپلاگ",tool_hat:"کلاه",tool_bracelet:"دستبند",tool_garter:"گارتر",tool_tiara:"تل",tool_choker:"چوکر",accessory:"لوازم جانبی",acc_lift:"لیفت",acc_solar:"سولار",acc_perfume:"عطر بیکینی",acc_lotion:"لوسیون",acc_basket:"سبد",prosthetic_hipdip:"هیپ‌دیپ",prosthetic_hips:"باسن",prosthetic_thigh:"بغل‌ران",swim_slip:"اسلیپ",swim_padded_wire:"کاپدار فنردار",swim_bikini:"بیکینی",swim_paar:"پادار",swim_skirted:"دامنی",swim_2piece:"دوتیکه",swim_3piece:"سه‌تیکه",swim_cover:"کاورمایو",swim_cap:"کلاه‌شنا",crop:"کراپ",topw:"تاپ",bodycotton:"بادی نخی",bodysilk:"بادی حریر",bodyfishnet:"بادی فیشنت",bodysexy:"بادی سکسی",corset_slip:"گن اسلیپ فنردار",corset_waist:"گن کمری",corset_top:"گن تاپی",corset_cotton:"گن نخی",corset_laser:"گن لیزری",game_snake:"مار و پله",game_love:"لاو",game_flower:"گل‌یاپوچ",game_map:"نقشه",game_challenge:"چالش",game_cards:"کارت‌بازی"};';
+  js+='var LBL={set:"ست",bra:"سوتین",tset:"ست",top:"نیمتنه",panty:"شورت",panty_cotton:"شورت نخی",panty_laser:"شورت لیزری",panty_shortex:"شورتکس",panty_fantasy:"شورت فانتزی سکسی",setpad_wire:"ست — اسفنجی فنردار",setpad_nowire:"ست — اسفنجی بدون فنر",setnopad_wire:"ست — بدون اسفنج فنردار",setnopad_nowire:"ست — بدون اسفنج بدون فنر",brapad_wire:"سوتین — اسفنجی فنردار",brapad_nowire:"سوتین — اسفنجی بدون فنر",branopad_wire:"سوتین — بدون اسفنج فنردار",branopad_nowire:"سوتین — بدون اسفنج بدون فنر",brajelly:"سوتین ژله‌ای",braplastic:"سوتین طلقی",brabutterfly:"سوتین پروانه‌ای",pajama:"پیژامه",nightgown:"نایتگان",nightgownset:"ست نایتگان",robe:"روبدوشام",sexy_twopiece:"دو تیکه",sexy_fantasy:"بادی فانتزی",sexy_costume:"کاستوم",sexy_topshort:"تاپ شورتک",sexy_onepiece:"سرهمی",sexy_babydoll:"بیبی‌دال",tool_mask:"نقاب",tool_whip:"شلاق",tool_buttplug:"بات\u200cپلاگ",tool_hat:"کلاه",tool_bracelet:"دستبند",tool_garter:"گارتر",tool_tiara:"تل",tool_choker:"چوکر",accessory:"لوازم جانبی",acc_lift:"لیفت",acc_solar:"سولار",acc_perfume:"عطر بیکینی",acc_lotion:"لوسیون",acc_basket:"سبد",acc_rabet:"رابط",prosthetic_hipdip:"هیپ‌دیپ",prosthetic_hips:"باسن",prosthetic_thigh:"بغل‌ران",swim_slip:"اسلیپ",swim_padded_wire:"کاپدار فنردار",swim_bikini:"بیکینی",swim_paar:"پادار",swim_skirted:"دامنی",swim_2piece:"دوتیکه",swim_3piece:"سه‌تیکه",swim_cover:"کاورمایو",swim_cap:"کلاه‌شنا",crop:"کراپ",topw:"تاپ",bodycotton:"بادی نخی",bodysilk:"بادی حریر",bodyfishnet:"بادی فیشنت",bodysexy:"بادی سکسی",corset_slip:"گن اسلیپ فنردار",corset_waist:"گن کمری",corset_top:"گن تاپی",corset_cotton:"گن نخی",corset_laser:"گن لیزری",game_snake:"مار و پله",game_love:"لاو",game_flower:"گل‌یاپوچ",game_map:"نقشه",game_challenge:"چالش",game_cards:"کارت‌بازی"};';
   js+='function toEnD(s){if(s==null)return s;return String(s).replace(/[\u06f0-\u06f9]/g,function(d){return String("\u06f0\u06f1\u06f2\u06f3\u06f4\u06f5\u06f6\u06f7\u06f8\u06f9".indexOf(d));}).replace(/[\u0660-\u0669]/g,function(d){return String("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(d));});}';
   js+='function fP(p){if(!p||p=="--")return"--";var n=toEnD(String(p)).replace(/,/g,"");if(n!==""&&!isNaN(n))return Number(n).toLocaleString("fa-IR")+" تومان";return p;}';
   js+='function nP(p){return parseFloat(toEnD(String(p||0)).replace(/,/g,""))||0;}';
@@ -6376,13 +6378,13 @@ function setCgSaleType(mode){ // برای سازگاری با کد قدیمی/ب
 }
 var COLOR_HEX_MAP={
   'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
-  'مشکی':'#000000',
-  'قرمز':'#E53935','زرشکی':'#7B1E3A','شرابی':'#722F37',
-  'آبی':'#1E88E5','آبی آسمانی':'#87CEEB','آبی کاربنی':'#4A6FA5','آبی نفتی':'#1B4F72','سرمه‌ای':'#0B1F3A',
-  'زرد':'#FDD835','زرد لیمویی':'#E3F400','زرد فسفری':'#E8F500','طلایی':'#D4AF37',
+  'مشکی':'#000000','ملانژ':'#B0AAA4',
+  'قرمز':'#E53935','زرشکی':'#7B1E3A','شرابی':'#722F37','بادمجونی':'#4C2C4E',
+  'آبی':'#1E88E5','آبی آسمانی':'#87CEEB','آبی کاربنی':'#4A6FA5','آبی نفتی':'#1B4F72','آبی اطلسی':'#2E5C8A','سرمه‌ای':'#0B1F3A',
+  'زرد':'#FDD835','زرد لیمویی':'#E3F400','زرد فسفری':'#E8F500','طلایی':'#D4AF37','نباتی':'#EDE0C0',
   'نارنجی':'#FB8C00','نارنجی تیره':'#C56000','نارنجی فسفری':'#FF6D00','هلویی':'#FFCBA4',
   'صورتی':'#FF69B4','صورتی تیره':'#D6467C','صورتی پاستیلی':'#FFD1DC','سرخ‌آبی':'#C2185B','سرخ‌آبی تیره':'#8E1550',
-  'سبز':'#43A047','سبز صابونی':'#A8C686','سبز زمردی':'#009B77','سبز یشمی':'#00A86B','سبز فسفری':'#7FFF00',
+  'سبز':'#43A047','سبز صابونی':'#A8C686','سبز زمردی':'#009B77','سبز یشمی':'#00A86B','سبز فسفری':'#7FFF00','سبز پسته‌ای':'#93C572','سبز کله‌غازی':'#4B5320','زیتونی':'#6B7A3A',
   'قهوه‌ای':'#6F4E37','کرم':'#F5E6CA','نسکافه‌ای':'#A67B5B','شکلاتی':'#5C3317','قهوه‌ای خاکستری':'#7A6C5D','فیلی':'#C4B7A6',
   'طوسی روشن':'#D3D3D3','طوسی تیره':'#696969','خاکستری':'#808080','خاکستری تیره':'#4F4F4F','موشی':'#8B8589','دلفینی':'#8E9AAF'
 };
@@ -6514,7 +6516,7 @@ function toggleCgFabricTag(tag,btn){
   if(idx>-1){CG_FABRIC_TAGS.splice(idx,1);btn.classList.remove('on');}
   else{CG_FABRIC_TAGS.push(tag);btn.classList.add('on');}
 }
-var CG_NO_SIZE_TYPES=['tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker','game_snake','game_love','game_flower','game_map','game_challenge','game_cards','acc_lift','acc_solar','acc_perfume','acc_lotion','acc_basket'];
+var CG_NO_SIZE_TYPES=['tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker','game_snake','game_love','game_flower','game_map','game_challenge','game_cards','acc_lift','acc_solar','acc_perfume','acc_lotion','acc_basket','acc_rabet'];
 function updateSizeFieldVisibility(){
   var sizeWrap=document.getElementById('CG_SIZE_WRAP');
   var sleepWrap=document.getElementById('CG_SLEEP_SIZE_WRAP');
@@ -6674,9 +6676,10 @@ function buildCaptionData(){
     if(minOrder)pushInfoLine('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
   }
   if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    pushInfoLine('🎁 سایز و قیمت هر عدد (بسته میکس):');
+    pushInfoLine('🎁 سایز و قیمت بسته (بسته میکس):');
     CG_SIZEPRICE_LIST.forEach(function(sp){
-      lines.push(sp.size+' → '+(showPriceInCaption?(fmtUnitPriceDisplay(sp.price)):'استعلام بگیرید'));
+      var pkgTxt=showPriceInCaption?(fmtP(sp.pkgPrice)+(sp.pkgCount?(' ('+sp.pkgCount+' عددی)'):'')):'استعلام بگیرید';
+      lines.push(sp.size+' → '+pkgTxt);
     });
   }
   if(mixEnabled&&mixDesc)pushInfoLine('🎨 '+mixDesc);
@@ -7047,7 +7050,7 @@ function saveProductFromCaption(data){
   if(bid){
     addRow(bid,data.category,data.type,data.code,data.finalSize,data.color,data.minOrder,data.price,'in',newImgId,null,data.title,extraInfo);
   } else {
-    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder,sizepricelist:extraInfo.sizepricelist,siteimg:extraInfo.siteimg,fabrictags:extraInfo.fabrictags}]);
+    addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder,sizepricelist:extraInfo.sizepricelist,siteimg:extraInfo.siteimg,siteimg2:extraInfo.siteimg2,fabrictags:extraInfo.fabrictags,patterntags:extraInfo.patterntags}]);
   }
   save();
   if(AUTO_SYNC_ENABLED){
@@ -7373,6 +7376,7 @@ function sendToChannels(){
 
   var data=buildCaptionData();
   if(!data.text){stat.textContent='لطفاً حداقل یکی از فیلدهای محصول را پر کن';stat.className='stat serr';return;}
+  if(!data.code){stat.textContent='⚠️ فیلد «کد محصول» خالیه — بدون کد، محصول به لیست قیمت اضافه نمی‌شه (حتی اگه به تلگرام ارسال بشه). لطفاً کد رو پر کن و دوباره امتحان کن.';stat.className='stat serr';return;}
   showCaptionPreview(data);
   var manualText=V('SEND_CAPTION');
   var isManuallyEdited=!!(manualText&&manualText.trim()!==data.text.trim());
@@ -7458,7 +7462,16 @@ function sendToChannels(){
     return;
   }
 
-  if(!targets.length){stat.textContent='هیچ کانالی انتخاب نشده، تیک‌ها یا تنظیمات تلگرام رو چک کن';stat.className='stat serr';return;}
+  if(!targets.length){
+    stat.textContent='هیچ کانالی تیک نخورده — در حال ذخیره در لیست قیمت بدون ارسال...';stat.className='stat sload';
+    saveProductWithDuplicateCheck(data,function(saved,mode){
+      if(mode==='cancel'){stat.textContent='لغو شد — چیزی ذخیره یا ارسال نشد';stat.className='stat';return;}
+      var saveMsgPart=saved?(mode==='replace'?'محصول قبلی جایگزین شد ✅':'محصول در لیست قیمت ذخیره شد ✅'):'خطا: کد محصول خالی بود، ذخیره نشد';
+      stat.textContent=saveMsgPart+' — به هیچ کانالی ارسال نشد (تیک تلگرام رو نزده بودی)';
+      stat.className=saved?'stat sok':'stat serr';
+    });
+    return;
+  }
 
   stat.textContent='در حال آماده‌سازی عکس‌ها (واترمارک)...';stat.className='stat sload';
   sendToGalleryChannel(ordered,data);
