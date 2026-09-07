@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تست هوش مصنوعی محلی — رزاوی (نسخه‌ی آزمایشی جدا)</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Tahoma,Vazirmatn,sans-serif;background:#fdf6ec;margin:0;padding:16px;color:#3a2e29;max-width:520px;margin:0 auto}
+  h1{font-size:1.05rem;text-align:center;color:#7a4a5a;margin-bottom:4px}
+  .subtitle{text-align:center;font-size:0.72rem;color:#9a6e3a;margin-bottom:14px}
+  .note{background:#fff3cd;border:1px solid #e0c080;border-radius:10px;padding:10px;font-size:0.76rem;margin-bottom:14px;line-height:1.9}
+  .note b{color:#a5750a}
+  textarea{width:100%;min-height:150px;border-radius:10px;border:1.5px solid #e0d0c0;padding:10px;font-size:0.85rem;font-family:inherit;resize:vertical}
+  button{width:100%;padding:14px;border:none;border-radius:10px;background:#d4789a;color:#fff;font-size:0.9rem;font-weight:700;margin-top:10px;cursor:pointer}
+  button:disabled{background:#e0c0cc;cursor:not-allowed}
+  .status{text-align:center;font-size:0.78rem;color:#8a7a6c;margin-top:10px;min-height:20px;line-height:1.7}
+  .field-row{background:#fff;border:1px solid #ecdfd2;border-radius:10px;padding:10px;margin-top:8px}
+  .field-row label{font-size:0.7rem;color:#9a6e3a;font-weight:700;display:block;margin-bottom:4px}
+  .field-row input{width:100%;border:1px solid #e0d0c0;border-radius:6px;padding:7px;font-size:0.82rem;font-family:inherit}
+  #results{display:none;margin-top:16px}
+  #results h2{font-size:0.85rem;color:#7a4a5a;margin:16px 0 4px}
+  .progress-bar{width:100%;height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-top:8px}
+  .progress-fill{height:100%;background:#d4789a;width:0%;transition:width 0.25s}
+  #rawOut{display:none;white-space:pre-wrap;font-size:0.68rem;background:#f5f0e8;padding:10px;border-radius:8px;margin-top:12px;direction:ltr;text-align:left;max-height:220px;overflow:auto}
+  #rawOut summary{cursor:pointer;font-size:0.72rem;color:#9a6e3a;direction:rtl;text-align:right}
+</style>
+</head>
+<body>
+<h1>🧪 تست هوش مصنوعی محلی</h1>
+<div class="subtitle">استخراج فیلدهای محصول از روی توضیحات — نسخه‌ی آزمایشی</div>
+
+<div class="note">
+⚠️ این یه ابزار <b>کاملاً جدا و آزمایشیه</b>. هیچ ارتباطی به سایت یا اپ ادمین اصلی رُزاوی نداره، هیچ‌جا ذخیره نمی‌کنه، و اگه نتیجه بد بود، کافیه این صفحه رو ببندی — هیچ چیزی از اپ اصلی تغییر نمی‌کنه.<br><br>
+📶 بار اول که «پردازش کن» رو بزنی، یه فایل هوش مصنوعی حدود ۵۰۰ مگابایت دانلود می‌شه — فقط یه‌بار، ترجیحاً با وایفای. دفعه‌های بعد از حافظه‌ی گوشی می‌خونه، دیگه دانلود نمی‌شه.
+</div>
+
+<textarea id="inputText" placeholder="توضیحات کامل محصول رو اینجا پیست کن... مثلاً:
+سوتین پلانچ هارنس‌دار طرح قلب
+برند راحیل
+کد RH-621
+رنگ: سفید، قرمز
+سایز و قیمت هر عدد: L به قیمت 158000 تومان
+جنس پنبه خالص
+ساخت ایران"></textarea>
+
+<button id="runBtn" onclick="runExtraction()">🚀 پردازش کن</button>
+<div class="status" id="status"></div>
+<div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
+
+<div id="results">
+  <h2>نتیجه (چک کن، هرجا اشتباه بود دستی درستش کن):</h2>
+  <div class="field-row"><label>کد محصول</label><input id="out_code"></div>
+  <div class="field-row"><label>برند</label><input id="out_brand"></div>
+  <div class="field-row"><label>رنگ</label><input id="out_color"></div>
+  <div class="field-row"><label>قیمت</label><input id="out_price"></div>
+  <div class="field-row"><label>حداقل سفارش</label><input id="out_minorder"></div>
+  <div class="field-row"><label>جنس</label><input id="out_material"></div>
+  <div class="field-row"><label>کشور تولید</label><input id="out_country"></div>
+  <div class="field-row"><label>توضیح ۱</label><input id="out_desc1"></div>
+  <div class="field-row"><label>توضیح ۲</label><input id="out_desc2"></div>
+</div>
+
+<details id="rawOut"><summary>خروجی خام هوش مصنوعی (برای بررسی فنی)</summary><div id="rawOutText"></div></details>
+
+<script type="module">
+// Candidate models, tried in order — smallest/most-confirmed-compatible first.
+// If the first fails to load (name changed, network hiccup, etc.), we fall back automatically.
+const MODEL_CANDIDATES = [
+  'onnx-community/Qwen2.5-0.5B-Instruct',
+  'Xenova/Qwen1.5-0.5B-Chat',
+  'HuggingFaceTB/SmolLM2-360M-Instruct'
+];
+
+let generator = null;
+let loadedModelName = '';
+
+async function loadModelWithFallback(onProgress){
+  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
+  let lastErr = null;
+  for(const name of MODEL_CANDIDATES){
+    try{
+      onProgress('در حال تلاش برای دانلود مدل «'+name+'»...', 0);
+      const gen = await pipeline('text-generation', name, {
+        progress_callback: (p) => {
+          if(p.status === 'progress' && p.total){
+            const pct = Math.round((p.loaded/p.total)*100);
+            const mb = Math.round(p.total/1024/1024);
+            onProgress('در حال دانلود «'+name+'»... '+pct+'٪ (حجم کل ~'+mb+' مگابایت)', pct);
+          }
+        }
+      });
+      loadedModelName = name;
+      return gen;
+    }catch(e){
+      console.error('Model failed: '+name, e);
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('هیچ‌کدوم از مدل‌ها لود نشدن');
+}
+
+function extractGeneratedText(output){
+  // Handles both possible transformers.js response shapes defensively
+  try{
+    const gt = output[0].generated_text;
+    if(typeof gt === 'string') return gt;
+    if(Array.isArray(gt)){
+      const last = gt[gt.length-1];
+      return (last && (last.content || last.text)) || JSON.stringify(gt);
+    }
+    return JSON.stringify(gt);
+  }catch(e){
+    return JSON.stringify(output);
+  }
+}
+
+window.runExtraction = async function(){
+  const btn = document.getElementById('runBtn');
+  const status = document.getElementById('status');
+  const progressBar = document.getElementById('progressBar');
+  const progressFill = document.getElementById('progressFill');
+  const text = document.getElementById('inputText').value.trim();
+  if(!text){ status.textContent = '⚠️ یه متن بنویس یا پیست کن اول'; return; }
+
+  btn.disabled = true;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('rawOut').style.display = 'none';
+
+  // Live elapsed-time ticker so the page never looks frozen, even during
+  // silent phases (model compile/instantiate) where there's no progress event.
+  let phaseLabel = '';
+  let phaseStart = Date.now();
+  let tickTimer = setInterval(() => {
+    const sec = Math.round((Date.now() - phaseStart) / 1000);
+    if(phaseLabel) status.textContent = phaseLabel + ' — ' + sec + ' ثانیه از این مرحله گذشته (صفحه رو نبند و باز نگه دار)';
+  }, 1000);
+  function setPhase(label){ phaseLabel = label; phaseStart = Date.now(); status.textContent = label; }
+
+  // Safety timeout: if model loading genuinely hangs, stop waiting after 6 minutes
+  // and report it clearly, instead of freezing forever with no feedback.
+  const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('بیش از ۶ دقیقه طول کشید — احتمالاً گوشی نتونست این مرحله رو کامل کنه یا تب پس‌زمینه رفته بود. صفحه رو ببند، دوباره باز کن، و مطمئن شو تا آخرش رو مچ (روشن و باز) نگهش می‌داری.')), ms));
+
+  try{
+    if(!generator){
+      progressBar.style.display = 'block';
+      setPhase('در حال دانلود مدل...');
+      generator = await Promise.race([
+        loadModelWithFallback((msg, pct) => {
+          if(pct < 100) setPhase(msg);
+          else setPhase('دانلود تموم شد ✅ — الان در حال آماده‌سازی مدل تو حافظه‌ی گوشیه (این مرحله معمولاً ۱۰-۹۰ ثانیه طول می‌کشه، صفحه رو باز نگه دار)');
+          progressFill.style.width = pct + '%';
+        }),
+        timeoutPromise(6*60*1000)
+      ]);
+      progressBar.style.display = 'none';
+      setPhase('✅ مدل «'+loadedModelName+'» لود شد');
+    }
+    setPhase('در حال پردازش متن با هوش مصنوعی...');
+
+    const messages = [
+      { role: 'system', content: 'تو یک دستیار استخراج اطلاعات محصول لباس زیر هستی. از متن فارسی داده‌شده توسط کاربر، این فیلدها رو استخراج کن و فقط و فقط یک شیء JSON معتبر برگردون، بدون هیچ توضیح اضافه، بدون بک‌تیک: {"code":"","brand":"","color":"","price":"","minOrder":"","material":"","country":"","desc1":"","desc2":""}. اگر فیلدی توی متن نبود، مقدارش رو رشته‌ی خالی بذار. عدد قیمت رو فقط رقم بنویس بدون کلمه‌ی تومان.' },
+      { role: 'user', content: text }
+    ];
+
+    const output = await generator(messages, { max_new_tokens: 350, temperature: 0.1, do_sample: false });
+    const raw = extractGeneratedText(output);
+
+    document.getElementById('rawOut').style.display = 'block';
+    document.getElementById('rawOutText').textContent = raw;
+
+    let parsed = null;
+    try{
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+    }catch(e){
+      clearInterval(tickTimer);
+      status.textContent = '⚠️ هوش مصنوعی خروجی JSON درستی نداد — پایین رو باز کن ببین چی نوشته (این خودش یه نتیجه‌ی تست مهمه)';
+      btn.disabled = false;
+      return;
+    }
+
+    document.getElementById('out_code').value = parsed.code || '';
+    document.getElementById('out_brand').value = parsed.brand || '';
+    document.getElementById('out_color').value = parsed.color || '';
+    document.getElementById('out_price').value = parsed.price || '';
+    document.getElementById('out_minorder').value = parsed.minOrder || '';
+    document.getElementById('out_material').value = parsed.material || '';
+    document.getElementById('out_country').value = parsed.country || '';
+    document.getElementById('out_desc1').value = parsed.desc1 || '';
+    document.getElementById('out_desc2').value = parsed.desc2 || '';
+    document.getElementById('results').style.display = 'block';
+    clearInterval(tickTimer);
+    status.textContent = '✅ انجام شد — با متن اصلی مقایسه کن ببین دقیق بوده یا نه';
+  }catch(err){
+    clearInterval(tickTimer);
+    status.textContent = '❌ خطا: ' + (err && err.message ? err.message : err);
+    console.error(err);
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>
