@@ -880,6 +880,73 @@ input[type=file]{display:none}
       <button class="ba-btn ba-pick" style="margin-top:6px;width:100%" onclick="sendVipAnnouncement()">📢 ارسال به‌عنوان اعلان به مشتری‌ها</button>
     </div>
   </div>
+  <div class="card"><div class="ctitle">🏷️ کدهای تخفیف</div>
+    <div class="g1">
+      <span class="lbl">کد تخفیف</span>
+      <div style="display:flex;gap:6px">
+        <input class="fi" type="text" id="DC_CODE" placeholder="مثال: SUMMER20" style="direction:ltr;text-align:left;flex:1">
+        <button class="addb" onclick="generateDiscountCode()" style="white-space:nowrap">تصادفی</button>
+      </div>
+    </div>
+    <div class="g1">
+      <span class="lbl">نوع تخفیف</span>
+      <div class="chips" id="DC_TYPE_CHIPS">
+        <button type="button" class="chip on" onclick="selectDiscountType('percent',this)">درصدی</button>
+        <button type="button" class="chip" onclick="selectDiscountType('fixed',this)">مبلغ ثابت</button>
+        <button type="button" class="chip" onclick="selectDiscountType('freeship',this)">ارسال رایگان</button>
+      </div>
+    </div>
+    <div class="g1" id="DC_VALUE_WRAP">
+      <span class="lbl" id="DC_VALUE_LBL">مقدار تخفیف (درصد)</span>
+      <input class="fi" type="text" id="DC_VALUE" placeholder="مثال: 20" inputmode="numeric">
+    </div>
+    <div class="g1" id="DC_MAXCAP_WRAP">
+      <span class="lbl">سقف تخفیف به تومان (اختیاری — برای جلوگیری از تخفیف خیلی زیاد)</span>
+      <input class="fi" type="text" id="DC_MAXCAP" placeholder="مثال: 200000" inputmode="numeric">
+    </div>
+    <div class="g1">
+      <span class="lbl">حداقل مبلغ سبد خرید برای فعال شدن کد (اختیاری)</span>
+      <input class="fi" type="text" id="DC_MINPURCHASE" placeholder="مثال: 2000000" inputmode="numeric">
+    </div>
+    <div class="g1" style="display:flex;gap:10px">
+      <div style="flex:1">
+        <span class="lbl">محدودیت تعداد کل استفاده (خالی = نامحدود)</span>
+        <input class="fi" type="text" id="DC_USAGELIMIT" placeholder="مثال: 50" inputmode="numeric">
+      </div>
+      <div style="flex:1">
+        <span class="lbl">محدودیت به‌ازای هر مشتری</span>
+        <input class="fi" type="text" id="DC_PERCUSTOMER" placeholder="پیش‌فرض: 1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="g1">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="DC_CUSTOMER_ONLY_CHK" onchange="document.getElementById('DC_CUSTOMER_PHONE_WRAP').style.display=this.checked?'block':'none'" style="width:17px;height:17px">
+        <span class="lbl" style="margin:0">مخصوص یه مشتری خاص باشه</span>
+      </label>
+      <div id="DC_CUSTOMER_PHONE_WRAP" style="display:none;margin-top:6px">
+        <input class="fi" type="text" id="DC_CUSTOMER_PHONE" placeholder="شماره تماس همون مشتری" style="direction:ltr;text-align:left">
+      </div>
+    </div>
+    <div class="g1" style="display:flex;gap:10px">
+      <div style="flex:1">
+        <span class="lbl">مدت اعتبار</span>
+        <input class="fi" type="text" id="DC_DURATION" placeholder="مثال: 48" inputmode="numeric">
+      </div>
+      <div style="flex:1">
+        <span class="lbl">واحد</span>
+        <div class="chips" id="DC_DURUNIT_CHIPS">
+          <button type="button" class="chip on" onclick="selectDurUnit('hours',this)">ساعت</button>
+          <button type="button" class="chip" onclick="selectDurUnit('days',this)">روز</button>
+        </div>
+      </div>
+    </div>
+    <button class="sbig stg" style="margin-top:10px" onclick="createDiscountCode()">🏷️ ساخت کد تخفیف</button>
+    <div class="stat" id="DC_STAT"></div>
+    <div style="margin-top:14px;padding-top:10px;border-top:1px dashed #e2cdb0">
+      <div style="font-size:0.72rem;color:#9a6e3a;font-weight:700;margin-bottom:8px">کدهای فعال</div>
+      <div id="DC_LIST"><div style="color:#9a6e3a;font-size:0.76rem">در حال دریافت...</div></div>
+    </div>
+  </div>
 </div>
 <div class="pg" id="pcat">
   <div class="card"><div class="ctitle">صفحه جستجوی مشتری (قدیمی، معمولاً لازم نیست)</div>
@@ -1146,9 +1213,12 @@ function renderOrdersList(list){
       if(it.color)line+=' — رنگ/سایز: '+it.color;
       return line;
     }).join('<br>');
+    var totalDisplay=(o.discountCode&&o.finalTotal!=null)?('<span style="text-decoration:line-through;color:#bbb;font-size:0.78em;margin-left:5px">'+fmtP(o.total)+'</span>'+fmtP(o.finalTotal)):fmtP(o.total);
+    var discountHTML=o.discountCode?('<div style="color:#2a9d5c;font-size:0.72rem;margin-top:4px;background:#eafaf0;border-radius:6px;padding:6px 8px">🏷️ کد تخفیف «'+o.discountCode+'» — '+(o.discountType==='percent'?'درصدی':(o.discountType==='fixed'?'مبلغ ثابت':'ارسال رایگان'))+(o.discountAmount?(' — '+fmtP(o.discountAmount)+' کسر شد'):(o.freeShipping?' (هزینه‌ی ارسال رایگانه)':''))+'</div>'):'';
     return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px" data-order-id="'+o._id+'">'+
-      '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+fmtP(o.total)+'</span></div>'+
+      '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+totalDisplay+'</span></div>'+
       '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">شماره سفارش: '+o.orderNo+'</div>'+
+      discountHTML+
       (o.customerAddress?('<div style="color:#3d2b1f;font-size:0.72rem;margin-top:4px;background:#fbf6ee;border-radius:6px;padding:6px 8px">📍 '+(o.customerProvince||'')+(o.customerCity?(' - '+o.customerCity):'')+' — '+o.customerAddress+(o.customerPostal?(' — کدپستی: '+o.customerPostal):'')+'</div>'):'')+
       (o.invoiceWanted?('<div style="color:#3d2b1f;font-size:0.7rem;margin-top:4px;background:#eef7ee;border-radius:6px;padding:6px 8px">📨 درخواست پیش‌فاکتور از طریق '+({telegram:'تلگرام',whatsapp:'واتساپ',bale:'بله'}[o.invoiceApp]||o.invoiceApp)+' به '+(o.invoiceContact||o.customerPhone)+(o.preInvoiceSentAt?' — <b style="color:#2a9d5c">✅ ارسال شد</b>':'')+'</div>'):'')+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
@@ -1638,9 +1708,12 @@ function renderConfirmedOrdersList(list){
       shipInfo='<div style="color:#1a6a8a;font-size:0.7rem;margin-top:5px;background:#eaf4fb;border-radius:6px;padding:6px 8px">🚚 ارسال با '+(shipLbl[o.shippingMethod]||o.shippingMethod)+etaTxt+'</div>';
     }
     var stalledInfo=o.deliveryCheckStalled?('<div style="color:#c0392b;font-size:0.7rem;margin-top:5px;background:#fdeeed;border-radius:6px;padding:6px 8px">⚠️ بیش از ۳ روز از موعد تحویل گذشته و مشتری جواب نداده — پیگیری کن</div>'):'';
+    var totalDisplay2=(o.discountCode&&o.finalTotal!=null)?('<span style="text-decoration:line-through;color:#bbb;font-size:0.78em;margin-left:5px">'+fmtP(o.total)+'</span>'+fmtP(o.finalTotal)):fmtP(o.total);
+    var discountHTML2=o.discountCode?('<div style="color:#2a9d5c;font-size:0.7rem;margin-top:4px;background:#eafaf0;border-radius:6px;padding:6px 8px">🏷️ کد تخفیف «'+o.discountCode+'» — '+(o.discountType==='percent'?'درصدی':(o.discountType==='fixed'?'مبلغ ثابت':'ارسال رایگان'))+(o.discountAmount?(' — '+fmtP(o.discountAmount)+' کسر شد'):(o.freeShipping?' (هزینه‌ی ارسال رایگانه)':''))+'</div>'):'';
     return '<div style="background:#fff;border:1px solid #d4a87a;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
-      '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+fmtP(o.total)+'</span></div>'+
+      '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+totalDisplay2+'</span></div>'+
       '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">شماره سفارش: '+o.orderNo+(o.receiptRef?(' — رسید: '+o.receiptRef):'')+'</div>'+
+      discountHTML2+
       (o.customerAddress?('<div style="color:#3d2b1f;font-size:0.7rem;margin-top:4px;background:#fbf6ee;border-radius:6px;padding:6px 8px">📍 '+(o.customerProvince||'')+(o.customerCity?(' - '+o.customerCity):'')+' — '+o.customerAddress+'</div>'):'')+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       shipInfo+stalledInfo+
@@ -2906,7 +2979,7 @@ function showTab(id,btn){
   if(id==='ps')doSearch();
   if(id==='pa'){checkArchive();renderArchive();}
   if(id==='pcat'){initBanners();renderVipList();}
-  if(id==='psitecontent'){initBanners();renderVipList();}
+  if(id==='psitecontent'){initBanners();renderVipList();loadDiscountCodesList();}
   if(id==='pf'){
     initHomeStatWidgets();
     loadSiteAnalytics();
@@ -4620,6 +4693,118 @@ function renderVipList(){
     html+='</div></div>';
   });
   el.innerHTML=html;
+}
+var DC_TYPE='percent';
+var DC_DURUNIT='hours';
+function selectDiscountType(type,btn){
+  DC_TYPE=type;
+  document.querySelectorAll('#DC_TYPE_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+  btn.classList.add('on');
+  var valueWrap=document.getElementById('DC_VALUE_WRAP');
+  var maxcapWrap=document.getElementById('DC_MAXCAP_WRAP');
+  var valueLbl=document.getElementById('DC_VALUE_LBL');
+  if(type==='freeship'){
+    valueWrap.style.display='none';
+    maxcapWrap.style.display='none';
+  }else{
+    valueWrap.style.display='block';
+    maxcapWrap.style.display=(type==='percent')?'block':'none';
+    valueLbl.textContent=(type==='percent')?'مقدار تخفیف (درصد)':'مقدار تخفیف (تومان)';
+  }
+}
+function selectDurUnit(unit,btn){
+  DC_DURUNIT=unit;
+  document.querySelectorAll('#DC_DURUNIT_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+  btn.classList.add('on');
+}
+function generateDiscountCode(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code='';
+  for(var i=0;i<7;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('DC_CODE').value=code;
+}
+function createDiscountCode(){
+  var stat=document.getElementById('DC_STAT');
+  var code=(document.getElementById('DC_CODE').value||'').trim().toUpperCase();
+  if(!code){stat.textContent='کد رو وارد کن یا تصادفی بساز';stat.className='stat serr';return;}
+  var value=toEnDigits(document.getElementById('DC_VALUE').value||'').replace(/[^0-9]/g,'');
+  if(DC_TYPE!=='freeship'&&!value){stat.textContent='مقدار تخفیف رو وارد کن';stat.className='stat serr';return;}
+  if(DC_TYPE==='percent'&&(Number(value)<1||Number(value)>100)){stat.textContent='درصد باید بین ۱ تا ۱۰۰ باشه';stat.className='stat serr';return;}
+  var maxCap=toEnDigits(document.getElementById('DC_MAXCAP').value||'').replace(/[^0-9]/g,'');
+  var minPurchase=toEnDigits(document.getElementById('DC_MINPURCHASE').value||'').replace(/[^0-9]/g,'');
+  var usageLimit=toEnDigits(document.getElementById('DC_USAGELIMIT').value||'').replace(/[^0-9]/g,'');
+  var perCustomer=toEnDigits(document.getElementById('DC_PERCUSTOMER').value||'').replace(/[^0-9]/g,'')||'1';
+  var customerOnly=document.getElementById('DC_CUSTOMER_ONLY_CHK').checked;
+  var customerPhone=customerOnly?(document.getElementById('DC_CUSTOMER_PHONE').value||'').trim():'';
+  if(customerOnly&&!customerPhone){stat.textContent='شماره‌ی مشتری رو وارد کن';stat.className='stat serr';return;}
+  var duration=toEnDigits(document.getElementById('DC_DURATION').value||'').replace(/[^0-9]/g,'');
+  if(!duration){stat.textContent='مدت اعتبار رو وارد کن';stat.className='stat serr';return;}
+  var durMs=Number(duration)*(DC_DURUNIT==='hours'?3600000:86400000);
+  var expiresAt=new Date(Date.now()+durMs);
+  if(!fbDb){stat.textContent='خطا در اتصال به سرور';stat.className='stat serr';return;}
+  stat.textContent='در حال ساخت...';stat.className='stat sload';
+  fbDb.collection('discountCodes').doc(code).set({
+    code:code,
+    type:DC_TYPE,
+    value:DC_TYPE==='freeship'?0:Number(value),
+    maxDiscount:maxCap?Number(maxCap):null,
+    minPurchase:minPurchase?Number(minPurchase):0,
+    usageLimit:usageLimit?Number(usageLimit):null,
+    usedCount:0,
+    perCustomerLimit:Number(perCustomer),
+    usedByPhones:[],
+    customerPhone:customerPhone?normPhone(customerPhone):null,
+    expiresAt:firebase.firestore.Timestamp.fromDate(expiresAt),
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    active:true
+  }).then(function(){
+    stat.textContent='✅ کد «'+code+'» ساخته شد';stat.className='stat sok';
+    ['DC_CODE','DC_VALUE','DC_MAXCAP','DC_MINPURCHASE','DC_USAGELIMIT','DC_PERCUSTOMER','DC_CUSTOMER_PHONE','DC_DURATION'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.value='';
+    });
+    document.getElementById('DC_CUSTOMER_ONLY_CHK').checked=false;
+    document.getElementById('DC_CUSTOMER_PHONE_WRAP').style.display='none';
+    loadDiscountCodesList();
+  }).catch(function(e){
+    stat.textContent='خطا: '+(e&&e.message?e.message:e);stat.className='stat serr';
+  });
+}
+function loadDiscountCodesList(){
+  var el=document.getElementById('DC_LIST');
+  if(!el||!fbDb)return;
+  fbDb.collection('discountCodes').orderBy('createdAt','desc').limit(30).get().then(function(snap){
+    var list=[];
+    snap.forEach(function(doc){list.push(doc.data());});
+    renderDiscountCodesList(list);
+  }).catch(function(e){
+    el.innerHTML='<div style="color:#c0392b;font-size:0.76rem">خطا در دریافت کدها</div>';
+  });
+}
+function renderDiscountCodesList(list){
+  var el=document.getElementById('DC_LIST');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div style="color:#bbb;font-size:0.78rem;text-align:center;padding:14px 0">هنوز کدی ساخته نشده</div>';return;}
+  var now=Date.now();
+  el.innerHTML=list.map(function(d){
+    var expMs=(d.expiresAt&&d.expiresAt.toMillis)?d.expiresAt.toMillis():0;
+    var expired=!!(expMs&&expMs<now);
+    var typeLbl=d.type==='percent'?(d.value+'٪ تخفیف'):(d.type==='fixed'?(fmtP(d.value)+' تخفیف'):'ارسال رایگان');
+    var usageLbl='استفاده‌شده: '+(d.usedCount||0)+(d.usageLimit?(' از '+d.usageLimit):' (نامحدود)');
+    var expLbl=expMs?('انقضا: '+new Date(expMs).toLocaleString('fa-IR')):'';
+    return '<div style="background:'+(expired?'#f5f0e8':'#fff')+';border:1px solid '+(expired?'#ddd':'#ecdfd2')+';border-radius:10px;padding:10px 12px;margin-bottom:8px;opacity:'+(expired?'0.6':'1')+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center"><b style="direction:ltr;font-size:0.88rem">'+d.code+'</b>'+
+      '<span onclick="deleteDiscountCode(\''+d.code+'\')" style="color:#c0392b;font-size:0.78rem;cursor:pointer">حذف</span></div>'+
+      '<div style="font-size:0.78rem;color:#3d2b1f;margin-top:4px">'+typeLbl+(d.minPurchase?(' — حداقل خرید '+fmtP(d.minPurchase)):'')+'</div>'+
+      '<div style="font-size:0.7rem;color:#9a6e3a;margin-top:3px">'+usageLbl+(d.customerPhone?(' — مخصوص '+d.customerPhone):'')+'</div>'+
+      (expLbl?('<div style="font-size:0.68rem;color:'+(expired?'#c0392b':'#9a6e3a')+';margin-top:3px">'+expLbl+(expired?' (منقضی شده)':'')+'</div>'):'')+
+      '</div>';
+  }).join('');
+}
+function deleteDiscountCode(code){
+  if(!confirm('کد «'+code+'» پاک بشه؟'))return;
+  fbDb.collection('discountCodes').doc(code).delete().then(function(){
+    loadDiscountCodesList();
+  }).catch(function(e){alert('خطا در حذف: '+(e&&e.message?e.message:e));});
 }
 function setVipDiscount(inp,code){
   var p=VIP_PRODUCTS.find(function(x){return x.code===code;});

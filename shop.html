@@ -284,6 +284,9 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .cart-total-row{display:flex;justify-content:space-between;font-size:0.92rem;font-weight:900;color:#2e2320;margin:14px 0}
 .cart-total-row span:last-child{color:#d4789a}
 .checkout-btn{display:block;width:100%;text-align:center;padding:13px;border-radius:10px;background:#2a9d5c;color:#fff;font-weight:900;font-size:0.86rem;border:none;cursor:pointer;margin-top:8px}
+.ship-chip{flex:1;min-width:88px;text-align:center;padding:10px 6px;border-radius:10px;border:1.5px solid #ecdfd2;background:#fff;cursor:pointer;font-size:0.76rem;font-weight:700;color:#5a4d45;transition:all 0.15s}
+.ship-chip.on{border-color:#d4789a;background:#fdf2f6;color:#b0517a}
+.ship-chip.disabled{opacity:0.4;pointer-events:none;background:#f0ece5}
 .form-field{margin-bottom:12px}
 .form-field label{display:block;font-size:0.74rem;color:#9c8a7c;margin-bottom:5px}
 .form-field input,.form-field textarea,.form-field select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #e0d0c0;background:#ffffff;color:#3a2e29;font-family:inherit;font-size:0.82rem}
@@ -330,6 +333,11 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
   <span style="flex:1">برای عملکرد درست، سایت رو تو مرورگر واقعی باز کن</span>
   <button onclick="openInRealBrowser()" style="background:#d4789a;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.74rem;font-weight:700;white-space:nowrap;cursor:pointer">باز کردن</button>
   <button onclick="dismissInAppBanner()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+</div>
+<div id="BDAY_REMINDER_BANNER" style="display:none;position:fixed;left:0;right:0;z-index:99998;background:#fdf2f6;color:#8a4a5a;padding:9px 14px;font-size:0.74rem;align-items:center;justify-content:space-between;gap:10px;box-sizing:border-box;border-bottom:1.5px solid #e0a8c0">
+  <span style="flex:1">🎂 تاریخ تولدت رو تو پروفایلت وارد کن تا تخفیف ویژه‌ی روز تولدت رو از دست ندی!</span>
+  <button onclick="goToProfileForBday()" style="background:#d4789a;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:0.7rem;font-weight:700;white-space:nowrap;cursor:pointer">ثبت می‌کنم</button>
+  <button onclick="dismissBdayBanner()" style="background:none;border:none;color:#8a4a5a;font-size:1.05rem;cursor:pointer;padding:0 4px;line-height:1">✕</button>
 </div>
 <div id="INIT_LOADER">
   <div id="INIT_TIP_CARD">
@@ -495,14 +503,22 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
   var banner=document.getElementById('INAPP_BROWSER_BANNER');
   if(banner){
     banner.style.display='flex';
-    document.documentElement.style.setProperty('--iab','44px');
+    layoutTopBanners();
   }
   window._REAL_BROWSER_URL=fullUrl;
 })();
+function layoutTopBanners(){
+  var y=0;
+  var iab=document.getElementById('INAPP_BROWSER_BANNER');
+  if(iab&&iab.style.display==='flex'){iab.style.top='0px';y+=44;}
+  var bday=document.getElementById('BDAY_REMINDER_BANNER');
+  if(bday&&bday.style.display==='flex'){bday.style.top=y+'px';y+=40;}
+  document.documentElement.style.setProperty('--iab',y+'px');
+}
 function dismissInAppBanner(){
   var banner=document.getElementById('INAPP_BROWSER_BANNER');
   if(banner)banner.remove();
-  document.documentElement.style.setProperty('--iab','0px');
+  layoutTopBanners();
 }
 function openInRealBrowser(){
   var url=window._REAL_BROWSER_URL||location.href;
@@ -1650,7 +1666,9 @@ function silentCloseAccount(){document.getElementById('ACCOUNT_OV').classList.re
 // ── احراز هویت مشتری (نام + شماره تماس + رمز) ──
 var fbAuth=null;
 var CUR_CUSTOMER=null; // {uid,name,phone}
-var ACC_MODE='login';
+var ACC_MODE='phone'; // 'phone' | 'login' | 'signup'
+var ACC_CHECKED_PHONE='';
+var PENDING_CHECKOUT_AFTER_LOGIN=false;
 function initAuth(){
   try{
     if(!fbAuth)fbAuth=firebase.auth();
@@ -1668,7 +1686,27 @@ function phoneToEmail(phone){
   var digits=toEnDigitsPhone(phone).replace(/\D/g,'');
   return digits+'@rosavie-app.local';
 }
-function setAccMode(m){ACC_MODE=m;renderAccountView();}
+function setAccMode(m){ACC_MODE=m;if(m==='phone')ACC_CHECKED_PHONE='';renderAccountView();}
+function checkPhoneAndProceed(){
+  var phone=(document.getElementById('AC_PHONE_INITIAL').value||'').trim();
+  var err=document.getElementById('AC_ERR');
+  if(!phone||phone.replace(/\D/g,'').length<10){err.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
+  if(!initAuth()){err.textContent='خطا در اتصال به سرور. اینترنت (یا فیلترشکن) رو چک کن.';return;}
+  err.textContent='';
+  var btn=document.getElementById('AC_PHONE_BTN');btn.disabled=true;btn.textContent='در حال بررسی...';
+  db.collection('customerLookup').doc(normPhone(phone)).get().then(function(doc){
+    var authEmail=(doc.exists&&doc.data().authEmail)?doc.data().authEmail:phoneToEmail(phone);
+    return fbAuth.fetchSignInMethodsForEmail(authEmail);
+  }).then(function(methods){
+    btn.disabled=false;btn.textContent='ادامه';
+    ACC_CHECKED_PHONE=phone;
+    ACC_MODE=(methods&&methods.length)?'login':'signup';
+    renderAccountView();
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='ادامه';
+    err.textContent='خطا در بررسی شماره: '+authErrMsg(e.code);
+  });
+}
 
 var SHOP_PROVINCES={"آذربایجان شرقی":["تبریز","مراغه","میانه","اهر","مرند","بناب","شبستر","سراب"],"آذربایجان غربی":["ارومیه","خوی","مهاباد","بوکان","سلماس","میاندوآب","نقده"],"اردبیل":["اردبیل","پارس‌آباد","مشگین‌شهر","خلخال","گرمی"],"اصفهان":["اصفهان","کاشان","نجف‌آباد","خمینی‌شهر","شاهین‌شهر","نطنز","گلپایگان","فولادشهر"],"البرز":["کرج","نظرآباد","فردیس","اشتهارد","ماهدشت"],"ایلام":["ایلام","دهلران","آبدانان","ایوان"],"بوشهر":["بوشهر","برازجان","گناوه","دیر","کنگان"],"تهران":["تهران","ری","اسلامشهر","شهریار","ورامین","پاکدشت","دماوند","پردیس","رباط‌کریم","ملارد"],"چهارمحال و بختیاری":["شهرکرد","بروجن","فارسان","لردگان"],"خراسان جنوبی":["بیرجند","قائنات","فردوس","نهبندان"],"خراسان رضوی":["مشهد","نیشابور","سبزوار","تربت‌حیدریه","کاشمر","قوچان","تربت‌جام","چناران"],"خراسان شمالی":["بجنورد","شیروان","اسفراین","جاجرم"],"خوزستان":["اهواز","آبادان","خرمشهر","دزفول","ماهشهر","بهبهان","شوشتر","اندیمشک","ایذه"],"زنجان":["زنجان","ابهر","خدابنده","خرمدره"],"سمنان":["سمنان","شاهرود","دامغان","گرمسار"],"سیستان و بلوچستان":["زاهدان","زابل","ایرانشهر","چابهار","سراوان","خاش"],"فارس":["شیراز","مرودشت","جهرم","کازرون","فسا","لار","داراب","اقلید"],"قزوین":["قزوین","تاکستان","البرز","آبیک"],"قم":["قم"],"کردستان":["سنندج","سقز","مریوان","بانه","قروه"],"کرمان":["کرمان","رفسنجان","سیرجان","جیرفت","بم","زرند"],"کرمانشاه":["کرمانشاه","اسلام‌آباد غرب","سنقر","کنگاور","پاوه"],"کهگیلویه و بویراحمد":["یاسوج","گچساران","دهدشت"],"گلستان":["گرگان","گنبدکاووس","علی‌آباد","آق‌قلا","کردکوی"],"گیلان":["رشت","بندرانزلی","لاهیجان","لنگرود","آستارا","رودسر","صومعه‌سرا"],"لرستان":["خرم‌آباد","بروجرد","دورود","الیگودرز","کوهدشت"],"مازندران":["ساری","بابل","آمل","قائم‌شهر","بهشهر","نوشهر","چالوس","تنکابن","بابلسر","رامسر"],"مرکزی":["اراک","ساوه","خمین","محلات","دلیجان"],"هرمزگان":["بندرعباس","میناب","قشم","بندرلنگه","کیش"],"همدان":["همدان","ملایر","نهاوند","تویسرکان","اسدآباد"],"یزد":["یزد","میبد","اردکان","بافق"]};
 function buildProvinceOptions(selected){
@@ -1827,18 +1865,20 @@ function saveProfileDetails(){
   db.collection('customers').doc(user.uid).set({name:name,province:province,city:city,address:address,postal:postal,birthdate:birthdate},{merge:true}).then(function(){
     CUR_CUSTOMER=CUR_CUSTOMER||{};
     CUR_CUSTOMER.name=name;CUR_CUSTOMER.province=province;CUR_CUSTOMER.city=city;CUR_CUSTOMER.address=address;CUR_CUSTOMER.postal=postal;CUR_CUSTOMER.birthdate=birthdate;
+    syncPhoneProfile(CUR_CUSTOMER.phone,{name:name,phone:CUR_CUSTOMER.phone,province:province,city:city,address:address,postal:postal,birthdate:birthdate});
+    showBdayReminderIfNeeded();
     err.style.color='#2a9d5c';err.textContent='✅ اطلاعات ذخیره شد';
   }).catch(function(e){
     err.style.color='#c0304a';err.textContent='خطا در ذخیره: '+(e&&e.message?e.message:e);
   });
 }
 var ORDHIST_ALL=[],ORDHIST_FILTER='all';
-function loadOrderHistory(uid){
+function loadOrderHistory(phone){
   var list=document.getElementById('ORDHIST_LIST');
   var countEl=document.getElementById('ORDHIST_COUNT');
   if(!list)return;
   ORDHIST_FILTER='all';
-  db.collection('orders').where('customerUid','==',uid).get().then(function(snap){
+  db.collection('orders').where('customerPhone','==',phone).get().then(function(snap){
     var orders=[];
     snap.forEach(function(doc){orders.push(doc.data());});
     orders.sort(function(a,b){
@@ -2261,7 +2301,7 @@ function showSavePasswordReminder(pass){
     '<p style="color:#c0304a;font-weight:700;text-align:center;font-size:0.85rem">این رمز شماست، حتماً از این صفحه اسکرین‌شات بگیرید:</p>'+
     '<div style="background:#f7efe6;border:1.5px dashed #d4789a;border-radius:12px;padding:16px;text-align:center;font-size:1.3rem;font-weight:900;color:#2e2320;direction:ltr;margin:12px 0">'+pass+'</div>'+
     '<p style="font-size:0.76rem;color:#8a7a6c;text-align:center">ما این رمز رو جایی ذخیره نمی‌کنیم و بعداً نمی‌تونیم نشونتون بدیم — فقط خودتون نگهش دارید.</p>'+
-    '<button class="acc-btn" onclick="renderAccountView()">✅ اسکرین‌شات گرفتم</button>';
+    '<button class="acc-btn" onclick="continueAfterAuthIfPending()">✅ اسکرین‌شات گرفتم</button>';
 }
 function renderAccountView(){
   var body=document.getElementById('ACCOUNT_BODY');
@@ -2316,26 +2356,32 @@ function renderAccountView(){
         '<button class="acc-btn" onclick="saveProfileDetails()">ثبت اطلاعات</button>';
       buildProvinceOptions(pr);
       fillCityOptions(ct);
-      loadOrderHistory(user.uid);
+      loadOrderHistory(ph);
+      return;
+    }
+    if(ACC_MODE==='phone'){
+      body.innerHTML=
+        (PENDING_CHECKOUT_AFTER_LOGIN?'<div style="background:#fdf2f6;border:1.5px solid #e0a8c0;border-radius:10px;padding:10px;font-size:0.76rem;color:#8a4a5a;margin-bottom:12px;text-align:center">برای ثبت نهایی سفارش، اول شماره‌ات رو وارد کن</div>':'')+
+        '<div class="form-field"><label>شماره تماس</label><input id="AC_PHONE_INITIAL" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left" value="'+ACC_CHECKED_PHONE+'"></div>'+
+        '<div class="acc-err" id="AC_ERR"></div>'+
+        '<button class="acc-btn" id="AC_PHONE_BTN" onclick="checkPhoneAndProceed()">ادامه</button>';
       return;
     }
     var loginOn=(ACC_MODE==='login');
+    var phoneRow='<div class="form-field"><label>شماره تماس</label><div class="phone-verified" style="display:flex;justify-content:space-between;align-items:center"><span style="direction:ltr">'+ACC_CHECKED_PHONE+'</span><span onclick="setAccMode(\'phone\')" style="color:#b0517a;font-size:0.72rem;text-decoration:underline;cursor:pointer">تغییر شماره</span></div></div>';
     body.innerHTML=
-      '<div class="acc-tabs">'+
-        '<div class="acc-tab'+(loginOn?' on':'')+'" onclick="setAccMode(\'login\')">ورود</div>'+
-        '<div class="acc-tab'+(!loginOn?' on':'')+'" onclick="setAccMode(\'signup\')">ثبت‌نام</div>'+
-      '</div>'+
       (loginOn?
-        ('<div class="form-field"><label>شماره تماس</label><input id="AC_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left"></div>'+
+        (phoneRow+
          pwField('AC_PASS','رمز عبور')+
          '<div class="acc-err" id="AC_ERR"></div>'+
          '<button class="acc-btn" id="AC_BTN" onclick="doLogin()">ورود</button>'+
          '<div style="text-align:center;margin-top:12px"><span style="color:#b0517a;font-size:0.78rem;cursor:pointer;text-decoration:underline" onclick="forgotPassword()">رمز عبورم رو فراموش کردم</span></div>')
       :
-        ('<div class="form-field"><label>نام و نام‌خانوادگی</label><input id="AC_NAME" type="text" placeholder="مثال: زهرا محمدی"></div>'+
-         '<div class="form-field"><label>شماره تماس</label><input id="AC_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left"></div>'+
+        (phoneRow+
+         '<div class="form-field"><label>نام و نام‌خانوادگی</label><input id="AC_NAME" type="text" placeholder="مثال: زهرا محمدی"></div>'+
          '<div class="form-field"><label>ایمیل (اختیاری)</label><input id="AC_EMAIL" type="email" placeholder="example@gmail.com" style="direction:ltr;text-align:left"><div style="font-size:0.68rem;color:#8a7a6c;margin-top:4px">اگه ایمیل بدی، اگه رمزت یادت رفت خودکار می‌تونی بازیابیش کنی. بدون ایمیل هم می‌تونی ثبت‌نام کنی، فقط بازیابی رمز باید دستی از طریق پشتیبانی انجام بشه.</div></div>'+
          pwField('AC_PASS','رمز عبور (حداقل ۶ رقم)')+
+
          pwField('AC_PASS2','تکرار رمز عبور')+
          '<div class="acc-terms-row"><input type="checkbox" id="AC_TERMS"><label for="AC_TERMS">'+
            '<span onclick="event.preventDefault();event.stopPropagation();openTermsPage()" style="text-decoration:underline;color:#b0517a">قوانین و مقررات</span> را خوانده‌ام و می‌پذیرم</label></div>'+
@@ -2365,16 +2411,20 @@ function authErrMsg(code){
 }
 
 function normPhone(p){return toEnDigitsPhone(p||'').replace(/\D/g,'');}
+function syncPhoneProfile(phone,data){
+  if(!phone)return Promise.resolve();
+  var payload=Object.assign({},data,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  return db.collection('customerProfiles').doc(normPhone(phone)).set(payload,{merge:true}).catch(function(e){console.error('syncPhoneProfile error',e);});
+}
 function isValidEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e||'');}
 function doSignup(){
   var name=(document.getElementById('AC_NAME').value||'').trim();
-  var phone=(document.getElementById('AC_PHONE').value||'').trim();
+  var phone=ACC_CHECKED_PHONE;
   var email=(document.getElementById('AC_EMAIL').value||'').trim();
   var pass=document.getElementById('AC_PASS').value||'';
   var pass2=document.getElementById('AC_PASS2').value||'';
   var err=document.getElementById('AC_ERR');
   if(!name){err.textContent='لطفاً نام رو وارد کن';return;}
-  if(!phone||phone.replace(/\D/g,'').length<10){err.textContent='لطفاً یه شماره تماس درست وارد کن';return;}
   if(email&&!isValidEmail(email)){err.textContent='ایمیلی که وارد کردی معتبر نیست';return;}
   if(pass.length<6){err.textContent='رمز عبور باید حداقل ۶ رقم باشه';return;}
   if(pass!==pass2){err.textContent='تکرار رمز عبور با رمز عبور یکی نیست';return;}
@@ -2385,35 +2435,55 @@ function doSignup(){
   var authEmail=email?email:phoneToEmail(phone);
   fbAuth.createUserWithEmailAndPassword(authEmail,pass).then(function(cred){
     var uid=cred.user.uid;
-    var custData={name:name,phone:phone,termsAccepted:true,termsAcceptedAt:firebase.firestore.FieldValue.serverTimestamp(),createdAt:firebase.firestore.FieldValue.serverTimestamp()};
-    if(email)custData.email=email;
-    var chain=db.collection('customers').doc(uid).set(custData);
-    if(email){
-      chain=chain.then(function(){
-        return db.collection('customerLookup').doc(normPhone(phone)).set({authEmail:email,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    return db.collection('customerProfiles').doc(normPhone(phone)).get().then(function(oldProfDoc){
+      var restored=oldProfDoc.exists?oldProfDoc.data():{};
+      var custData={
+        name:name,phone:phone,termsAccepted:true,
+        termsAcceptedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        province:restored.province||'',city:restored.city||'',address:restored.address||'',
+        postal:restored.postal||'',birthdate:restored.birthdate||''
+      };
+      if(email)custData.email=email;
+      else if(restored.email)custData.email=restored.email;
+      var chain=db.collection('customers').doc(uid).set(custData);
+      if(email){
+        chain=chain.then(function(){
+          return db.collection('customerLookup').doc(normPhone(phone)).set({authEmail:email,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        });
+      }
+      chain=chain.then(function(){return syncPhoneProfile(phone,custData);});
+      return chain.then(function(){
+        CUR_CUSTOMER={uid:uid,name:name,phone:phone,termsAccepted:true,province:custData.province,city:custData.city,address:custData.address,postal:custData.postal,birthdate:custData.birthdate,email:custData.email||'',hasOrdered:false};
+        showSavePasswordReminder(pass);
       });
-    }
-    return chain.then(function(){
-      CUR_CUSTOMER={uid:uid,name:name,phone:phone,termsAccepted:true};
-      showSavePasswordReminder(pass);
     });
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ثبت‌نام';
     err.textContent=authErrMsg(e.code);
   });
 }
+function continueAfterAuthIfPending(){
+  if(PENDING_CHECKOUT_AFTER_LOGIN){
+    PENDING_CHECKOUT_AFTER_LOGIN=false;
+    navTo('cart');
+    renderCheckout();
+  }else{
+    renderAccountView();
+  }
+}
 function doLogin(){
-  var phone=(document.getElementById('AC_PHONE').value||'').trim();
+  var phone=ACC_CHECKED_PHONE;
   var pass=document.getElementById('AC_PASS').value||'';
   var err=document.getElementById('AC_ERR');
-  if(!phone||!pass){err.textContent='شماره و رمز عبور رو وارد کن';return;}
+  if(!pass){err.textContent='رمز عبور رو وارد کن';return;}
   err.textContent='';
   var btn=document.getElementById('AC_BTN');btn.disabled=true;btn.textContent='در حال ورود...';
   db.collection('customerLookup').doc(normPhone(phone)).get().then(function(doc){
     var authEmail=(doc.exists&&doc.data().authEmail)?doc.data().authEmail:phoneToEmail(phone);
     return fbAuth.signInWithEmailAndPassword(authEmail,pass);
   }).then(function(cred){
-    return loadCustomerProfile(cred.user.uid).then(function(){renderAccountView();});
+    return loadCustomerProfile(cred.user.uid).then(function(){continueAfterAuthIfPending();});
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ورود';
     if(e&&e.code==='auth/blocked'){err.textContent='دسترسی این حساب توسط مدیریت مسدود شده. برای اطلاع بیشتر با پشتیبانی تماس بگیر.';}
@@ -2486,7 +2556,7 @@ function confirmLogout(btn){
 }
 function doLogout(){
   if(!confirm('مطمئنی می‌خوای از حسابت خارج بشی؟'))return;
-  fbAuth.signOut().then(function(){CUR_CUSTOMER=null;ACC_MODE='login';renderAccountView();});
+  fbAuth.signOut().then(function(){CUR_CUSTOMER=null;ACC_MODE='phone';ACC_CHECKED_PHONE='';renderAccountView();showBdayReminderIfNeeded();});
 }
 function loadCustomerProfile(uid){
   return db.collection('customers').doc(uid).get().then(function(doc){
@@ -2497,11 +2567,30 @@ function loadCustomerProfile(uid){
         return fbAuth.signOut().then(function(){return Promise.reject({code:'auth/blocked'});});
       }
       var acceptedAt=(d.termsAcceptedAt&&d.termsAcceptedAt.toDate)?d.termsAcceptedAt.toDate():null;
-      CUR_CUSTOMER={uid:uid,name:d.name||'',phone:d.phone||'',province:d.province||'',city:d.city||'',address:d.address||'',postal:d.postal||'',birthdate:d.birthdate||'',termsAccepted:!!d.termsAccepted,termsAcceptedAt:acceptedAt,galleryLink:d.galleryLink||'',galleryLinkUsed:!!d.galleryLinkUsed};
+      CUR_CUSTOMER={uid:uid,name:d.name||'',phone:d.phone||'',province:d.province||'',city:d.city||'',address:d.address||'',postal:d.postal||'',birthdate:d.birthdate||'',termsAccepted:!!d.termsAccepted,termsAcceptedAt:acceptedAt,galleryLink:d.galleryLink||'',galleryLinkUsed:!!d.galleryLinkUsed,hasOrdered:!!d.hasOrdered};
       updateAccountNewBadge();
       updateNotifBadge();
+      showBdayReminderIfNeeded();
     }
   });
+}
+var BDAY_BANNER_DISMISSED=false;
+function showBdayReminderIfNeeded(){
+  var banner=document.getElementById('BDAY_REMINDER_BANNER');
+  if(!banner)return;
+  var shouldShow=!!(CUR_CUSTOMER&&CUR_CUSTOMER.hasOrdered&&!CUR_CUSTOMER.birthdate&&!BDAY_BANNER_DISMISSED);
+  banner.style.display=shouldShow?'flex':'none';
+  layoutTopBanners();
+}
+function dismissBdayBanner(){
+  BDAY_BANNER_DISMISSED=true;
+  var banner=document.getElementById('BDAY_REMINDER_BANNER');
+  if(banner)banner.style.display='none';
+  layoutTopBanners();
+}
+function goToProfileForBday(){
+  dismissBdayBanner();
+  navTo('account');
 }
 function updateAccountNewBadge(){
   var b=document.getElementById('ACC_NEW_BADGE');
@@ -2559,11 +2648,77 @@ function renderCart(){
       '<div class="cart-qty"><button onclick="cartQty('+i+',-1)">−</button><span>'+c.qty+'</span><button onclick="cartQty('+i+',1)">+</button>'+
       '<span class="cart-remove" onclick="cartRemove('+i+')">حذف</span></div></div></div>';
   }).join('');
+  var subtotal=cartTotal();
   body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
     '<div class="modal-name" style="margin-bottom:10px">سبد خرید</div>'+
     itemsHTML+
-    '<div class="cart-total-row"><span>جمع کل</span><span>'+fmtP(cartTotal())+'</span></div>'+
-    '<button class="checkout-btn" onclick="renderCheckout()">تکمیل سفارش</button>';
+    '<div class="cart-total-row"><span>جمع کل</span><span>'+fmtP(subtotal)+'</span></div>'+
+    '<div class="form-field" style="margin-top:8px">'+
+      '<label>کد تخفیف داری؟</label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="CART_DC_CODE" type="text" placeholder="کد تخفیف" style="flex:1;direction:ltr;text-align:left;text-transform:uppercase" value="'+(APPLIED_DISCOUNT?APPLIED_DISCOUNT.code:'')+'">'+
+        '<button onclick="applyDiscountCode()" style="background:#3d2b1f;color:#fff;border:none;border-radius:8px;padding:0 16px;font-size:0.78rem;cursor:pointer">اعمال</button>'+
+      '</div>'+
+      '<div id="CART_DC_MSG" style="font-size:0.72rem;margin-top:5px"></div>'+
+    '</div>'+
+    '<div id="CART_DC_ROW"></div>'+
+    '<button class="checkout-btn" onclick="startCheckout()">تکمیل سفارش</button>';
+  renderAppliedDiscountRow();
+}
+function renderAppliedDiscountRow(){
+  var row=document.getElementById('CART_DC_ROW');
+  if(!row)return;
+  if(!APPLIED_DISCOUNT){row.innerHTML='';return;}
+  var subtotal=cartTotal();
+  var amt=computeDiscountAmount(APPLIED_DISCOUNT,subtotal);
+  var finalTotal=Math.max(0,subtotal-amt);
+  var line=APPLIED_DISCOUNT.type==='freeship'?'ارسال رایگان اعمال شد 🚚':('-'+fmtP(amt));
+  row.innerHTML='<div class="cart-total-row" style="color:#2a9d5c"><span>تخفیف («'+APPLIED_DISCOUNT.code+'») <span onclick="removeDiscountCode()" style="color:#c0304a;font-size:0.7rem;text-decoration:underline;cursor:pointer;margin-right:6px">حذف</span></span><span>'+line+'</span></div>'+
+    '<div class="cart-total-row" style="font-weight:900"><span>مبلغ نهایی قابل پرداخت</span><span>'+fmtP(finalTotal)+'</span></div>';
+}
+function computeDiscountAmount(d,subtotal){
+  if(!d)return 0;
+  if(d.type==='percent'){
+    var amt=Math.round(subtotal*d.value/100);
+    if(d.maxDiscount)amt=Math.min(amt,d.maxDiscount);
+    return Math.min(amt,subtotal);
+  }
+  if(d.type==='fixed')return Math.min(d.value,subtotal);
+  return 0; // freeship has no cart-total effect
+}
+var APPLIED_DISCOUNT=null;
+function removeDiscountCode(){
+  APPLIED_DISCOUNT=null;
+  var msg=document.getElementById('CART_DC_MSG');if(msg)msg.textContent='';
+  renderAppliedDiscountRow();
+}
+function applyDiscountCode(){
+  var input=document.getElementById('CART_DC_CODE');
+  var msg=document.getElementById('CART_DC_MSG');
+  var code=(input.value||'').trim().toUpperCase();
+  if(!code){msg.style.color='#c0304a';msg.textContent='یه کد وارد کن';return;}
+  msg.style.color='#8a7a6c';msg.textContent='در حال بررسی...';
+  var phone=(CUR_CUSTOMER&&CUR_CUSTOMER.phone)||'';
+  db.collection('discountCodes').doc(code).get().then(function(doc){
+    if(!doc.exists||!doc.data().active){msg.style.color='#c0304a';msg.textContent='همچین کدی پیدا نشد';return;}
+    var d=doc.data();
+    var nowMs=Date.now();
+    var expMs=(d.expiresAt&&d.expiresAt.toMillis)?d.expiresAt.toMillis():0;
+    if(expMs&&expMs<nowMs){msg.style.color='#c0304a';msg.textContent='این کد منقضی شده';return;}
+    var subtotal=cartTotal();
+    if(d.minPurchase&&subtotal<d.minPurchase){msg.style.color='#c0304a';msg.textContent='این کد فقط برای خریدهای بالای '+fmtP(d.minPurchase)+' فعاله';return;}
+    if(d.usageLimit&&(d.usedCount||0)>=d.usageLimit){msg.style.color='#c0304a';msg.textContent='ظرفیت استفاده از این کد تموم شده';return;}
+    if(d.customerPhone&&normPhone(d.customerPhone)!==normPhone(phone)){msg.style.color='#c0304a';msg.textContent='این کد مخصوص یه مشتری دیگه‌ست';return;}
+    var perLimit=d.perCustomerLimit||1;
+    var usedByThis=phone?(d.usedByPhones||[]).filter(function(p){return normPhone(p)===normPhone(phone);}).length:0;
+    if(phone&&usedByThis>=perLimit){msg.style.color='#c0304a';msg.textContent='قبلاً از این کد استفاده کردی';return;}
+    APPLIED_DISCOUNT={code:code,type:d.type,value:d.value||0,maxDiscount:d.maxDiscount||null};
+    msg.style.color='#2a9d5c';msg.textContent='✅ کد تخفیف اعمال شد';
+    renderAppliedDiscountRow();
+  }).catch(function(e){
+    msg.style.color='#c0304a';msg.textContent='خطا در بررسی کد';
+    console.error('applyDiscountCode error',e);
+  });
 }
 function cartQty(i,d){
   var step=Number(CART[i].minOrder)||1;
@@ -2574,6 +2729,16 @@ function cartQty(i,d){
 function cartRemove(i){CART.splice(i,1);saveCart();updateFab();renderCart();}
 function openCart(){navTo('cart');}
 function closeCart(){goBack();}
+function startCheckout(){
+  if(!CUR_CUSTOMER){
+    PENDING_CHECKOUT_AFTER_LOGIN=true;
+    ACC_MODE='phone';
+    showToast('برای ثبت نهایی سفارش، لطفاً اول وارد حساب شو یا ثبت‌نام کن');
+    navTo('account');
+    return;
+  }
+  renderCheckout();
+}
 
 function renderOFProvinceOptions(selected){
   var sel=document.getElementById('OF_PROVINCE');
@@ -2590,6 +2755,35 @@ function fillOFCityOptions(selectedCity){
   var h='<option value="">انتخاب شهر</option>';
   cities.forEach(function(c){h+='<option value="'+c+'"'+(c===selectedCity?' selected':'')+'>'+c+'</option>';});
   citySel.innerHTML=h;
+  updateShipMethodAvailability();
+}
+function selectShipMethod(el){
+  if(el.classList.contains('disabled'))return;
+  document.querySelectorAll('#OF_SHIP_CHIPS .ship-chip').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');
+  document.getElementById('OF_SHIP_METHOD').value=el.dataset.method;
+}
+function selectInvApp(el){
+  document.querySelectorAll('#OF_INV_APP_CHIPS .ship-chip').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');
+  document.getElementById('OF_INV_APP').value=el.dataset.app;
+}
+function updateShipMethodAvailability(){
+  var provSel=document.getElementById('OF_PROVINCE');
+  var chipsWrap=document.getElementById('OF_SHIP_CHIPS');
+  if(!provSel||!chipsWrap)return;
+  var province=provSel.value;
+  var allow;
+  if(province==='تهران')allow=['tipax','courier'];
+  else if(province==='البرز')allow=['tipax','freight','courier'];
+  else allow=['tipax','freight'];
+  var chips=chipsWrap.querySelectorAll('.ship-chip');
+  chips.forEach(function(c){c.classList.toggle('disabled',allow.indexOf(c.dataset.method)===-1);});
+  var hiddenInput=document.getElementById('OF_SHIP_METHOD');
+  if(allow.indexOf(hiddenInput.value)===-1){
+    hiddenInput.value=allow[0];
+    chips.forEach(function(c){c.classList.toggle('on',c.dataset.method===allow[0]);});
+  }
 }
 function renderCheckout(){
   var body=document.getElementById('CART_BODY');
@@ -2603,6 +2797,8 @@ function renderCheckout(){
   body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
     '<div class="modal-name" style="margin-bottom:12px">تکمیل سفارش</div>'+
     '<div class="cart-total-row"><span>جمع کل ('+CART.reduce(function(s,c){return s+c.qty;},0)+' قلم)</span><span>'+fmtP(cartTotal())+'</span></div>'+
+    (APPLIED_DISCOUNT?('<div class="cart-total-row" style="color:#2a9d5c"><span>تخفیف («'+APPLIED_DISCOUNT.code+'»)</span><span>'+(APPLIED_DISCOUNT.type==='freeship'?'ارسال رایگان 🚚':('-'+fmtP(computeDiscountAmount(APPLIED_DISCOUNT,cartTotal()))))+'</span></div>'+
+      '<div class="cart-total-row" style="font-weight:900"><span>مبلغ نهایی قابل پرداخت</span><span>'+fmtP(Math.max(0,cartTotal()-computeDiscountAmount(APPLIED_DISCOUNT,cartTotal())))+'</span></div>'):'')+
     '<div class="form-field"><label>نام و نام‌خانوادگی *</label><input id="OF_NAME" type="text" placeholder="مثال: زهرا محمدی" value="'+pfName+'"></div>'+
     '<div class="form-field"><label>شماره تماس *</label><input id="OF_PHONE" type="tel" placeholder="09xxxxxxxxx" style="direction:ltr;text-align:left" value="'+pfPhone+'"></div>'+
     '<div class="form-field"><label>استان *</label><select id="OF_PROVINCE" onchange="fillOFCityOptions()"></select></div>'+
@@ -2613,12 +2809,13 @@ function renderCheckout(){
     '<div class="form-field"><label>توضیحات سفارش (اختیاری)</label><textarea id="OF_NOTE" placeholder="رنگ/سایز مدنظر، هر نکته‌ی دیگه..."></textarea></div>'+
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
       '<label style="margin-bottom:8px;display:block">🚚 روش ارسال</label>'+
-      '<select id="OF_SHIP_METHOD" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #ecdfd2;background:#fff">'+
-        '<option value="tipax">📦 تیپاکس</option>'+
-        '<option value="freight">🚛 باربری</option>'+
-        '<option value="courier">🛵 پیک (فقط تهران — تحویل فوری)</option>'+
-      '</select>'+
-      '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:5px">تیپاکس و باربری معمولاً برای شهرستان مناسب‌ترن؛ پیک فقط داخل تهران و برای تحویل سریع‌تره.</div>'+
+      '<div id="OF_SHIP_CHIPS" style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<div class="ship-chip on" data-method="tipax" onclick="selectShipMethod(this)">📦 تیپاکس<div style="font-size:0.6rem;font-weight:400;margin-top:2px">تا ۲۰ کیلو</div></div>'+
+        '<div class="ship-chip" data-method="freight" onclick="selectShipMethod(this)">🚛 باربری<div style="font-size:0.6rem;font-weight:400;margin-top:2px">بیشتر از ۲۰ کیلو</div></div>'+
+        '<div class="ship-chip" data-method="courier" onclick="selectShipMethod(this)">🛵 پیک<div style="font-size:0.6rem;font-weight:400;margin-top:2px">فقط تهران/کرج</div></div>'+
+      '</div>'+
+      '<input type="hidden" id="OF_SHIP_METHOD" value="tipax">'+
+      '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:8px">تیپاکس برای بسته‌های کوچیک تا ۲۰ کیلو مناسبه؛ بیشتر از اون، باربری به‌صرفه‌تره.</div>'+
     '</div>'+
     '<div class="form-field" style="background:#f7efe6;border-radius:10px;padding:12px">'+
       '<label style="margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:pointer">'+
@@ -2626,11 +2823,14 @@ function renderCheckout(){
         '📨 پیش‌فاکتور از طریق پیام‌رسان براتون ارسال بشه؟'+
       '</label>'+
       '<div id="OF_INV_DETAILS">'+
-        '<select id="OF_INV_APP" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #ecdfd2;margin-bottom:8px;background:#fff">'+
-          '<option value="telegram">تلگرام</option>'+
-          '<option value="whatsapp">واتساپ</option>'+
-          '<option value="bale">بله</option>'+
-        '</select>'+
+        '<div style="margin-bottom:8px">'+
+          '<div id="OF_INV_APP_CHIPS" style="display:flex;gap:8px">'+
+            '<div class="ship-chip on" data-app="telegram" onclick="selectInvApp(this)">تلگرام</div>'+
+            '<div class="ship-chip" data-app="whatsapp" onclick="selectInvApp(this)">واتساپ</div>'+
+            '<div class="ship-chip" data-app="bale" onclick="selectInvApp(this)">بله</div>'+
+          '</div>'+
+          '<input type="hidden" id="OF_INV_APP" value="telegram">'+
+        '</div>'+
         '<input id="OF_INV_CONTACT" type="text" placeholder="آیدی یا همون شماره تماس بالا" style="direction:ltr;text-align:left">'+
         '<div style="font-size:0.68rem;color:#8a7a6c;margin-top:4px">اگه آیدیت با شماره تماس فرق داره اینجا بنویس، وگرنه خالی بذار.</div>'+
       '</div>'+
@@ -2674,6 +2874,13 @@ function genOrderNo(){
   return 'RV'+ymd+'-'+Date.now().toString(36).slice(-4).toUpperCase()+rnd;
 }
 function submitOrder(){
+  if(!CUR_CUSTOMER){
+    PENDING_CHECKOUT_AFTER_LOGIN=true;
+    ACC_MODE='phone';
+    showToast('برای ثبت نهایی سفارش، لطفاً اول وارد حساب شو یا ثبت‌نام کن');
+    navTo('account');
+    return;
+  }
   var name=(document.getElementById('OF_NAME').value||'').trim();
   var phone=(document.getElementById('OF_PHONE').value||'').trim();
   var province=(document.getElementById('OF_PROVINCE').value||'').trim();
@@ -2699,12 +2906,18 @@ function submitOrder(){
   if(email&&!isValidEmail(email)){errEl.textContent='ایمیلی که وارد کردی معتبر نیست';return;}
   errEl.textContent='';
   var btn=document.getElementById('OF_SUBMIT');
-  btn.disabled=true;btn.textContent='در حال ثبت سفارش...';
+  btn.disabled=true;btn.textContent='در حال بررسی سفارش...';
+  function proceedWithSubmit(){
   var orderNo=genOrderNo();
   var order={
     orderNo:orderNo,
     items:CART.map(function(c){return {code:c.code,title:c.title,qty:c.qty,price:c.price,tab:c.tab,color:c.colorNote||''};}),
     total:cartTotal(),
+    discountCode:null,
+    discountType:null,
+    discountAmount:0,
+    finalTotal:cartTotal(),
+    freeShipping:false,
     customerName:name,
     customerPhone:phone,
     customerProvince:province,
@@ -2721,7 +2934,12 @@ function submitOrder(){
     status:'new',
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
   };
-  db.collection('orders').doc(orderNo).set(order).then(function(){
+  function onOrderSaved(){
+    if(CUR_CUSTOMER&&CUR_CUSTOMER.uid&&!CUR_CUSTOMER.hasOrdered){
+      db.collection('customers').doc(CUR_CUSTOMER.uid).set({hasOrdered:true},{merge:true}).catch(function(e){console.error('hasOrdered update error',e);});
+      CUR_CUSTOMER.hasOrdered=true;
+    }
+    APPLIED_DISCOUNT=null;
     CART=[];saveCart();updateFab();
     if(CUR_CUSTOMER&&CUR_CUSTOMER.uid&&!CUR_CUSTOMER.address&&!CUR_CUSTOMER.province){
       var profileUpdate={name:name,province:province,city:city,address:addr};
@@ -2729,6 +2947,7 @@ function submitOrder(){
       if(email)profileUpdate.email=email;
       db.collection('customers').doc(CUR_CUSTOMER.uid).set(profileUpdate,{merge:true}).then(function(){
         CUR_CUSTOMER=Object.assign({},CUR_CUSTOMER,profileUpdate);
+        syncPhoneProfile(CUR_CUSTOMER.phone,profileUpdate);
       }).catch(function(e){console.error('profile auto-update error',e);});
     }
     document.getElementById('CART_BODY').innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
@@ -2737,10 +2956,48 @@ function submitOrder(){
       '<button class="checkout-btn" style="background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29" onclick="copyOrderNo(\''+orderNo+'\')" id="COPY_BTN">📋 کپی شماره سفارش</button>'+
       '<div style="color:#999;font-size:0.78rem;margin-top:10px">این شماره رو نگه‌دار. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>';
     document.getElementById('CART_BODY').scrollTop=0;
-  }).catch(function(err){
+  }
+  function onOrderError(err){
     btn.disabled=false;btn.textContent='✅ ثبت نهایی سفارش';
     errEl.textContent='خطا در ثبت سفارش: '+(err&&err.message?err.message:err);
+  }
+  if(!APPLIED_DISCOUNT){
+    db.collection('orders').doc(orderNo).set(order).then(onOrderSaved).catch(onOrderError);
+    return;
+  }
+  var discRef=db.collection('discountCodes').doc(APPLIED_DISCOUNT.code);
+  var orderRef=db.collection('orders').doc(orderNo);
+  db.runTransaction(function(tx){
+    return tx.get(discRef).then(function(discDoc){
+      if(!discDoc.exists||!discDoc.data().active)return Promise.reject({code:'discount-invalid',message:'کد تخفیفت دیگه معتبر نیست'});
+      var d=discDoc.data();
+      var expMs=(d.expiresAt&&d.expiresAt.toMillis)?d.expiresAt.toMillis():0;
+      if(expMs&&expMs<Date.now())return Promise.reject({code:'discount-invalid',message:'کد تخفیفت منقضی شده'});
+      if(d.usageLimit&&(d.usedCount||0)>=d.usageLimit)return Promise.reject({code:'discount-invalid',message:'ظرفیت این کد تخفیف تموم شده'});
+      if(d.customerPhone&&normPhone(d.customerPhone)!==normPhone(phone))return Promise.reject({code:'discount-invalid',message:'این کد مخصوص یه مشتری دیگه‌ست'});
+      var perLimit=d.perCustomerLimit||1;
+      var usedByThis=(d.usedByPhones||[]).filter(function(p){return normPhone(p)===normPhone(phone);}).length;
+      if(usedByThis>=perLimit)return Promise.reject({code:'discount-invalid',message:'قبلاً از این کد استفاده کردی'});
+      var freshDiscount={code:d.code,type:d.type,value:d.value||0,maxDiscount:d.maxDiscount||null};
+      var discAmt=computeDiscountAmount(freshDiscount,order.total);
+      order.discountCode=d.code;order.discountType=d.type;order.discountAmount=discAmt;
+      order.finalTotal=Math.max(0,order.total-discAmt);order.freeShipping=(d.type==='freeship');
+      tx.set(orderRef,order);
+      tx.update(discRef,{usedCount:firebase.firestore.FieldValue.increment(1),usedByPhones:firebase.firestore.FieldValue.arrayUnion(phone)});
+    });
+  }).then(onOrderSaved).catch(function(err){
+    if(err&&err.code==='discount-invalid'){
+      APPLIED_DISCOUNT=null;
+      renderCheckout();
+      var errEl2=document.getElementById('OF_ERR');
+      if(errEl2)errEl2.textContent=err.message+' — سفارش رو بدون این کد دوباره ثبت کن.';
+    }else{
+      onOrderError(err);
+    }
   });
+  } // end proceedWithSubmit
+  btn.textContent='در حال ثبت سفارش...';
+  proceedWithSubmit();
 }
 
 var BANNER_ITEMS=[];
