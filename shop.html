@@ -1654,17 +1654,14 @@ function checkPhoneAndProceed(){
   if(!initAuth()){err.textContent='خطا در اتصال به سرور. اینترنت (یا فیلترشکن) رو چک کن.';return;}
   err.textContent='';
   var btn=document.getElementById('AC_PHONE_BTN');btn.disabled=true;btn.textContent='در حال بررسی...';
-  db.collection('customerLookup').doc(normPhone(phone)).get().then(function(doc){
-    var authEmail=(doc.exists&&doc.data().authEmail)?doc.data().authEmail:phoneToEmail(phone);
-    return fbAuth.fetchSignInMethodsForEmail(authEmail);
-  }).then(function(methods){
+  db.collection('customerProfiles').doc(normPhone(phone)).get().then(function(doc){
     btn.disabled=false;btn.textContent='ادامه';
     ACC_CHECKED_PHONE=phone;
-    ACC_MODE=(methods&&methods.length)?'login':'signup';
+    ACC_MODE=doc.exists?'login':'signup';
     renderAccountView();
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ادامه';
-    err.textContent='خطا در بررسی شماره: '+authErrMsg(e.code);
+    err.textContent='خطا در بررسی شماره: '+(e&&e.message?e.message:e);
   });
 }
 
