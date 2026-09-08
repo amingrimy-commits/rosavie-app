@@ -1118,7 +1118,7 @@ function renderModalContent(){
       if(isOut){
         return '<div class="color-qty-row" style="opacity:0.55"><span class="color-qty-name">'+s.size+' — '+fmtP(Math.round(s.price))+' <b style="color:#c0304a">(ناموجود)</b></span></div>';
       }
-      return '<div class="color-qty-row"><span class="color-qty-name">'+s.size+' — '+fmtP(s.price)+'</span>'+
+      return '<div class="color-qty-row"><span class="color-qty-name">'+s.size+' — '+fmtP(Math.round(s.price))+'</span>'+
         '<div class="qty-box qty-box-sm"><button class="qty-btn" onclick="changeColorQty(\''+key.replace(/'/g,"\\'")+'\',-1,'+(p.minOrder||1)+')">−</button>'+
         '<span class="qty-val" id="CQTY_'+safeKey+'">0</span>'+
         '<button class="qty-btn" onclick="changeColorQty(\''+key.replace(/'/g,"\\'")+'\',1,'+(p.minOrder||1)+')">+</button></div></div>';
@@ -1469,7 +1469,6 @@ function renderRoute(){
   if(!hash){return;}
   var parts=hash.split('~').map(function(s){try{return decodeURIComponent(s);}catch(e){return s;}});
   var type=parts[0];
-  if(type==='list'&&!requireLoginGate())return;
   if((type==='notifications'||type==='deliverycheck')&&!requireLoginGate())return;
   if(type==='p'){
     var code=parts[1];
@@ -2911,10 +2910,22 @@ function submitOrder(){
         syncPhoneProfile(CUR_CUSTOMER.phone,profileUpdate);
       }).catch(function(e){console.error('profile auto-update error',e);});
     }
+    var shipLbl={tipax:'📦 تیپاکس',freight:'🚛 باربری',courier:'🛵 پیک'};
+    var itemsReceiptHTML=order.items.map(function(it){
+      return '<div style="display:flex;justify-content:space-between;font-size:0.76rem;padding:5px 0;border-bottom:1px solid #f0e6d8"><span>'+it.title+(it.color?(' ('+it.color+')'):'')+' × '+it.qty+'</span><span>'+fmtP(it.price*it.qty)+'</span></div>';
+    }).join('');
+    var discountReceiptHTML=order.discountCode?('<div style="display:flex;justify-content:space-between;font-size:0.76rem;padding:5px 0;color:#2a9d5c"><span>تخفیف («'+order.discountCode+'»)</span><span>'+(order.freeShipping?'ارسال رایگان':('-'+fmtP(order.discountAmount)))+'</span></div>'):'';
     document.getElementById('CART_BODY').innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
       '<div class="order-ok"><div class="oi">🎉</div><div style="font-weight:900;font-size:0.95rem">سفارشت با موفقیت ثبت شد!</div>'+
       '<div class="onum" id="ORDNO_TXT">'+orderNo+'</div>'+
-      '<button class="checkout-btn" style="background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29" onclick="copyOrderNo(\''+orderNo+'\')" id="COPY_BTN">📋 کپی شماره سفارش</button>'+
+      '<div style="text-align:right;background:#faf6f1;border-radius:10px;padding:12px;margin-top:14px">'+
+        itemsReceiptHTML+
+        discountReceiptHTML+
+        '<div style="display:flex;justify-content:space-between;font-weight:900;font-size:0.84rem;padding-top:8px;margin-top:4px;border-top:1.5px solid #e0d0c0"><span>مبلغ نهایی</span><span>'+fmtP(order.finalTotal)+'</span></div>'+
+        '<div style="font-size:0.74rem;color:#8a7a6c;margin-top:10px">'+(shipLbl[order.shippingMethod]||order.shippingMethod)+'</div>'+
+        '<div style="font-size:0.74rem;color:#8a7a6c;margin-top:4px">📍 '+province+(city?(' - '+city):'')+' — '+addr+(postal?(' — کدپستی: '+postal):'')+'</div>'+
+      '</div>'+
+      '<button class="checkout-btn" style="background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;margin-top:14px" onclick="copyOrderNo(\''+orderNo+'\')" id="COPY_BTN">📋 کپی شماره سفارش</button>'+
       '<div style="color:#999;font-size:0.78rem;margin-top:10px">این شماره رو نگه‌دار. به‌زودی از طریق شماره تماست باهات هماهنگ می‌کنیم.</div></div>';
     document.getElementById('CART_BODY').scrollTop=0;
   }
