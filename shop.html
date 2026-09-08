@@ -1795,16 +1795,18 @@ function openGalleryLink(){
     }).catch(function(e){console.error('mark gallery used error',e);});
   }
 }
+var EYE_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+var EYE_OFF_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-5 0-9.27-3.11-11-7.5a13.16 13.16 0 0 1 2.94-4.44M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.11 11 7.5a13.16 13.16 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 function toggleEye(inputId,btn){
   var inp=document.getElementById(inputId);
   if(!inp)return;
-  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
-  else{inp.type='password';btn.textContent='👁️';}
+  if(inp.type==='password'){inp.type='text';btn.innerHTML=EYE_OFF_ICON;}
+  else{inp.type='password';btn.innerHTML=EYE_ICON;}
 }
 function pwField(id,labelHtml){
   return '<div class="form-field"><label>'+labelHtml+'</label><div style="position:relative">'+
     '<input id="'+id+'" type="password" style="padding-left:38px">'+
-    '<button type="button" onclick="toggleEye(\''+id+'\',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1rem;cursor:pointer;padding:4px">👁️</button>'+
+    '<button type="button" onclick="toggleEye(\''+id+'\',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#8a7a6c;cursor:pointer;padding:4px;display:flex">'+EYE_ICON+'</button>'+
     '</div></div>';
 }
 function saveProfileDetails(){
@@ -2343,7 +2345,8 @@ function renderAccountView(){
          '<div class="acc-terms-row"><input type="checkbox" id="AC_TERMS"><label for="AC_TERMS">'+
            '<span onclick="event.preventDefault();event.stopPropagation();openTermsPage()" style="text-decoration:underline;color:#b0517a">قوانین و مقررات</span> را خوانده‌ام و می‌پذیرم</label></div>'+
          '<div class="acc-err" id="AC_ERR"></div>'+
-         '<button class="acc-btn" id="AC_BTN" onclick="doSignup()">ثبت‌نام</button>')
+         '<button class="acc-btn" id="AC_BTN" onclick="doSignup()">ثبت‌نام</button>'+
+         '<div style="text-align:center;margin-top:12px"><span style="color:#b0517a;font-size:0.78rem;cursor:pointer;text-decoration:underline" onclick="setAccMode(\'login\')">قبلاً با این شماره ثبت‌نام کردم، وارد شو</span></div>')
       );
   }catch(e){
     console.error('renderAccountView error',e);
@@ -2378,8 +2381,8 @@ function doSignup(){
   var name=(document.getElementById('AC_NAME').value||'').trim();
   var phone=ACC_CHECKED_PHONE;
   var email=(document.getElementById('AC_EMAIL').value||'').trim();
-  var pass=document.getElementById('AC_PASS').value||'';
-  var pass2=document.getElementById('AC_PASS2').value||'';
+  var pass=(document.getElementById('AC_PASS').value||'').trim();
+  var pass2=(document.getElementById('AC_PASS2').value||'').trim();
   var err=document.getElementById('AC_ERR');
   if(!name){err.textContent='لطفاً نام رو وارد کن';return;}
   if(email&&!isValidEmail(email)){err.textContent='ایمیلی که وارد کردی معتبر نیست';return;}
@@ -2417,7 +2420,14 @@ function doSignup(){
     });
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ثبت‌نام';
-    err.textContent=authErrMsg(e.code);
+    if(e&&e.code==='auth/email-already-in-use'){
+      ACC_MODE='login';
+      renderAccountView();
+      var err2=document.getElementById('AC_ERR');
+      if(err2)err2.textContent='این شماره قبلاً ثبت‌نام کرده — رمز عبورت رو وارد کن.';
+    }else{
+      err.textContent=authErrMsg(e.code);
+    }
   });
 }
 function continueAfterAuthIfPending(){
@@ -2431,7 +2441,7 @@ function continueAfterAuthIfPending(){
 }
 function doLogin(){
   var phone=ACC_CHECKED_PHONE;
-  var pass=document.getElementById('AC_PASS').value||'';
+  var pass=(document.getElementById('AC_PASS').value||'').trim();
   var err=document.getElementById('AC_ERR');
   if(!pass){err.textContent='رمز عبور رو وارد کن';return;}
   err.textContent='';
