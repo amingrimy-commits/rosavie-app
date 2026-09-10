@@ -1580,7 +1580,40 @@ function loadCart(){
   try{var raw=localStorage.getItem('rv_shop_cart');CART=raw?JSON.parse(raw):[];}catch(e){CART=[];}
   updateFab();
 }
-function saveCart(){try{localStorage.setItem('rv_shop_cart',JSON.stringify(CART));}catch(e){}}
+function saveCart(){
+  try{localStorage.setItem('rv_shop_cart',JSON.stringify(CART));}catch(e){}
+  syncCartToServer();
+}
+function syncCartToServer(){
+  if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone)return;
+  if(typeof db==='undefined'||!db)return;
+  db.collection('customerCarts').doc(normPhone(CUR_CUSTOMER.phone)).set({
+    items:CART,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){console.error('cart server sync error',e);});
+}
+function loadCartFromServer(){
+  if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone||typeof db==='undefined'||!db)return Promise.resolve();
+  return db.collection('customerCarts').doc(normPhone(CUR_CUSTOMER.phone)).get().then(function(doc){
+    var serverItems=(doc.exists&&Array.isArray(doc.data().items))?doc.data().items:[];
+    var localItems=CART.slice();
+    var merged=serverItems.slice();
+    localItems.forEach(function(loc){
+      var existing=loc.key?merged.find(function(m){return m.key&&m.key===loc.key;}):null;
+      if(existing){
+        var combinedQty=(existing.qty||0)+(loc.qty||0);
+        Object.assign(existing,loc);
+        existing.qty=combinedQty;
+      }else{
+        merged.push(loc);
+      }
+    });
+    CART=merged;
+    saveCart();
+    updateFab();
+    if(document.getElementById('CART_OV').classList.contains('open'))renderCart();
+  }).catch(function(e){console.error('loadCartFromServer error',e);});
+}
 
 // ── آیکون‌های اشتراک‌گذاری / قلب / حذف (خطی، هماهنگ با نمونه‌های ارسالی) ──
 var HEART_OFF_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9bfb3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"/></svg>';
@@ -2756,6 +2789,7 @@ function loadCustomerProfile(uid){
       updateAccountNewBadge();
       updateNotifBadge();
       showBdayReminderIfNeeded();
+      loadCartFromServer();
     }
   });
 }
