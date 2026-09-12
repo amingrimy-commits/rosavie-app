@@ -1592,8 +1592,11 @@ function syncCartToServer(){
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   }).catch(function(e){console.error('cart server sync error',e);});
 }
+var CART_SERVER_SYNCED_FOR='';
 function loadCartFromServer(){
   if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone||typeof db==='undefined'||!db)return Promise.resolve();
+  if(CART_SERVER_SYNCED_FOR===normPhone(CUR_CUSTOMER.phone))return Promise.resolve();
+  CART_SERVER_SYNCED_FOR=normPhone(CUR_CUSTOMER.phone);
   return db.collection('customerCarts').doc(normPhone(CUR_CUSTOMER.phone)).get().then(function(doc){
     var serverItems=(doc.exists&&Array.isArray(doc.data().items))?doc.data().items:[];
     var localItems=CART.slice();
@@ -1612,7 +1615,7 @@ function loadCartFromServer(){
     saveCart();
     updateFab();
     if(document.getElementById('CART_OV').classList.contains('open'))renderCart();
-  }).catch(function(e){console.error('loadCartFromServer error',e);});
+  }).catch(function(e){console.error('loadCartFromServer error',e);CART_SERVER_SYNCED_FOR='';});
 }
 
 // ── آیکون‌های اشتراک‌گذاری / قلب / حذف (خطی، هماهنگ با نمونه‌های ارسالی) ──
@@ -2865,16 +2868,21 @@ function renderCart(){
     return;
   }
   var itemsHTML=CART.map(function(c,i){
-    var key='cart_'+(c.key||i);
-    if(PENDING_REMOVALS[key])return removingRowHTML(key,'renderCart');
-    var img=c.img?'<img src="'+c.img+'">':'<div class="cart-item-ph">👗</div>';
-    return '<div class="cart-item">'+img+'<div class="cart-item-info"><div class="cart-item-name">'+c.title+'</div>'+
-      '<div class="cart-item-price">'+fmtP(c.price)+'</div>'+
-      (c.colorNote?'<div style="font-size:0.68rem;color:#e8a0b8;margin-top:2px">🎨 '+c.colorNote+'</div>':'')+
-      '<span onclick="moveCartItemToLater('+i+')" style="color:#9a8b7f;font-size:0.7rem;text-decoration:underline;cursor:pointer;display:inline-block;margin-top:4px">🕓 بعدا می‌خرم</span>'+
-      '<div class="cart-qty"><button onclick="cartQty('+i+',-1)">−</button><span>'+c.qty+'</span><button onclick="cartQty('+i+',1)">+</button>'+
-      '<span onclick="shareProductByCode(\''+c.code+'\')" style="color:#8a7a6c;cursor:pointer;display:flex;align-items:center;margin-right:6px">'+SHARE_ICON+'</span>'+
-      '<span class="cart-remove" onclick="cartRemove('+i+')">حذف</span></div></div></div>';
+    try{
+      var key='cart_'+(c.key||i);
+      if(PENDING_REMOVALS[key])return removingRowHTML(key,'renderCart');
+      var img=c.img?'<img src="'+c.img+'">':'<div class="cart-item-ph">👗</div>';
+      return '<div class="cart-item">'+img+'<div class="cart-item-info"><div class="cart-item-name">'+(c.title||c.code||'محصول')+'</div>'+
+        '<div class="cart-item-price">'+fmtP(c.price||0)+'</div>'+
+        (c.colorNote?'<div style="font-size:0.68rem;color:#e8a0b8;margin-top:2px">🎨 '+c.colorNote+'</div>':'')+
+        '<span onclick="moveCartItemToLater('+i+')" style="color:#9a8b7f;font-size:0.7rem;text-decoration:underline;cursor:pointer;display:inline-block;margin-top:4px">🕓 بعدا می‌خرم</span>'+
+        '<div class="cart-qty"><button onclick="cartQty('+i+',-1)">−</button><span>'+(c.qty||1)+'</span><button onclick="cartQty('+i+',1)">+</button>'+
+        '<span onclick="shareProductByCode(\''+(c.code||'')+'\')" style="color:#8a7a6c;cursor:pointer;display:flex;align-items:center;margin-right:6px">'+SHARE_ICON+'</span>'+
+        '<span class="cart-remove" onclick="cartRemove('+i+')">حذف</span></div></div></div>';
+    }catch(e){
+      console.error('cart item render error, skipping item at index',i,c,e);
+      return '';
+    }
   }).join('');
   var subtotal=cartTotal();
   body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+
