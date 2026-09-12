@@ -7809,7 +7809,7 @@ function save(){
           var ttEl=document.getElementById('TT'+rid),stEl=document.getElementById('ST'+rid),tiEl=document.getElementById('TI'+rid);
           var stk='in';if(stEl){if(stEl.classList.contains('s-out'))stk='out';else if(stEl.classList.contains('s-call'))stk='call';}
           var defType=(tab==='p3'?'panty':tab==='p5'?'accessory':'set');
-          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',tgmsgids:row.dataset.tgmsgids||'[]',fulldesc:row.dataset.fulldesc||'',colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]',siteimg:row.dataset.siteimg||'',siteimg2:row.dataset.siteimg2||'',fabrictags:row.dataset.fabrictags||'[]'});
+          rows.push({type:ttEl?ttEl.dataset.t:defType,code:cdEl.value,sizes:V('SZ'+rid),colors:V('CL'+rid),minO:V('MO'+rid),price:V('PR'+rid),stock:stk,imgId:IMG_IDS[rid]||null,outSince:OUT_SINCE[rid]||null,title:(tiEl?tiEl.value:''),material:row.dataset.material||'',country:row.dataset.country||'',desc1:(row.dataset.desc1||'').slice(0,60),desc2:(row.dataset.desc2||'').slice(0,60),sleeve:row.dataset.sleeve||'',extraImgIds:row.dataset.extraImgIds||'[]',tglink:row.dataset.tglink||'',tgmsgids:row.dataset.tgmsgids||'[]',fulldesc:(row.dataset.fulldesc||'').slice(0,80),colorlist:row.dataset.colorlist||'[]',mixenabled:row.dataset.mixenabled||'',mixdesc:row.dataset.mixdesc||'',mixminorder:row.dataset.mixminorder||'',sizepricelist:row.dataset.sizepricelist||'[]',siteimg:row.dataset.siteimg||'',siteimg2:row.dataset.siteimg2||'',fabrictags:row.dataset.fabrictags||'[]'});
         });
         var bnEl=document.getElementById('BN'+bid);
         brands.push({name:bnEl?bnEl.value:'',logoId:LOGO_IDS[bid]||null,rows:rows});
@@ -7994,6 +7994,27 @@ if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceSho
       }
     }catch(e){}
   });
+})();
+(function shrinkOversizedRv10(){
+  try{
+    var raw=localStorage.getItem('rv10');
+    if(!raw||raw.length<800000)return; // only touch it if it's actually oversized
+    var d=JSON.parse(raw);
+    TABS.forEach(function(t){
+      if(!Array.isArray(d[t]))return;
+      d[t].forEach(function(brand){
+        if(!Array.isArray(brand.rows))return;
+        brand.rows.forEach(function(row){
+          if(row.desc1)row.desc1=String(row.desc1).slice(0,60);
+          if(row.desc2)row.desc2=String(row.desc2).slice(0,60);
+          if(row.fulldesc)row.fulldesc=String(row.fulldesc).slice(0,80);
+        });
+      });
+    });
+    var shrunk=JSON.stringify(d);
+    localStorage.setItem('rv10',shrunk);
+    console.log('shrunk rv10 from',raw.length,'to',shrunk.length,'chars');
+  }catch(e){console.error('shrinkOversizedRv10 error',e);}
 })();
 load();
 setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();},600);
