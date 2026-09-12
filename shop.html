@@ -1610,6 +1610,10 @@ function loadCartFromServer(){
     logCartEvent('loadCartFromServer() SKIPPED (already synced this session)');
     return Promise.resolve();
   }
+  if(typeof document!=='undefined'&&document.hidden){
+    logCartEvent('loadCartFromServer() DEFERRED (tab is in background) — will retry when tab becomes visible');
+    return Promise.resolve();
+  }
   CART_SERVER_SYNCED_FOR=normPhone(CUR_CUSTOMER.phone);
   logCartEvent('loadCartFromServer() STARTED, CART.length at call time='+CART.length);
   return db.collection('customerCarts').doc(normPhone(CUR_CUSTOMER.phone)).get().then(function(doc){
@@ -3539,6 +3543,11 @@ updateListsHeaderBadge();
 loadSiteData();
 watchAuthState();
 renderRoute();
+if(typeof document!=='undefined'){
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden)loadCartFromServer();
+  });
+}
 setTimeout(hideInitLoader,15000);
 </script>
 </body>
