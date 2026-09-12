@@ -2864,7 +2864,16 @@ function renderCart(){
     return;
   }
   if(!CART.length){
-    body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div><div class="cart-empty">🛒</div><div style="text-align:center;color:#888;font-size:0.82rem">سبد خریدت خالیه</div>';
+    var rawLS='';
+    try{rawLS=localStorage.getItem('rv_shop_cart')||'(هیچی)';}catch(e){rawLS='(خطا در خوندن)';}
+    var diag='<div style="margin-top:20px;text-align:left;direction:ltr;font-size:0.62rem;color:#b08;background:#fdf2f6;border-radius:8px;padding:10px;word-break:break-all;max-height:220px;overflow:auto">'+
+      'DEBUG INFO:<br>'+
+      'logged in: '+(CUR_CUSTOMER?('YES, phone='+CUR_CUSTOMER.phone):'NO (guest)')+'<br>'+
+      'CART_SERVER_SYNCED_FOR: '+(CART_SERVER_SYNCED_FOR||'(empty)')+'<br>'+
+      'localStorage rv_shop_cart: '+rawLS+'<br>'+
+      'in-memory CART.length: '+CART.length+
+      '</div>';
+    body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div><div class="cart-empty">🛒</div><div style="text-align:center;color:#888;font-size:0.82rem">سبد خریدت خالیه</div>'+diag;
     return;
   }
   var itemsHTML=CART.map(function(c,i){
