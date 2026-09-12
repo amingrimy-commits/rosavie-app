@@ -3548,6 +3548,13 @@ if(typeof document!=='undefined'){
     if(!document.hidden)loadCartFromServer();
   });
 }
+if(typeof window!=='undefined'){
+  window.addEventListener('storage',function(e){
+    if(e.key==='rv_shop_cart'){
+      logCartEvent('[[CROSS-TAB]] storage event fired from ANOTHER tab! oldValue.length='+((e.oldValue||'').length)+' newValue='+(e.newValue||'(null)'));
+    }
+  });
+}
 setTimeout(hideInitLoader,15000);
 </script>
 </body>
