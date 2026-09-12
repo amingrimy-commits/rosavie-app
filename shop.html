@@ -1576,30 +1576,46 @@ function openModalFromList(i){var p=window._LISTVISIBLE[i];if(p)navTo('p~'+encod
 
 // ── سبد خرید ──
 var CART=[];
+var CART_EVENT_LOG=[];
+function logCartEvent(msg){
+  CART_EVENT_LOG.push('['+new Date().toISOString().slice(11,23)+'] '+msg);
+  if(CART_EVENT_LOG.length>40)CART_EVENT_LOG.shift();
+}
 function loadCart(){
   try{var raw=localStorage.getItem('rv_shop_cart');CART=raw?JSON.parse(raw):[];}catch(e){CART=[];}
+  logCartEvent('loadCart() -> CART.length='+CART.length);
   updateFab();
 }
 function saveCart(){
+  logCartEvent('saveCart() called with CART.length='+CART.length+' (stack: '+(new Error().stack||'').split('\n').slice(1,3).join(' | ')+')');
   try{localStorage.setItem('rv_shop_cart',JSON.stringify(CART));}catch(e){}
   syncCartToServer();
 }
 function syncCartToServer(){
   if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone)return;
   if(typeof db==='undefined'||!db)return;
+  var lenAtCall=CART.length;
+  logCartEvent('syncCartToServer() START, sending items.length='+lenAtCall);
   db.collection('customerCarts').doc(normPhone(CUR_CUSTOMER.phone)).set({
     items:CART,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(function(e){console.error('cart server sync error',e);});
+  }).then(function(){
+    logCartEvent('syncCartToServer() SUCCESS, sent items.length='+lenAtCall);
+  }).catch(function(e){logCartEvent('syncCartToServer() FAILED: '+e.message);console.error('cart server sync error',e);});
 }
 var CART_SERVER_SYNCED_FOR='';
 function loadCartFromServer(){
   if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone||typeof db==='undefined'||!db)return Promise.resolve();
-  if(CART_SERVER_SYNCED_FOR===normPhone(CUR_CUSTOMER.phone))return Promise.resolve();
+  if(CART_SERVER_SYNCED_FOR===normPhone(CUR_CUSTOMER.phone)){
+    logCartEvent('loadCartFromServer() SKIPPED (already synced this session)');
+    return Promise.resolve();
+  }
   CART_SERVER_SYNCED_FOR=normPhone(CUR_CUSTOMER.phone);
+  logCartEvent('loadCartFromServer() STARTED, CART.length at call time='+CART.length);
   return db.collection('customerCarts').doc(normPhone(CUR_CUSTOMER.phone)).get().then(function(doc){
     var serverItems=(doc.exists&&Array.isArray(doc.data().items))?doc.data().items:[];
     var localItems=CART.slice();
+    logCartEvent('loadCartFromServer() GET resolved: serverItems.length='+serverItems.length+', localItems.length(at resolve time)='+localItems.length+', doc.exists='+doc.exists);
     var merged=serverItems.slice();
     localItems.forEach(function(loc){
       var existing=loc.key?merged.find(function(m){return m.key&&m.key===loc.key;}):null;
@@ -1611,11 +1627,12 @@ function loadCartFromServer(){
         merged.push(loc);
       }
     });
+    logCartEvent('loadCartFromServer() merged.length='+merged.length+' -> assigning to CART');
     CART=merged;
     saveCart();
     updateFab();
     if(document.getElementById('CART_OV').classList.contains('open'))renderCart();
-  }).catch(function(e){console.error('loadCartFromServer error',e);CART_SERVER_SYNCED_FOR='';});
+  }).catch(function(e){logCartEvent('loadCartFromServer() FAILED: '+e.message);console.error('loadCartFromServer error',e);CART_SERVER_SYNCED_FOR='';});
 }
 
 // ── آیکون‌های اشتراک‌گذاری / قلب / حذف (خطی، هماهنگ با نمونه‌های ارسالی) ──
@@ -2871,7 +2888,8 @@ function renderCart(){
       'logged in: '+(CUR_CUSTOMER?('YES, phone='+CUR_CUSTOMER.phone):'NO (guest)')+'<br>'+
       'CART_SERVER_SYNCED_FOR: '+(CART_SERVER_SYNCED_FOR||'(empty)')+'<br>'+
       'localStorage rv_shop_cart: '+rawLS+'<br>'+
-      'in-memory CART.length: '+CART.length+
+      'in-memory CART.length: '+CART.length+'<br><br>'+
+      'EVENT TIMELINE:<br>'+CART_EVENT_LOG.join('<br>')+
       '</div>';
     body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div><div class="cart-empty">🛒</div><div style="text-align:center;color:#888;font-size:0.82rem">سبد خریدت خالیه</div>'+diag;
     return;
