@@ -1582,13 +1582,24 @@ function logCartEvent(msg){
   if(CART_EVENT_LOG.length>40)CART_EVENT_LOG.shift();
 }
 function loadCart(){
-  try{var raw=localStorage.getItem('rv_shop_cart');CART=raw?JSON.parse(raw):[];}catch(e){CART=[];}
+  var raw=null;
+  try{raw=localStorage.getItem('rv_shop_cart');CART=raw?JSON.parse(raw):[];}catch(e){CART=[];logCartEvent('!!! loadCart() ERROR: '+(e&&e.name)+': '+(e&&e.message)+' | raw was: '+raw);}
   logCartEvent('loadCart() -> CART.length='+CART.length);
   updateFab();
 }
 function saveCart(){
   logCartEvent('saveCart() called with CART.length='+CART.length+' (stack: '+(new Error().stack||'').split('\n').slice(1,3).join(' | ')+')');
-  try{localStorage.setItem('rv_shop_cart',JSON.stringify(CART));}catch(e){}
+  try{
+    localStorage.setItem('rv_shop_cart',JSON.stringify(CART));
+    var verify=localStorage.getItem('rv_shop_cart');
+    var verifyLen=0;
+    try{verifyLen=(JSON.parse(verify||'[]')||[]).length;}catch(e2){verifyLen='PARSE_ERROR';}
+    if(verifyLen!==CART.length){
+      logCartEvent('!!! WRITE VERIFY MISMATCH: wrote CART.length='+CART.length+' but read-back length='+verifyLen);
+    }
+  }catch(e){
+    logCartEvent('!!! localStorage.setItem THREW: '+(e&&e.name)+': '+(e&&e.message));
+  }
   syncCartToServer();
 }
 function syncCartToServer(){
