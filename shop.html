@@ -2898,11 +2898,26 @@ function renderCart(){
   if(!CART.length){
     var rawLS='';
     try{rawLS=localStorage.getItem('rv_shop_cart')||'(هیچی)';}catch(e){rawLS='(خطا در خوندن)';}
-    var diag='<div style="margin-top:20px;text-align:left;direction:ltr;font-size:0.62rem;color:#b08;background:#fdf2f6;border-radius:8px;padding:10px;word-break:break-all;max-height:220px;overflow:auto">'+
+    var lsBreakdown='';
+    try{
+      var entries=[];
+      var totalChars=0;
+      for(var lsi=0;lsi<localStorage.length;lsi++){
+        var lsKey=localStorage.key(lsi);
+        var lsVal=localStorage.getItem(lsKey)||'';
+        entries.push({k:lsKey,len:lsVal.length});
+        totalChars+=lsVal.length;
+      }
+      entries.sort(function(a,b){return b.len-a.len;});
+      lsBreakdown='TOTAL chars: '+totalChars+' (~'+Math.round(totalChars/1024)+' KB)<br>'+
+        entries.map(function(e){return e.k+': '+e.len+' chars (~'+Math.round(e.len/1024)+' KB)';}).join('<br>');
+    }catch(eLs){lsBreakdown='error reading breakdown: '+eLs.message;}
+    var diag='<div style="margin-top:20px;text-align:left;direction:ltr;font-size:0.62rem;color:#b08;background:#fdf2f6;border-radius:8px;padding:10px;word-break:break-all;max-height:400px;overflow:auto">'+
       'DEBUG INFO:<br>'+
       'logged in: '+(CUR_CUSTOMER?('YES, phone='+CUR_CUSTOMER.phone):'NO (guest)')+'<br>'+
       'CART_SERVER_SYNCED_FOR: '+(CART_SERVER_SYNCED_FOR||'(empty)')+'<br>'+
-      'localStorage rv_shop_cart: '+rawLS+'<br>'+
+      'localStorage rv_shop_cart: '+rawLS+'<br><br>'+
+      'STORAGE SIZE BREAKDOWN:<br>'+lsBreakdown+'<br>'+
       'in-memory CART.length: '+CART.length+'<br><br>'+
       'EVENT TIMELINE:<br>'+CART_EVENT_LOG.join('<br>')+
       '</div>';
