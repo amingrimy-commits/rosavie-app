@@ -3547,6 +3547,16 @@ function trackDailyVisit(){
   }catch(e){console.error('trackDailyVisit error',e);}
 }
 trackDailyVisit();
+(function cleanupLegacyBackupKeys(){
+  ['rv8','rv9','rv_final'].forEach(function(k){
+    try{
+      if(localStorage.getItem(k)!==null){
+        localStorage.removeItem(k);
+        console.log('cleaned up unused legacy key:',k);
+      }
+    }catch(e){}
+  });
+})();
 loadCart();
 loadWishlist();
 loadLaterList();

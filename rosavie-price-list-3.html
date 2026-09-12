@@ -7985,6 +7985,16 @@ if(!CUSTOMERS.length&&!INVOICE_LOG.length)setTimeout(function(){whenAdminReady(p
 renderCgTypeChips();
 var _cgPriceEl=document.getElementById('CG_PRICE');
 if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});
+(function cleanupLegacyBackupKeys(){
+  ['rv8','rv9','rv_final'].forEach(function(k){
+    try{
+      if(localStorage.getItem(k)!==null){
+        localStorage.removeItem(k);
+        console.log('cleaned up unused legacy key:',k);
+      }
+    }catch(e){}
+  });
+})();
 load();
 setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();},600);
 </script>
