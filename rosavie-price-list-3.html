@@ -7996,10 +7996,51 @@ if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceSho
   });
 })();
 (function shrinkOversizedRv10(){
+  var raw=null;
+  try{raw=localStorage.getItem('rv10');}catch(e0){
+    alert('خطا در خوندن rv10 از حافظه: '+(e0&&e0.message));
+    load();return;
+  }
+  if(!raw){
+    console.log('[shrink] rv10 خالیه یا وجود نداره، کاری لازم نیست');
+    load();return;
+  }
+  if(raw.length<800000){
+    console.log('[shrink] rv10 حجمش '+raw.length+' کاراکتره، به‌اندازه‌ی کافی کوچیکه، کاری لازم نیست');
+    load();return;
+  }
+  var d;
+  try{d=JSON.parse(raw);}catch(e1){
+    alert('!!! rv10 حجمش '+raw.length+' کاراکتره ولی parse نشد: '+(e1&&e1.message)+' — این خودش یه یافته‌ی مهمه، به کلود بگو.');
+    load();return;
+  }
+  // Measure exactly which fields are actually large, across every row, instead of assuming
+  var fieldTotals={};
+  var rowCount=0;
   try{
-    var raw=localStorage.getItem('rv10');
-    if(!raw||raw.length<800000)return; // only touch it if it's actually oversized
-    var d=JSON.parse(raw);
+    TABS.forEach(function(t){
+      if(!Array.isArray(d[t]))return;
+      d[t].forEach(function(brand){
+        if(!Array.isArray(brand.rows))return;
+        brand.rows.forEach(function(row){
+          rowCount++;
+          Object.keys(row||{}).forEach(function(fk){
+            var v=row[fk];
+            var len=(typeof v==='string')?v.length:JSON.stringify(v||'').length;
+            fieldTotals[fk]=(fieldTotals[fk]||0)+len;
+          });
+        });
+      });
+    });
+  }catch(eMeasure){
+    alert('!!! خطا حین اندازه‌گیری فیلدها: '+(eMeasure&&eMeasure.message));
+    load();return;
+  }
+  var sortedFields=Object.keys(fieldTotals).sort(function(a,b){return fieldTotals[b]-fieldTotals[a];});
+  var breakdown=sortedFields.slice(0,8).map(function(fk){return fk+': '+fieldTotals[fk]+' کاراکتر';}).join('\n');
+  alert('rv10 قبل از کوچیک‌سازی: '+raw.length+' کاراکتر، '+rowCount+' ردیف محصول.\n\nبزرگ‌ترین فیلدها:\n'+breakdown);
+  // Now apply the trim (same as before) and report the real outcome
+  try{
     TABS.forEach(function(t){
       if(!Array.isArray(d[t]))return;
       d[t].forEach(function(brand){
@@ -8013,8 +8054,11 @@ if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceSho
     });
     var shrunk=JSON.stringify(d);
     localStorage.setItem('rv10',shrunk);
-    console.log('shrunk rv10 from',raw.length,'to',shrunk.length,'chars');
-  }catch(e){console.error('shrinkOversizedRv10 error',e);}
+    var verify=localStorage.getItem('rv10');
+    alert('بعد از کوچیک‌سازی: نوشتیم '+shrunk.length+' کاراکتر. چیزی که واقعاً تو حافظه خوندیم برگشت: '+(verify?verify.length:'(هیچی)')+' کاراکتر.'+(verify&&verify.length===shrunk.length?' ✅ درست ذخیره شد.':' ⚠️ با چیزی که نوشتیم فرق داره!'));
+  }catch(e2){
+    alert('!!! خطا حین ذخیره‌ی نسخه‌ی کوچیک‌شده: '+(e2&&e2.name)+': '+(e2&&e2.message));
+  }
 })();
 load();
 setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();},600);
