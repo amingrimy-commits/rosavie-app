@@ -396,7 +396,7 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 <div class="info-page" id="NOTIF_OV">
   <div class="info-page-head">
     <button class="list-view-back" onclick="closeNotifList()">→ بازگشت</button>
-    <div class="list-view-title">🔔 اعلان‌ها</div>
+    <div class="list-view-title" style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v1.5"/><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5 1.5 6.5H4.5C4.5 14 6 13 6 9z"/><path d="M10 18a2 2 0 0 0 4 0"/></svg><span>اعلان‌ها</span></div>
   </div>
   <div class="info-page-body" id="NOTIF_BODY"></div>
 </div>
@@ -1934,7 +1934,7 @@ function openAccount(){
   silentCloseDrawer();
   navTo('account');
 }
-function closeAccount(){goBack();}
+function closeAccount(){goHome();}
 function silentCloseAccount(){document.getElementById('ACCOUNT_OV').classList.remove('open');}
 
 // ── احراز هویت مشتری (نام + شماره تماس + رمز) ──
