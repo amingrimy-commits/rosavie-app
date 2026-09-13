@@ -776,6 +776,33 @@ function loadMoreForCategory(){
     renderGrid();
   });
 }
+function ensureFullyLoadedThenRender(){
+  var st=_catState[CUR_CAT];
+  if(!st){renderGrid();return;}
+  if(!st.hasMore){renderGrid();return;}
+  if(st.loading)return;
+  st.loading=true;
+  renderGrid();
+  (function loadNextBatch(){
+    catQueryBase(CUR_CAT).startAfter(st.lastDoc).limit(CAT_PAGE_SIZE).get().then(function(snap){
+      snap.forEach(function(doc){st.items.push(doc.data());});
+      st.lastDoc=snap.docs.length?snap.docs[snap.docs.length-1]:st.lastDoc;
+      st.hasMore=snap.docs.length===CAT_PAGE_SIZE;
+      mergeIntoGlobalProducts(st.items);
+      if(st.hasMore){
+        loadNextBatch();
+      }else{
+        st.loading=false;
+        renderFabricFilter();
+        renderChips();
+        renderGrid();
+      }
+    }).catch(function(err){
+      st.loading=false;
+      renderGrid();
+    });
+  })();
+}
 function loadProducts(){
   ensureCategoryLoaded('all');
   setTimeout(backgroundLoadAllForSearch,2500);
@@ -821,7 +848,8 @@ function toggleFabricFilter(tag){
   var idx=CUR_FABRIC_TAGS.indexOf(tag);
   if(idx>-1)CUR_FABRIC_TAGS.splice(idx,1);
   else CUR_FABRIC_TAGS.push(tag);
-  renderFabricFilter();renderGrid();
+  renderFabricFilter();
+  if(CUR_FABRIC_TAGS.length)ensureFullyLoadedThenRender();else renderGrid();
 }
 function clearFabricFilter(){CUR_FABRIC_TAGS=[];renderFabricFilter();renderGrid();}
 function renderBrandFilter(){
@@ -886,7 +914,7 @@ function setBrand(b){
   if(b!=='all'&&!requireLoginGate())return;
   CUR_BRAND=b;
   renderBrandFilter();
-  renderGrid();
+  if(b!=='all')ensureFullyLoadedThenRender();else renderGrid();
 }
 function toggleHomeProdAcc(){
   var body=document.getElementById('HOME_PROD_ACC_BODY');
@@ -2876,15 +2904,29 @@ function showToast(msg){
   setTimeout(function(){t.remove();},2200);
 }
 function cartTotal(){return CART.reduce(function(s,c){var n=parseInt(String(c.price).replace(/[^\d]/g,''),10)||0;return s+n*c.qty;},0);}
+function buildCartHeaderHTML(){
+  return '<div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<button class="modal-close" onclick="closeCart()" style="margin-top:-6px">✕</button>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<button onclick="navTo(\'wishlist\')" aria-label="لیست‌های شما" style="position:relative;background:none;border:none;padding:4px;cursor:pointer;color:#5a4d45;display:flex">'+WISHLIST_ICON+(WISHLIST.length+LATER_LIST.length>0?('<span class="topnav-cart-badge" style="display:flex;position:absolute;top:-4px;left:-4px">'+(WISHLIST.length+LATER_LIST.length)+'</span>'):'')+'</button>'+
+        '<div style="position:relative"><span onclick="toggleCartMenu()" style="cursor:pointer;color:#5a4d45;font-size:1.8rem;padding:4px 8px">⋮</span>'+
+          (CART_MENU_OPEN?('<div style="position:absolute;left:0;top:34px;background:#fff;border:1px solid #ecdfd2;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);z-index:10;min-width:180px">'+
+            '<div onclick="confirmCartBulkAction(\'moveAllToLater\')" style="padding:11px 14px;font-size:0.78rem;color:#3a2e29;cursor:pointer;border-bottom:1px solid #f0e6d8;white-space:nowrap;display:flex;align-items:center;gap:8px">'+HISTORY_ICON+'<span>انتقال همه به سبد خرید بعدی</span></div>'+
+            '<div onclick="confirmCartBulkAction(\'emptyCart\')" style="padding:11px 14px;font-size:0.78rem;color:#c0304a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px">'+TRASH_ICON+'<span>خالی کردن سبد خرید</span></div>'+
+          '</div>'):'')+
+        '</div>'+
+      '</div>'+
+    '</div>';
+}
 function renderCart(){
   loadCart();
   var body=document.getElementById('CART_BODY');
   if(PENDING_REMOVALS['cart_bulk']){
-    body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div>'+removingRowHTML('cart_bulk','renderCart');
+    body.innerHTML=buildCartHeaderHTML()+removingRowHTML('cart_bulk','renderCart');
     return;
   }
   if(!CART.length){
-    body.innerHTML='<button class="modal-close" onclick="closeCart()">✕</button><div style="clear:both"></div><div class="cart-empty">🛒</div><div style="text-align:center;color:#888;font-size:0.82rem">سبد خریدت خالیه</div>';
+    body.innerHTML=buildCartHeaderHTML()+'<div class="modal-name" style="margin:10px 0">سبد خرید (0 کالا)</div><div class="cart-empty">🛒</div><div style="text-align:center;color:#888;font-size:0.82rem">سبد خریدت خالیه</div>';
     return;
   }
   var itemsHTML=CART.map(function(c,i){
@@ -2906,18 +2948,7 @@ function renderCart(){
   }).join('');
   var subtotal=cartTotal();
   body.innerHTML=
-    '<div style="display:flex;justify-content:space-between;align-items:center">'+
-      '<button class="modal-close" onclick="closeCart()" style="margin-top:-6px;float:none">✕</button>'+
-      '<div style="display:flex;align-items:center;gap:10px">'+
-        '<button onclick="navTo(\'wishlist\')" aria-label="لیست‌های شما" style="position:relative;background:none;border:none;padding:4px;cursor:pointer;color:#5a4d45;display:flex">'+WISHLIST_ICON+(WISHLIST.length+LATER_LIST.length>0?('<span class="topnav-cart-badge" style="display:flex;position:absolute;top:-4px;left:-4px">'+(WISHLIST.length+LATER_LIST.length)+'</span>'):'')+'</button>'+
-        '<div style="position:relative"><span onclick="toggleCartMenu()" style="cursor:pointer;color:#5a4d45;font-size:1.8rem;padding:4px 8px">⋮</span>'+
-          (CART_MENU_OPEN?('<div style="position:absolute;left:0;top:34px;background:#fff;border:1px solid #ecdfd2;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);z-index:10;min-width:180px">'+
-            '<div onclick="confirmCartBulkAction(\'moveAllToLater\')" style="padding:11px 14px;font-size:0.78rem;color:#3a2e29;cursor:pointer;border-bottom:1px solid #f0e6d8;white-space:nowrap;display:flex;align-items:center;gap:8px">'+HISTORY_ICON+'<span>انتقال همه به سبد خرید بعدی</span></div>'+
-            '<div onclick="confirmCartBulkAction(\'emptyCart\')" style="padding:11px 14px;font-size:0.78rem;color:#c0304a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px">'+TRASH_ICON+'<span>خالی کردن سبد خرید</span></div>'+
-          '</div>'):'')+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+    buildCartHeaderHTML()+
     '<div class="modal-name" style="margin:10px 0">سبد خرید ('+CART.length+' کالا)</div>'+
     itemsHTML+
     '<div class="cart-total-row"><span>جمع کل ('+CART.length+' کالا)</span><span>'+fmtP(subtotal)+'</span></div>'+
