@@ -1825,12 +1825,32 @@ function removeListItem(tab,i){
   },'renderCurrentListsView');
 }
 function shareProductByCode(code){
-  var url=SITE_BASE_URL+'#p~'+encodeURIComponent(code);
+  var url=location.origin+location.pathname+'#p~'+encodeURIComponent(code);
+  function fallbackCopy(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){
+        showToast('لینک محصول کپی شد 🔗');
+      }).catch(function(){
+        manualPrompt();
+      });
+    }else{
+      manualPrompt();
+    }
+  }
+  function manualPrompt(){
+    try{
+      window.prompt('این لینک رو کپی کن:',url);
+    }catch(e){
+      showToast('لینک: '+url);
+    }
+  }
   if(navigator.share){
-    navigator.share({title:'رزاوی',url:url}).catch(function(){});
+    navigator.share({title:'رزاوی',url:url}).catch(function(err){
+      if(err&&err.name==='AbortError')return; // user cancelled the native share sheet, not an error
+      fallbackCopy();
+    });
   }else{
-    navigator.clipboard&&navigator.clipboard.writeText(url);
-    showToast('لینک محصول کپی شد 🔗');
+    fallbackCopy();
   }
 }
 
