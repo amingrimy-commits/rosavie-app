@@ -1069,7 +1069,10 @@ input[type=file]{display:none}
     <div class="g1" style="margin-top:12px;background:#eef2f7;border:1.5px dashed #9ab3c8;border-radius:10px;padding:10px">
       <span class="lbl">🗂️ Chat ID کانال «بکاپ تولید محتوای رُزاوی»</span>
       <input class="fi" type="text" id="CONTENTBACKUPCID" autocomplete="off" style="direction:ltr" placeholder="مثال: -1001234567890">
+      <button class="sbig" style="background:#dde7f0;color:#3a5a7a;margin-top:8px" onclick="fetchContentBackupChatId()">دریافت خودکار شناسه کانال</button>
+      <div class="stat" id="CONTENTBACKUPCIDSTAT"></div>
       <p style="font-size:0.68rem;color:#5a7a9a;margin-top:4px">اگه این رو پر کنی، موقع ارسال هر محصول، عکسِ بدون واترمارک + کپشنِ آماده (بدون لینک) + توضیحات کاملی که می‌نویسی، خودکار به این کانال هم ذخیره می‌شه تا هروقت خواستی برای تولید محتوای خودت (اینستاگرام و غیره) دوباره پیداشون کنی و از نو زحمت نکشی.</p>
+      <p style="font-size:0.68rem;color:#8a7a6c;margin-top:6px;line-height:1.9">راهنما: یه کانال تلگرام جدید و پرایوت بساز، ربات رو با یوزرنیمش ادمین کانال کن، یه پیام توی کانال بفرست، بعد دکمه‌ی بالا رو بزن.</p>
     </div>
   </div>
   <div class="card"><div class="ctitle">📥 دریافت سفارش مشتری</div>
@@ -5633,6 +5636,33 @@ function importCustomersOnly(inputEl){
   };
   reader.readAsText(f);
   inputEl.value='';
+}
+function fetchContentBackupChatId(){
+  var token=V('TGK');
+  var stat=document.getElementById('CONTENTBACKUPCIDSTAT');
+  if(!token){stat.textContent='ابتدا Token ربات را وارد کنید';stat.className='stat serr';return;}
+  stat.textContent='در حال جستجو...';stat.className='stat sload';
+  var x=new XMLHttpRequest();
+  x.open('GET',TGB+token+'/getUpdates?limit=20',true);
+  x.timeout=15000;
+  x.onload=function(){
+    try{
+      var r=JSON.parse(x.responseText);
+      if(!r.ok){stat.textContent='خطا: '+r.description;stat.className='stat serr';return;}
+      if(!r.result||!r.result.length){stat.textContent='پیامی پیدا نشد. یه پیام با / توی کانال بفرست یا Privacy Mode ربات رو خاموش کن';stat.className='stat serr';return;}
+      var last=r.result[r.result.length-1];
+      var msg=last.message||last.channel_post;
+      if(!msg||!msg.chat){stat.textContent='پیام معتبری پیدا نشد';stat.className='stat serr';return;}
+      var chatId=msg.chat.id;
+      var name=msg.chat.title||msg.chat.first_name||msg.chat.username||'';
+      document.getElementById('CONTENTBACKUPCID').value=chatId;
+      stat.textContent='پیدا شد! "'+name+'" ثبت شد';stat.className='stat sok';
+      save();
+    }catch(e){stat.textContent='خطا در پردازش پاسخ';stat.className='stat serr';}
+  };
+  x.onerror=function(){stat.textContent='خطا در اتصال';stat.className='stat serr';};
+  x.ontimeout=function(){stat.textContent='زمان تموم شد';stat.className='stat serr';};
+  x.send();
 }
 function fetchCustChatId(){
   var token=V('TGK');
