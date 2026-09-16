@@ -1122,6 +1122,11 @@ input[type=file]{display:none}
 <div id="C10" class="ptpl"></div>
 <div id="CINV" class="ptpl"></div>
 <script>
+// ── قفل ورود ادمین (تعریف زودهنگام تا هیچ فراخوانی setTimeout(0) قبل از آماده شدنش صدا نزنه) ──
+var ADMIN_IS_READY=false,ADMIN_READY_QUEUE=[];
+function whenAdminReady(cb){
+  if(ADMIN_IS_READY)cb();else ADMIN_READY_QUEUE.push(cb);
+}
 // ── GLOBALS ──
 var BID=0,RID=0,LOGOS={},IMAGES={},LOGO_IDS={},IMG_IDS={},DRAG=null,CFIL='all',CSORT='';
 var SITE_IMAGES={},SITE_IMG_IDS={};
@@ -8116,10 +8121,6 @@ setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvIt
 <script>
 // ── قفل ورود ادمین ──
 var ADMIN_UID='5OEb6mBf4mOwDPdOcAx4ycAUc692';
-var ADMIN_IS_READY=false,ADMIN_READY_QUEUE=[];
-function whenAdminReady(cb){
-  if(ADMIN_IS_READY)cb();else ADMIN_READY_QUEUE.push(cb);
-}
 function adminShowApp(){
   document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
   document.getElementById('APP_ROOT').style.display='';
