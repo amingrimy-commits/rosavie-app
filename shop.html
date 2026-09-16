@@ -218,7 +218,9 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .modal-home-bar-title{color:#fff;font-weight:900;font-size:0.88rem;letter-spacing:0.3px}
 @media(min-width:640px){.modal-ov{align-items:center}.modal{border-radius:16px}}
 .modal-close{width:42px;height:42px;border-radius:50%;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;font-size:1.3rem;float:left;cursor:pointer}
-.modal-img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;margin-top:8px;background:#f3e9de}
+.modal-img-wrap{position:relative;overflow:hidden;border-radius:14px;margin-top:8px}
+.modal-img-track{display:flex;transition:transform 0.35s ease}
+.modal-img{width:100%;flex:0 0 100%;aspect-ratio:3/4;object-fit:cover;background:#f3e9de;display:block}
 .modal-img-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px}
 .modal-img-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.55);border:1.5px solid rgba(0,0,0,0.15);cursor:pointer}
 .modal-img-dot.on{background:#d4789a;border-color:#d4789a}
@@ -1113,10 +1115,51 @@ function setModalImgIdx(i){
   if(!p)return;
   var imgs=[p.img,p.img2].filter(Boolean);
   if(!imgs[i])return;
-  var el=document.getElementById('MODAL_IMG_EL');
-  if(el)el.src=imgs[i];
+  window._MODAL_IMG_IDX=i;
+  var track=document.getElementById('MODAL_IMG_TRACK');
+  if(track)track.style.transform='translateX('+(i*100)+'%)';
   document.querySelectorAll('.modal-img-dot').forEach(function(d,idx){d.classList.toggle('on',idx===i);});
 }
+function modalImgNav(dir){
+  var p=window._CURGROUP&&window._CURGROUP[window._CURVARIANT];
+  if(!p)return;
+  var imgs=[p.img,p.img2].filter(Boolean);
+  if(imgs.length<2)return;
+  var next=((window._MODAL_IMG_IDX||0)+dir+imgs.length)%imgs.length;
+  setModalImgIdx(next);
+}
+(function setupModalImgSwipe(){
+  var startX=0,curDeltaPx=0,dragging=false;
+  function track(){return document.getElementById('MODAL_IMG_TRACK');}
+  function width(){var t=track();return (t&&t.parentNode&&t.parentNode.offsetWidth)||1;}
+  function hasTwo(){var p=window._CURGROUP&&window._CURGROUP[window._CURVARIANT];return !!(p&&p.img&&p.img2);}
+  function begin(clientX){
+    if(!hasTwo())return;
+    dragging=true;startX=clientX;curDeltaPx=0;
+    var t=track();if(t)t.style.transition='none';
+  }
+  function move(clientX){
+    if(!dragging)return;
+    curDeltaPx=clientX-startX;
+    var t=track();if(!t)return;
+    t.style.transform='translateX(calc('+((window._MODAL_IMG_IDX||0)*100)+'% + '+curDeltaPx+'px))';
+  }
+  function end(){
+    if(!dragging)return;
+    dragging=false;
+    var t=track();if(t)t.style.transition='';
+    var deltaPercent=(curDeltaPx/width())*100;
+    if(deltaPercent<-15)modalImgNav(1);
+    else if(deltaPercent>15)modalImgNav(-1);
+    else setModalImgIdx(window._MODAL_IMG_IDX||0);
+  }
+  document.addEventListener('touchstart',function(e){var t=e.target.closest&&e.target.closest('#MODAL_IMG_TRACK');if(t)begin(e.touches[0].clientX);},{passive:true});
+  document.addEventListener('touchmove',function(e){if(dragging)move(e.touches[0].clientX);},{passive:true});
+  document.addEventListener('touchend',function(){if(dragging)end();});
+  document.addEventListener('mousedown',function(e){var t=e.target.closest&&e.target.closest('#MODAL_IMG_TRACK');if(t){begin(e.clientX);e.preventDefault();}});
+  document.addEventListener('mousemove',function(e){if(dragging)move(e.clientX);});
+  document.addEventListener('mouseup',function(){if(dragging)end();});
+})();
 function switchVariant(idx){
   window._CURVARIANT=idx;
   renderModalContent();
@@ -1126,6 +1169,7 @@ function renderModalContent(){
   var p=group[window._CURVARIANT];
   window._CURP=p;
   window._CURQTY=Number(p.minOrder)||1;
+  window._MODAL_IMG_IDX=0;
   window._PDP_TAB='spec';
   var nm=productDisplayName(p);
   var isSleep=(p.tab==='p4');
@@ -1198,9 +1242,16 @@ function renderModalContent(){
     '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>');
   }
   var html='<button class="modal-close" onclick="goHome()" style="margin-top:-6px">✕</button><div style="clear:both"></div>'+
-    (p.img?('<div style="position:relative">'+
-      '<img class="modal-img" id="MODAL_IMG_EL" src="'+p.img+'">'+
-      (p.img2?('<div class="modal-img-dots"><span class="modal-img-dot on" onclick="setModalImgIdx(0)"></span><span class="modal-img-dot" onclick="setModalImgIdx(1)"></span></div>'):'')+
+    (p.img?('<div class="modal-img-wrap" id="MODAL_IMG_WRAP">'+
+      '<div class="modal-img-track" id="MODAL_IMG_TRACK">'+
+        '<img class="modal-img" src="'+p.img+'">'+
+        (p.img2?('<img class="modal-img" src="'+p.img2+'">'):'')+
+      '</div>'+
+      (p.img2?(
+        '<button class="banner-arrow prev" onclick="modalImgNav(-1)" aria-label="قبلی" style="bottom:auto;top:50%;transform:translateY(-50%)">‹</button>'+
+        '<button class="banner-arrow next" onclick="modalImgNav(1)" aria-label="بعدی" style="bottom:auto;top:50%;transform:translateY(-50%)">›</button>'+
+        '<div class="modal-img-dots"><span class="modal-img-dot on" onclick="setModalImgIdx(0)"></span><span class="modal-img-dot" onclick="setModalImgIdx(1)"></span></div>'
+      ):'')+
       '</div>'):'')+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div class="modal-name" style="flex:1">'+nm+'</div>'+
       '<button onclick="toggleWishlist(\''+p.code+'\',this)" style="background:none;border:none;padding:4px;cursor:pointer;flex-shrink:0" id="WISH_BTN_'+p.code+'">'+(isInWishlist(p.code)?HEART_ON_ICON:HEART_OFF_ICON)+'</button></div>'+

@@ -1066,6 +1066,11 @@ input[type=file]{display:none}
       <input class="fi" type="text" id="GALLERYCID" autocomplete="off" style="direction:ltr" value="-1003987788681" placeholder="مثال: -1001234567890">
       <p style="font-size:0.68rem;color:#5a8a5a;margin-top:4px">اگه این رو پر کنی، موقع ارسال محصول به کانال‌های عمومی، نسخه‌ی تمیز (بدون واترمارک) هم خودکار به این کانال فرستاده می‌شه.</p>
     </div>
+    <div class="g1" style="margin-top:12px;background:#eef2f7;border:1.5px dashed #9ab3c8;border-radius:10px;padding:10px">
+      <span class="lbl">🗂️ Chat ID کانال «بکاپ تولید محتوای رُزاوی»</span>
+      <input class="fi" type="text" id="CONTENTBACKUPCID" autocomplete="off" style="direction:ltr" placeholder="مثال: -1001234567890">
+      <p style="font-size:0.68rem;color:#5a7a9a;margin-top:4px">اگه این رو پر کنی، موقع ارسال هر محصول، عکسِ بدون واترمارک + کپشنِ آماده (بدون لینک) + توضیحات کاملی که می‌نویسی، خودکار به این کانال هم ذخیره می‌شه تا هروقت خواستی برای تولید محتوای خودت (اینستاگرام و غیره) دوباره پیداشون کنی و از نو زحمت نکشی.</p>
+    </div>
   </div>
   <div class="card"><div class="ctitle">📥 دریافت سفارش مشتری</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">وقتی مشتری از صفحه جستجو فرم سفارش را پر می‌کند، پیام مستقیم به این چت‌ها ارسال می‌شود.</p>
@@ -7551,6 +7556,30 @@ function sendToGalleryChannel(cleanOrdered,data){
   if(cleanOrdered.length===1)sendSingleMediaTo(base,tgToken,galleryCid,cleanOrdered[0],galCaption,done);
   else sendMediaGroupTo(base,tgToken,galleryCid,cleanOrdered,galCaption,done);
 }
+function sendToContentBackupChannel(cleanOrdered,data){
+  var backupCid=V('CONTENTBACKUPCID');
+  if(!backupCid||!cleanOrdered.length)return;
+  var tgToken=V('TGK');
+  if(!tgToken)return;
+  var base='https://api.telegram.org/bot';
+  var caption=data.topSection||'';
+  function sendDescIfAny(){
+    var fullDesc=V('CG_FULLDESC');
+    if(!fullDesc){
+      addNotif('🗂️ محتوای محصول «'+(data.code||'')+'» در کانال بکاپ تولید محتوا ذخیره شد');
+      return;
+    }
+    xMsg(base+tgToken+'/sendMessage',{chat_id:backupCid,text:'📝 توضیحات کامل:\n'+fullDesc},function(){
+      addNotif('🗂️ محتوای محصول «'+(data.code||'')+'» در کانال بکاپ تولید محتوا ذخیره شد');
+    });
+  }
+  function done(err){
+    if(err){addNotif('⚠️ ارسال به کانال بکاپ تولید محتوا ناموفق بود: '+err);return;}
+    sendDescIfAny();
+  }
+  if(cleanOrdered.length===1)sendSingleMediaTo(base,tgToken,backupCid,cleanOrdered[0],caption,done);
+  else sendMediaGroupTo(base,tgToken,backupCid,cleanOrdered,caption,done);
+}
 var _lastSendClickTime=0;
 function sendToChannels(){
   var _sendNow=Date.now();
@@ -7640,6 +7669,7 @@ function sendToChannels(){
       var titleChanged=(data.title||'')!==EDIT_ORIGINAL_TITLE;
       if(codeChanged||brandChanged||titleChanged){
         sendToGalleryChannel(ordered,data);
+        sendToContentBackupChannel(ordered,data);
       }else{
         addNotif('ℹ️ کد/برند/اسم محصول عوض نشده — دوباره به کانال گالری VIP فرستاده نشد');
       }
@@ -7661,6 +7691,7 @@ function sendToChannels(){
 
   stat.textContent='در حال آماده‌سازی عکس‌ها (واترمارک)...';stat.className='stat sload';
   sendToGalleryChannel(ordered,data);
+  sendToContentBackupChannel(ordered,data);
   watermarkMediaList(ordered,function(orderedWm){
   stat.textContent='در حال بررسی و ذخیره در لیست قیمت...';stat.className='stat sload';
 
@@ -7799,7 +7830,7 @@ function save(){
   if(_loading)return;
   try{
     var sel={};[1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
-    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,bannerMessages:BANNER_MESSAGE,autoSync:AUTO_SYNC_ENABLED};
+    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),contentBackupCid:V('CONTENTBACKUPCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,bannerMessages:BANNER_MESSAGE,autoSync:AUTO_SYNC_ENABLED};
     TABS.forEach(function(tab){
       var brands=[];
       document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
@@ -7834,6 +7865,7 @@ function load(){
     if(d.tgcid)document.getElementById('TGCID').value=d.tgcid;
     if(d.tgcid2)document.getElementById('TGCID2').value=d.tgcid2;
     if(d.galleryCid)document.getElementById('GALLERYCID').value=d.galleryCid;
+    if(d.contentBackupCid)document.getElementById('CONTENTBACKUPCID').value=d.contentBackupCid;
     setTimeout(function(){
       var bad=[];
       if(looksLikeBotToken(d.tgcid))bad.push('کانال ۱');
@@ -7959,6 +7991,7 @@ window.addEventListener('message',function(e){
 [1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(c){var cb=document.getElementById('S'+n+'C'+c);if(cb)cb.onchange=save;});});
 document.getElementById('TGCID2').oninput=save;
 document.getElementById('GALLERYCID').oninput=save;
+document.getElementById('CONTENTBACKUPCID').oninput=save;
 document.getElementById('ORDERCID').oninput=save;
 document.getElementById('ORDERCID2').oninput=save;
 document.getElementById('REPORTCID').oninput=save;
