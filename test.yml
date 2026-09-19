@@ -1,0 +1,105 @@
+name: تست خودکار رزاوی
+
+on:
+  push:
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+
+      - name: نصب Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: نصب Playwright و مرورگر Chromium
+        run: |
+          npm install playwright@latest
+          npx playwright install --with-deps chromium
+
+      - name: بالا آوردن سرور محلی برای شبیه‌سازی سایت
+        run: |
+          python3 -m http.server 8080 &
+          sleep 2
+
+      - name: نوشتن اسکریپت تست
+        run: |
+          cat > run-tests.js << 'NODEEOF'
+          const { chromium } = require('playwright');
+
+          const FILES = ['shop.html', 'rosavie-price-list-3.html'];
+          const BASE = 'http://localhost:8080/';
+
+          (async () => {
+            const browser = await chromium.launch();
+            let overallFail = false;
+
+            for (const file of FILES) {
+              const page = await browser.newPage();
+              const pageErrors = [];
+              page.on('pageerror', e => pageErrors.push(e.message));
+
+              console.log(`\n=== ${file} ===`);
+              try {
+                await page.goto(BASE + file, { waitUntil: 'load', timeout: 30000 });
+              } catch (e) {
+                console.log(`NAVIGATION FAILED: ${e.message}`);
+                overallFail = true;
+                await page.close();
+                continue;
+              }
+              await page.waitForTimeout(2500);
+
+              if (pageErrors.length) {
+                console.log(`${pageErrors.length} JS error(s) during page load:`);
+                pageErrors.forEach(e => console.log('   -', e));
+                overallFail = true;
+              } else {
+                console.log('no JS errors during load - OK');
+              }
+
+              const hasTests = await page.evaluate(() => typeof window.runAllTests === 'function').catch(() => false);
+              if (!hasTests) {
+                console.log('runAllTests() not available on this page (probably because of the JS error above) - skipping unit tests');
+                if (pageErrors.length) overallFail = true;
+              } else {
+                let results;
+                try {
+                  results = await page.evaluate(() => window.runAllTests());
+                } catch (e) {
+                  console.log('FAIL - runAllTests() threw while running:', e.message);
+                  overallFail = true;
+                  results = null;
+                }
+                if (results) {
+                  const passed = results.filter(r => r.pass).length;
+                  console.log(`Unit tests: ${passed}/${results.length} passed`);
+                  results.forEach(r => {
+                    if (r.pass) console.log(`  OK - ${r.name}`);
+                    else { console.log(`  FAIL - ${r.name}: ${r.error}`); overallFail = true; }
+                  });
+                }
+              }
+              await page.close();
+            }
+
+            await browser.close();
+            if (overallFail) {
+              console.log('\nRESULT: FAILED');
+              process.exit(1);
+            } else {
+              console.log('\nRESULT: ALL OK');
+              process.exit(0);
+            }
+          })().catch((e) => {
+            console.log('UNEXPECTED SCRIPT ERROR:', e.message);
+            process.exit(1);
+          });
+          NODEEOF
+
+      - name: اجرای تست‌ها
+        run: node run-tests.js
