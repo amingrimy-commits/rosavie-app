@@ -218,6 +218,9 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .modal-home-bar-title{color:#fff;font-weight:900;font-size:0.88rem;letter-spacing:0.3px}
 @media(min-width:640px){.modal-ov{align-items:center}.modal{border-radius:16px}}
 .modal-close{width:42px;height:42px;border-radius:50%;background:#f7efe6;border:1px solid #e0d0c0;color:#3a2e29;font-size:1.3rem;float:left;cursor:pointer}
+.test-row{padding:9px 0;border-bottom:1px solid #f0e6d8;font-size:0.86rem}
+.test-row .tname{font-weight:700}
+.test-row .terr{color:#c0304a;font-size:0.75rem;margin-top:4px}
 .modal-img-wrap{position:relative;overflow:hidden;border-radius:14px;margin-top:8px}
 .modal-img-track{display:flex;transition:transform 0.35s ease}
 .modal-img{width:100%;flex:0 0 100%;aspect-ratio:3/4;object-fit:cover;background:#f3e9de;display:block}
@@ -481,6 +484,9 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 </div>
 <div class="modal-ov" id="SAVE_LATER_OV" style="z-index:3100" onclick="if(event.target===this)closeSaveLaterModal()">
   <div class="modal" id="SAVE_LATER_BODY"></div>
+</div>
+<div class="modal-ov" id="TEST_PANEL_OV" style="z-index:3200" onclick="if(event.target===this)closeTestPanel()">
+  <div class="modal" id="TEST_PANEL_BODY"></div>
 </div>
 
 <div class="list-view" id="LIST_VIEW">
@@ -3746,6 +3752,98 @@ if(typeof document!=='undefined'){
   });
 }
 setTimeout(hideInitLoader,15000);
+
+// ══════════ تست خودکار سیستم — چک‌های سریع روی منطق‌های مهم فروشگاه ══════════
+window.RV_TESTS=[
+  {name:'cartTotal: جمع ساده‌ی چند قلم با قیمت دارای کاما',fn:function(){
+    var saved=window.CART;
+    window.CART=[{price:'50,000',qty:2},{price:'30000',qty:1}];
+    var t=cartTotal();
+    window.CART=saved;
+    if(t!==130000)throw new Error('انتظار 130000، دریافت شد: '+t);
+  }},
+  {name:'cartTotal: سبد خالی باید صفر بده',fn:function(){
+    var saved=window.CART;
+    window.CART=[];
+    var t=cartTotal();
+    window.CART=saved;
+    if(t!==0)throw new Error('انتظار 0، دریافت شد: '+t);
+  }},
+  {name:'computeDiscountAmount: تخفیف درصدی ساده',fn:function(){
+    var r=computeDiscountAmount({type:'percent',value:10},100000);
+    if(r!==10000)throw new Error('انتظار 10000، دریافت شد: '+r);
+  }},
+  {name:'computeDiscountAmount: سقف تخفیف (maxDiscount) باید رعایت بشه',fn:function(){
+    var r=computeDiscountAmount({type:'percent',value:50,maxDiscount:20000},100000);
+    if(r!==20000)throw new Error('انتظار 20000 (سقف)، دریافت شد: '+r);
+  }},
+  {name:'computeDiscountAmount: تخفیف ثابت نباید از مبلغ سبد بیشتر بشه',fn:function(){
+    var r=computeDiscountAmount({type:'fixed',value:500000},100000);
+    if(r!==100000)throw new Error('انتظار 100000 (سقف مبلغ سبد)، دریافت شد: '+r);
+  }},
+  {name:'computeDiscountAmount: ارسال رایگان اثری روی مبلغ نداره',fn:function(){
+    var r=computeDiscountAmount({type:'freeship'},100000);
+    if(r!==0)throw new Error('انتظار 0، دریافت شد: '+r);
+  }},
+  {name:'مدل تصویر محصول: رفتن جلو و برگشت به عکس اول (wrap)',fn:function(){
+    var savedGroup=window._CURGROUP,savedVariant=window._CURVARIANT,savedIdx=window._MODAL_IMG_IDX;
+    window._CURGROUP=[{img:'a.jpg',img2:'b.jpg',code:'TEST',minOrder:1}];
+    window._CURVARIANT=0;window._MODAL_IMG_IDX=0;
+    modalImgNav(1);
+    var afterNext=window._MODAL_IMG_IDX;
+    modalImgNav(1);
+    var afterWrap=window._MODAL_IMG_IDX;
+    window._CURGROUP=savedGroup;window._CURVARIANT=savedVariant;window._MODAL_IMG_IDX=savedIdx;
+    if(afterNext!==1)throw new Error('انتظار عکس ۲ام (ایندکس ۱)، دریافت شد: '+afterNext);
+    if(afterWrap!==0)throw new Error('انتظار برگشت به عکس اول (ایندکس ۰)، دریافت شد: '+afterWrap);
+  }},
+  {name:'مودال «ذخیره کالا در»: انتقال از سبد به لیست بعدی',fn:function(){
+    var savedCart=window.CART,savedLater=window.LATER_LIST;
+    window.CART=[{key:'rvtest1',code:'T1',title:'محصول تست',price:100000,qty:1}];
+    window.LATER_LIST=[];
+    openSaveLaterModal(0);
+    var chkLater=document.getElementById('SL_CHK_LATER');
+    var defaultOk=chkLater&&chkLater.checked===true;
+    confirmSaveLater();
+    var movedOk=window.LATER_LIST.length===1&&window.CART.length===0;
+    window.CART=savedCart;window.LATER_LIST=savedLater;
+    if(!defaultOk)throw new Error('چک‌باکس «لیست بعدی» باید پیش‌فرض تیک‌خورده باشه');
+    if(!movedOk)throw new Error('انتقال کالا از سبد به لیست بعدی درست انجام نشد');
+  }},
+  {name:'مجله رزاوی: آرایه‌ی مقالات باید سالم و قابل‌خوندن باشه',fn:function(){
+    if(!Array.isArray(window.MAGAZINE_ARTICLES))throw new Error('MAGAZINE_ARTICLES آرایه نیست');
+  }}
+];
+function runAllTests(){
+  return window.RV_TESTS.map(function(t){
+    try{t.fn();return {name:t.name,pass:true};}
+    catch(e){return {name:t.name,pass:false,error:e.message};}
+  });
+}
+function openTestPanel(){
+  var results=runAllTests();
+  var passCount=results.filter(function(r){return r.pass;}).length;
+  var allOk=passCount===results.length;
+  var html='<button class="modal-close" onclick="closeTestPanel()">✕</button><div style="clear:both"></div>'+
+    '<div style="font-weight:900;font-size:1.05rem;color:#3a2e29;margin-bottom:6px">🧪 نتیجه‌ی تست سیستم</div>'+
+    '<div style="font-size:0.86rem;color:'+(allOk?'#2a9d5c':'#c0304a')+';font-weight:800;margin-bottom:14px">'+
+      (allOk?'✅ ':'⚠️ ')+passCount+' از '+results.length+' تست موفق'+
+    '</div>'+
+    results.map(function(r){
+      return '<div class="test-row"><span class="tname">'+(r.pass?'✅':'❌')+' '+r.name+'</span>'+
+        (r.pass?'':'<div class="terr">'+r.error+'</div>')+
+      '</div>';
+    }).join('');
+  document.getElementById('TEST_PANEL_BODY').innerHTML=html;
+  document.getElementById('TEST_PANEL_OV').classList.add('open');
+}
+function closeTestPanel(){
+  var ov=document.getElementById('TEST_PANEL_OV');
+  if(ov)ov.classList.remove('open');
+}
+if(location.search.indexOf('test=1')!==-1){
+  setTimeout(openTestPanel,800);
+}
 </script>
 </body>
 </html>

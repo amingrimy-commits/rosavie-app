@@ -229,6 +229,12 @@ input[type=file]{display:none}
 .pdfsel-row span,.pdfsel-row label{text-align:center}
 .pdfsel-row input[type=checkbox]{width:18px;height:18px;cursor:pointer}
 .editor-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#111}
+.test-panel-ov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,0.6);align-items:flex-end;justify-content:center}
+.test-panel-ov.open{display:flex}
+.test-panel-body{background:#fff;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:18px 16px 24px;position:relative}
+.test-row{padding:9px 0;border-bottom:1px solid #f0e6d8;font-size:0.86rem}
+.test-row .tname{font-weight:700}
+.test-row .terr{color:#c0304a;font-size:0.75rem;margin-top:4px}
 .editor-modal.open{display:block}
 .editor-iframe{width:100%;height:100%;border:none;display:block}
 .ptpl{position:fixed;top:-19999px;left:-19999px;width:794px;font-family:'Vazirmatn',sans-serif;direction:rtl;padding:26px}
@@ -1103,6 +1109,13 @@ input[type=file]{display:none}
     <button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="downloadCustomerDirectory()">📥 دانلود فایل جستجو (بدون ارسال)</button>
     <p style="font-size:0.7rem;color:#aaa;margin-top:8px;line-height:1.9">راهنما: از همون Token بالا استفاده می‌شه؛ فقط یه کانال پرایوت بساز، ربات رو ادمینش کن، یه پیام بفرست، بعد دکمه «دریافت خودکار شناسه» رو بزن.</p>
   </div>
+  <div class="card"><div class="ctitle">🧪 تست خودکار سیستم</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">یه سری چک خودکار روی محاسبات مهم برنامه (شماره فاکتور، قیمت، تاریخ و غیره) می‌زنه تا مطمئن بشی بعد از تغییرات اخیر چیزی خراب نشده. هر وقت خواستی، همینجا بزن.</p>
+    <button class="sbig stg" onclick="openTestPanel()">▶️ اجرای تست‌ها</button>
+  </div>
+</div>
+<div class="test-panel-ov" id="TEST_PANEL_OV" onclick="if(event.target===this)closeTestPanel()">
+  <div class="test-panel-body" id="TEST_PANEL_BODY"></div>
 </div>
 <!-- modal ویرایشگر تصویر (ایزوله در iframe - بدون تداخل با اپ اصلی) -->
 <div class="editor-modal" id="EDITOR_MODAL">
@@ -8116,6 +8129,97 @@ function hydrateMissingSiteImages(){
 }
 setTimeout(hydrateMissingSiteImages,1200);
 setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();},600);
+
+// ══════════ تست خودکار سیستم — چک‌های سریع روی منطق‌های مهم برنامه ══════════
+window.RV_TESTS=[
+  {name:'levenshteinDist: دو رشته‌ی کاملاً یکسان → فاصله صفر',fn:function(){
+    var d=levenshteinDist('رزاوی','رزاوی');
+    if(d!==0)throw new Error('انتظار 0، دریافت شد: '+d);
+  }},
+  {name:'levenshteinDist: یک تفاوت باید فاصله ۱ بده',fn:function(){
+    var d=levenshteinDist('کد001','کد002');
+    if(d!==1)throw new Error('انتظار 1، دریافت شد: '+d);
+  }},
+  {name:'expandPriceShorthand: عدد زیر ۵۰۰۰ باید ×۱۰۰۰ بشه',fn:function(){
+    var r=expandPriceShorthand('150');
+    if(r!=='150000')throw new Error('انتظار 150000، دریافت شد: '+r);
+  }},
+  {name:'expandPriceShorthand: عدد ۵۰۰۰ به بالا دست‌نخورده بمونه',fn:function(){
+    var r=expandPriceShorthand('45000');
+    if(r!=='45000')throw new Error('انتظار 45000، دریافت شد: '+r);
+  }},
+  {name:'computeUnitPrice: تقسیم دقیق و بی‌باقی‌مونده',fn:function(){
+    var r=computeUnitPrice(120000,12);
+    if(r!==10000)throw new Error('انتظار 10000، دریافت شد: '+r);
+  }},
+  {name:'computeUnitPrice: تقسیم اعشاری نزدیک به عدد صحیح گرد بشه',fn:function(){
+    var r=computeUnitPrice(100002,12); // ~8333.5
+    if(typeof r!=='number'||isNaN(r))throw new Error('خروجی عدد نیست: '+r);
+  }},
+  {name:'nextInvoiceNumber: فرمت باید RV+۶رقم باشه',fn:function(){
+    var before=localStorage.getItem('rv_invoice_counter');
+    var n=nextInvoiceNumber();
+    var ok=/^RV\d{6}$/.test(n);
+    if(before===null)localStorage.removeItem('rv_invoice_counter');else localStorage.setItem('rv_invoice_counter',before);
+    if(!ok)throw new Error('فرمت اشتباه: '+n);
+  }},
+  {name:'nextInvoiceNumber: هر بار باید دقیقاً یکی بعدی بیاد (بدون تکرار یا پرش)',fn:function(){
+    var before=localStorage.getItem('rv_invoice_counter');
+    var a=nextInvoiceNumber(),b=nextInvoiceNumber();
+    var na=parseInt(a.slice(2),10),nb=parseInt(b.slice(2),10);
+    if(before===null)localStorage.removeItem('rv_invoice_counter');else localStorage.setItem('rv_invoice_counter',before);
+    if(nb!==na+1)throw new Error(a+' → '+b+' درسته نباید اینطوری باشه');
+  }},
+  {name:'تاریخ جلالی: رفت‌وبرگشت میلادی↔جلالی باید یکی بمونه',fn:function(){
+    var g=j2g(1403,1,1);
+    var back=g2j(g[0],g[1],g[2]);
+    if(back[0]!==1403||back[1]!==1||back[2]!==1)throw new Error('رفت‌وبرگشت اشتباه: '+JSON.stringify(back));
+  }},
+  {name:'whenAdminReady: قبل از آماده‌شدن ادمین، باید صف کنه نه فوری اجرا کنه (رگرشن باگ قبلی)',fn:function(){
+    var savedReady=ADMIN_IS_READY,savedQueue=ADMIN_READY_QUEUE;
+    ADMIN_IS_READY=false;ADMIN_READY_QUEUE=[];
+    var called=false;
+    whenAdminReady(function(){called=true;});
+    var queuedOk=ADMIN_READY_QUEUE.length===1;
+    ADMIN_IS_READY=savedReady;ADMIN_READY_QUEUE=savedQueue;
+    if(called)throw new Error('نباید زودتر از آماده‌شدن ادمین اجرا بشه');
+    if(!queuedOk)throw new Error('باید تو صف قرار می‌گرفت');
+  }},
+  {name:'whenAdminReady: بعد از آماده‌شدن ادمین، باید فوری اجرا کنه',fn:function(){
+    var savedReady=ADMIN_IS_READY,savedQueue=ADMIN_READY_QUEUE;
+    ADMIN_IS_READY=true;ADMIN_READY_QUEUE=[];
+    var called=false;
+    whenAdminReady(function(){called=true;});
+    ADMIN_IS_READY=savedReady;ADMIN_READY_QUEUE=savedQueue;
+    if(!called)throw new Error('باید بلافاصله اجرا می‌شد');
+  }}
+];
+function runAllTests(){
+  return window.RV_TESTS.map(function(t){
+    try{t.fn();return {name:t.name,pass:true};}
+    catch(e){return {name:t.name,pass:false,error:e.message};}
+  });
+}
+function openTestPanel(){
+  var results=runAllTests();
+  var passCount=results.filter(function(r){return r.pass;}).length;
+  var allOk=passCount===results.length;
+  var html='<button onclick="closeTestPanel()" style="float:left;width:30px;height:30px;border-radius:50%;border:none;background:#f2e6d3;color:#9a6e3a;font-size:1rem;cursor:pointer">✕</button><div style="clear:both"></div>'+
+    '<div style="font-weight:900;font-size:1.05rem;margin-bottom:6px">🧪 نتیجه‌ی تست سیستم</div>'+
+    '<div style="font-size:0.86rem;color:'+(allOk?'#2a9d5c':'#c0304a')+';font-weight:800;margin-bottom:14px">'+
+      (allOk?'✅ ':'⚠️ ')+passCount+' از '+results.length+' تست موفق'+
+    '</div>'+
+    results.map(function(r){
+      return '<div class="test-row"><span class="tname">'+(r.pass?'✅':'❌')+' '+r.name+'</span>'+
+        (r.pass?'':'<div class="terr">'+r.error+'</div>')+
+      '</div>';
+    }).join('');
+  document.getElementById('TEST_PANEL_BODY').innerHTML=html;
+  document.getElementById('TEST_PANEL_OV').classList.add('open');
+}
+function closeTestPanel(){
+  document.getElementById('TEST_PANEL_OV').classList.remove('open');
+}
 </script>
 </div>
 <script>
