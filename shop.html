@@ -1195,10 +1195,12 @@ function renderModalContent(){
   if(hasSizePicker){
     window._COLOR_QTYS={};
     window._SIZE_PRICES={};
-    var szRowsHTML=p.sizePriceList.map(function(s){
-      var key='sz:'+s.size;
+    window._SIZE_LABELS={};
+    var szRowsHTML=p.sizePriceList.map(function(s,i){
+      var key='sz:'+i;
       window._COLOR_QTYS[key]=0;
       window._SIZE_PRICES[key]=s.price;
+      window._SIZE_LABELS[key]=s.size;
       var isOut=s.stock==='out';
       var safeKey=key.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
       if(isOut){
@@ -1303,8 +1305,8 @@ function addToCartMultiColor(){
     var isMix=(key==='__mix__');
     var isSize=key.indexOf('sz:')===0;
     var linePrice=isSize?(window._SIZE_PRICES[key]||p.price):p.price;
-    var colorNote=isMix?('میکس'+(p.mixDesc?(' — '+p.mixDesc):'')):(isSize?('سایز '+key.slice(3)):key);
-    var cartKey=p.id+'::'+colorNote;
+    var colorNote=isMix?('میکس'+(p.mixDesc?(' — '+p.mixDesc):'')):(isSize?('سایز '+(window._SIZE_LABELS[key]||key.slice(3))):key);
+    var cartKey=isSize?(p.id+'::'+key):(p.id+'::'+colorNote);
     var existing=CART.find(function(c){return c.key===cartKey;});
     if(existing){existing.qty+=qty;existing.minOrder=isMix?(p.mixMinOrder||p.minOrder||1):(p.minOrder||1);}
     else CART.push({key:cartKey,id:p.id,code:p.code,title:productDisplayName(p),price:linePrice,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:isMix?(p.mixMinOrder||p.minOrder||1):(p.minOrder||1)});
@@ -3814,6 +3816,40 @@ window.RV_TESTS=[
   }},
   {name:'مجله رزاوی: آرایه‌ی مقالات باید سالم و قابل‌خوندن باشه',fn:function(){
     if(!Array.isArray(window.MAGAZINE_ARTICLES))throw new Error('MAGAZINE_ARTICLES آرایه نیست');
+  }},
+  {name:'انتخاب سایز: ردیف‌های هم‌نام نباید تعدادشون قاطی بشه (رگرشن باگ قبلی)',fn:function(){
+    var savedCurP=window._CURP,savedQ=window._COLOR_QTYS,savedP=window._SIZE_PRICES,savedL=window._SIZE_LABELS,savedCart=window.CART;
+    window._CURP={id:'RVTEST',price:960000,minOrder:1,sizePriceList:[
+      {size:'میکس',price:1050000,stock:'in'},
+      {size:'میکس',price:998000,stock:'in'},
+      {size:'میکس',price:966667,stock:'in'}
+    ]};
+    window._COLOR_QTYS={};window._SIZE_PRICES={};window._SIZE_LABELS={};
+    var testNodes=[];
+    window._CURP.sizePriceList.forEach(function(s,i){
+      var key='sz:'+i;
+      window._COLOR_QTYS[key]=0;window._SIZE_PRICES[key]=s.price;window._SIZE_LABELS[key]=s.size;
+      var span=document.createElement('span');
+      span.id='CQTY_'+key.replace(/[^a-zA-Z0-9آ-ی]/g,'_');
+      span.textContent='0';
+      document.body.appendChild(span);
+      testNodes.push(span);
+    });
+    window.CART=[];
+    pushModalState();
+    changeColorQty('sz:1',1,1);
+    changeColorQty('sz:2',1,1);
+    var row0=document.getElementById('CQTY_sz_0').textContent;
+    var row1=document.getElementById('CQTY_sz_1').textContent;
+    var row2=document.getElementById('CQTY_sz_2').textContent;
+    addToCartMultiColor();
+    var cartLineCount=window.CART.length;
+    testNodes.forEach(function(n){n.remove();});
+    window._CURP=savedCurP;window._COLOR_QTYS=savedQ;window._SIZE_PRICES=savedP;window._SIZE_LABELS=savedL;window.CART=savedCart;
+    if(row0!=='0')throw new Error('ردیف دست‌نخورده نباید تغییر کنه، دریافت شد: '+row0);
+    if(row1!=='1')throw new Error('ردیف ۲ (میکس دوم) باید ۱ بشه، دریافت شد: '+row1);
+    if(row2!=='1')throw new Error('ردیف ۳ (میکس سوم) باید ۱ بشه، دریافت شد: '+row2);
+    if(cartLineCount!==2)throw new Error('باید ۲ ردیف جدا تو سبد ثبت بشه (قیمت‌های متفاوت)، دریافت شد: '+cartLineCount);
   }}
 ];
 function runAllTests(){
