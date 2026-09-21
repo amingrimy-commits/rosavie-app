@@ -10,6 +10,7 @@
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -614,6 +615,8 @@ input[type=file]{display:none}
       <button class="sbig" style="background:#eef2f7;color:#0d47a1;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showMissingBirthdateList()">🎂 بدون تاریخ تولد</button>
       <button class="sbig" style="background:#eef7ee;color:#2a6b3a;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showNoSiteAccountList()">🌐 بدون حساب سایت</button>
     </div>
+    <button class="sbig" style="background:#eaf3ff;color:#0d47a1;margin-top:0;margin-bottom:10px" onclick="document.getElementById('DIRECT_IMPORT_FILE').click()">📥 وارد کردن از اکسل دایرکت</button>
+    <input type="file" id="DIRECT_IMPORT_FILE" accept=".xlsx,.xls" style="display:none" onchange="importFromDirectExcel(this)">
     <div class="g1"><input class="fi" type="text" id="CUST_SEARCH" placeholder="جستجو با نام، شماره، استان، محله یا شماره فاکتور..." oninput="renderCustomerList()"></div>
     <button class="addb" onclick="openCustForm(null)">+ افزودن مشتری جدید</button>
     <div id="CUST_LIST"></div>
@@ -5458,6 +5461,74 @@ function showNoSiteAccountList(){
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
   card.innerHTML=h;card.style.display='block';
 }
+function jalaliStrToIso(str){
+  if(!str)return '';
+  var parts=String(str).trim().split('/');
+  if(parts.length!==3)return '';
+  var jy=parseInt(parts[0],10),jm=parseInt(parts[1],10),jd=parseInt(parts[2],10);
+  if(!jy||!jm||!jd)return '';
+  try{
+    var g=j2g(jy,jm,jd);
+    return g[0]+'-'+String(g[1]).padStart(2,'0')+'-'+String(g[2]).padStart(2,'0');
+  }catch(e){return '';}
+}
+function cleanDirectCell(v){
+  if(v===undefined||v===null)return '';
+  var s=String(v).trim();
+  if(/^\d+\.0$/.test(s))s=s.slice(0,-2);
+  return s==='nan'?'':s;
+}
+function importFromDirectExcel(inputEl){
+  var file=inputEl.files&&inputEl.files[0];
+  if(!file)return;
+  if(typeof XLSX==='undefined'){alert('کتابخانه‌ی خواندن اکسل لود نشده — اتصال اینترنتت رو چک کن و دوباره امتحان کن.');inputEl.value='';return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var sheet=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(sheet,{defval:''});
+      var added=0,updated=0,skipped=0;
+      rows.forEach(function(row){
+        var rawPhone=cleanDirectCell(row['شماره تلفن']);
+        var phone=normPhone(rawPhone);
+        if(!phone){skipped++;return;}
+        var name=cleanDirectCell(row['نام و نام خانوادگی']);
+        var birthdateIso=jalaliStrToIso(cleanDirectCell(row['تاریخ تولد']));
+        var nationalId=cleanDirectCell(row['کد ملی']);
+        var postal=cleanDirectCell(row['کد پستی']);
+        var addr=cleanDirectCell(row['آدرس']);
+        var notes=cleanDirectCell(row['توضیحات']);
+        var email=cleanDirectCell(row['ایمیل']);
+        var existing=findCustomerByPhone(phone);
+        var today=new Date().toISOString().slice(0,10);
+        if(existing){
+          var changed=false;
+          if(!existing.name&&name){existing.name=name;changed=true;}
+          if(!existing.birthdate&&birthdateIso){existing.birthdate=birthdateIso;changed=true;}
+          if(!existing.nationalId&&nationalId){existing.nationalId=nationalId;changed=true;}
+          if(!existing.postalCode&&postal){existing.postalCode=postal;changed=true;}
+          if(!existing.address&&addr){existing.address=addr;changed=true;}
+          if(!existing.email&&email){existing.email=email;changed=true;}
+          if(!existing.notes&&notes){existing.notes=notes;changed=true;}
+          if(changed){existing.updatedAt=today;updated++;}
+        }else{
+          CUSTOMERS.unshift({id:custUid(),name:name||'',phone:rawPhone,birthdate:birthdateIso,discountCode:'',loyaltyPoints:0,
+            address:addr,postalCode:postal,province:'',neighborhood:'',nationalId:nationalId,email:email,
+            notes:notes||'وارد شده از دستگاه Direct',location:null,createdAt:today,updatedAt:today,purchases:[]});
+          added++;
+        }
+      });
+      saveCustomers();renderCustomerList();
+      alert('نتیجه‌ی وارد کردن از دایرکت:\n\n✅ '+added+' مشتری جدید اضافه شد\n🔄 '+updated+' مشتری موجود تکمیل شد'+(skipped?('\n⏭️ '+skipped+' ردیف بدون شماره‌ی معتبر رد شد'):''));
+    }catch(err){
+      alert('خطا در خوندن فایل: '+(err.message||err));
+    }
+    inputEl.value='';
+  };
+  reader.onerror=function(){alert('خطا در خوندن فایل');inputEl.value='';};
+  reader.readAsArrayBuffer(file);
+}
 function renderCustomerList(){
   var el=document.getElementById('CUST_LIST');if(!el)return;
   checkBirthdaysToday();
@@ -8397,6 +8468,38 @@ window.RV_TESTS=[
           }catch(e){reject(e);}
         });
       });
+    });
+  }},
+  {name:'وارد کردن از دایرکت: تبدیل تاریخ جلالی و عدم بازنویسی اطلاعات موجود',fn:function(){
+    if(typeof window.XLSX==='undefined')return; // کتابخانه لود نشده (بدون اینترنت) — رد میشه، نه فیل
+    if(jalaliStrToIso('1382/4/9')!=='2003-06-30')throw new Error('تبدیل تاریخ جلالی اشتباهه: '+jalaliStrToIso('1382/4/9'));
+    if(cleanDirectCell(110386973.0)!=='110386973')throw new Error('پاک‌سازی کد ملی اشتباهه: '+cleanDirectCell(110386973.0));
+    return new Promise(function(resolve,reject){
+      var savedCustomers=window.CUSTOMERS,savedXLSX=window.XLSX,savedAlert=window.alert;
+      window.CUSTOMERS=[{id:'rvtest_existing',name:'نام قبلی',phone:'09190134599',birthdate:'',purchases:[]}];
+      window.XLSX={read:function(){return{SheetNames:['s'],Sheets:{s:{}}};},utils:{sheet_to_json:function(){return[
+        {'شماره تلفن':989190134599,'نام و نام خانوادگی':'نام جدید','تاریخ تولد':'1382/4/9','کد ملی':'','کد پستی':'','آدرس':'','توضیحات':'','ایمیل':''},
+        {'شماره تلفن':989120000000,'نام و نام خانوادگی':'','تاریخ تولد':'','کد ملی':'','کد پستی':'','آدرس':'','توضیحات':'','ایمیل':''}
+      ];}}};
+      window.alert=function(){
+        try{
+          var merged=window.CUSTOMERS.find(function(c){return c.id==='rvtest_existing';});
+          var newOne=window.CUSTOMERS.find(function(c){return normPhone(c.phone)===normPhone('989120000000');});
+          var count=window.CUSTOMERS.length;
+          window.CUSTOMERS=savedCustomers;window.XLSX=savedXLSX;window.alert=savedAlert;
+          if(count!==2)throw new Error('تعداد نهایی مشتری‌ها اشتباهه: '+count);
+          if(!merged||merged.name!=='نام قبلی')throw new Error('نام قبلیِ مشتری موجود نباید بازنویسی بشه');
+          if(!merged||merged.birthdate!=='2003-06-30')throw new Error('تاریخ تولد خالی باید از فایل پر بشه');
+          if(!newOne)throw new Error('مشتری جدید ساخته نشد');
+          resolve();
+        }catch(e){
+          window.CUSTOMERS=savedCustomers;window.XLSX=savedXLSX;window.alert=savedAlert;
+          reject(e);
+        }
+      };
+      var input=document.createElement('input');
+      Object.defineProperty(input,'files',{value:[new File([new Uint8Array([1])],'x.xlsx')]});
+      importFromDirectExcel(input);
     });
   }}
 ];
