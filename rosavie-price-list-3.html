@@ -604,10 +604,15 @@ input[type=file]{display:none}
   <div class="card">
     <div class="ctitle">👥 باشگاه مشتریان</div>
     <p style="font-size:0.74rem;color:#9a6e3a;margin-bottom:10px">با ثبت هر فاکتور از تب «فاکتور»، مشتری خودکار اینجا اضافه یا آپدیت میشه. برای فروش‌های بدون فاکتور رسمی هم می‌تونی از پروفایل مشتری، خرید رو دستی ثبت کنی.</p>
+    <div id="CUST_BDAY_TODAY_BANNER"></div>
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <button class="sbig" style="background:#eddfc9;color:#9a6e3a;margin-top:0;flex:1;width:auto" onclick="exportCustomersOnly()">⬇️ بکاپ مشتریان</button>
       <button class="sbig" style="background:#eddfc9;color:#9a6e3a;margin-top:0;flex:1;width:auto" onclick="document.getElementById('CUST_IMPORT_FILE').click()">⬆️ بازیابی بکاپ</button>
       <input type="file" id="CUST_IMPORT_FILE" accept="application/json" style="display:none" onchange="importCustomersOnly(this)">
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="sbig" style="background:#eef2f7;color:#0d47a1;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showMissingBirthdateList()">🎂 بدون تاریخ تولد</button>
+      <button class="sbig" style="background:#eef7ee;color:#2a6b3a;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showNoSiteAccountList()">🌐 بدون حساب سایت</button>
     </div>
     <div class="g1"><input class="fi" type="text" id="CUST_SEARCH" placeholder="جستجو با نام، شماره، استان، محله یا شماره فاکتور..." oninput="renderCustomerList()"></div>
     <button class="addb" onclick="openCustForm(null)">+ افزودن مشتری جدید</button>
@@ -2193,7 +2198,13 @@ function startCustomersListener(){
     if(el)el.innerHTML='خطا در دریافت مشتریان: '+(err&&err.message?err.message:err);
   });
 }
-function normPhone(p){return String(p||'').replace(/\D/g,'');}
+function normPhone(p){
+  var d=String(p||'').replace(/\D/g,'');
+  if(d.indexOf('0098')===0)d=d.slice(4);
+  else if(d.indexOf('98')===0&&d.length===12)d=d.slice(2);
+  else if(d.indexOf('0')===0&&d.length===11)d=d.slice(1);
+  return d;
+}
 function findLocalCustomerByPhone(phone){
   var np=normPhone(phone);
   if(!np)return null;
@@ -2213,8 +2224,10 @@ function linkOrderToCustomerClub(order){
   var already=(cust.purchases||[]).some(function(p){return p.invoiceNumber===order.orderNo;});
   if(already)return;
   var itemsSummary=(order.items||[]).map(function(it){return it.title+' ×'+it.qty;}).join('، ');
+  var categories=[];
+  (order.items||[]).forEach(function(it){if(it.tab&&categories.indexOf(it.tab)===-1)categories.push(it.tab);});
   cust.purchases=cust.purchases||[];
-  cust.purchases.unshift({id:custUid(),date:today,invoiceNumber:order.orderNo,itemsSummary:itemsSummary,total:order.total||0});
+  cust.purchases.unshift({id:custUid(),date:today,invoiceNumber:order.orderNo,itemsSummary:itemsSummary,total:order.total||0,categories:categories,cart:(order.items||[]).map(function(it){return {title:it.title,code:it.code||'--',qty:it.qty,price:it.price,minO:'1',colors:it.color||''};})});
   cust.updatedAt=today;
   saveCustomers();
   if(typeof renderCustomerList==='function')renderCustomerList();
@@ -3747,6 +3760,44 @@ function renderGenericPDF(htmlContent,cb){
         if(ih<=ph){pdf.addImage(img,'JPEG',0,0,pw,ih);}
         else{var y=0;while(y<ih){if(y>0)pdf.addPage();pdf.addImage(img,'JPEG',0,-y,pw,ih);y+=ph;}}
         cb(null,pdf.output('blob'));
+      }).catch(function(e){cb(e.message||'خطا',null);});
+    },500);
+  }
+  if(!total){go();return;}
+  imgs.forEach(function(img){if(img.complete){done++;if(done===total)go();}else{img.onload=function(){done++;if(done===total)go();};img.onerror=function(){done++;if(done===total)go();};}});
+}
+function renderInvoiceWithReceiptPDF(htmlContent,receiptDataUrl,cb){
+  var el=document.getElementById('CINV');
+  el.innerHTML=htmlContent;
+  var imgs=el.querySelectorAll('img'),total=imgs.length,done=0;
+  function addReceiptPageAndFinish(pdf){
+    if(!receiptDataUrl){cb(null,pdf.output('blob'));return;}
+    var probe=new Image();
+    probe.onload=function(){
+      pdf.addPage();
+      var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+      var margin=24;
+      var maxW=pw-margin*2,maxH=ph-margin*2;
+      var ratio=Math.min(maxW/probe.naturalWidth,maxH/probe.naturalHeight);
+      var w=probe.naturalWidth*ratio,h=probe.naturalHeight*ratio;
+      var x=(pw-w)/2,y=(ph-h)/2;
+      var fmt=/^data:image\/png/i.test(receiptDataUrl)?'PNG':'JPEG';
+      try{pdf.addImage(receiptDataUrl,fmt,x,y,w,h);}catch(e){}
+      cb(null,pdf.output('blob'));
+    };
+    probe.onerror=function(){cb(null,pdf.output('blob'));};
+    probe.src=receiptDataUrl;
+  }
+  function go(){
+    setTimeout(function(){
+      html2canvas(el,{scale:2.2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:794,windowWidth:794,logging:false}).then(function(canvas){
+        var img=canvas.toDataURL('image/jpeg',0.92);
+        var pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'px',format:'a4'});
+        var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+        var ih=(canvas.height*pw)/canvas.width;
+        if(ih<=ph){pdf.addImage(img,'JPEG',0,0,pw,ih);}
+        else{var y=0;while(y<ih){if(y>0)pdf.addPage();pdf.addImage(img,'JPEG',0,-y,pw,ih);y+=ph;}}
+        addReceiptPageAndFinish(pdf);
       }).catch(function(e){cb(e.message||'خطا',null);});
     },500);
   }
@@ -5312,7 +5363,7 @@ function renderHoodDatalist(targetId){
   hoods.sort();
   el.innerHTML=hoods.map(function(h){return '<option value="'+escAttr(h)+'">';}).join('');
 }
-function findCustomerByPhone(phone){phone=(phone||'').trim();if(!phone)return null;return CUSTOMERS.find(function(c){return (c.phone||'').trim()===phone;})||null;}
+function findCustomerByPhone(phone){var np=normPhone(phone);if(!np)return null;return CUSTOMERS.find(function(c){return normPhone(c.phone)===np;})||null;}
 function findCustomerByName(name){name=(name||'').trim();if(!name)return null;return CUSTOMERS.find(function(c){return (c.name||'').trim()===name;})||null;}
 function findPurchaseLocation(invoiceNumber){
   if(!invoiceNumber)return null;
@@ -5358,8 +5409,58 @@ function upsertCustomerFromInvoice(cName,cPhone,itemsSummary,total,invoiceNumber
   autoSyncCustomerChannel();
   return invoiceNumber;
 }
+function checkBirthdaysToday(){
+  var banner=document.getElementById('CUST_BDAY_TODAY_BANNER');
+  if(!banner)return;
+  var now=new Date();
+  var mm=now.getMonth()+1,dd=now.getDate();
+  var todays=(CUSTOMERS||[]).filter(function(c){
+    if(!c.birthdate)return false;
+    var parts=String(c.birthdate).split('-');
+    if(parts.length<3)return false;
+    return Number(parts[1])===mm&&Number(parts[2])===dd;
+  });
+  if(!todays.length){banner.innerHTML='';return;}
+  banner.innerHTML='<div style="background:#fff3e0;border:1.5px solid #ffcc80;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:0.8rem;color:#8a5a00">'+
+    '<b>🎂 امروز تولد '+todays.length+' مشتریه:</b> '+todays.map(function(c){return escHtml(c.name||c.phone);}).join('، ')+
+    ' — یادت نره کد تخفیف تولدشون رو بفرستی!</div>';
+}
+function showMissingBirthdateList(){
+  var list=(CUSTOMERS||[]).filter(function(c){return !c.birthdate;});
+  var card=document.getElementById('CUST_DETAIL_CARD');
+  var h='<div class="ctitle">🎂 مشتریان بدون تاریخ تولد ('+list.length+' نفر)</div>';
+  if(!list.length){h+='<div class="nores">همه‌ی مشتری‌ها تاریخ تولد ثبت‌شده دارن ✅</div>';}
+  else{
+    list.forEach(function(c){
+      h+='<div class="cust-row" onclick="renderCustomerDetail(\''+c.id+'\')">'+
+        '<div class="cust-avatar">'+(c.name||'؟').charAt(0)+'</div>'+
+        '<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>'+
+      '</div>';
+    });
+  }
+  h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
+  card.innerHTML=h;card.style.display='block';
+}
+function showNoSiteAccountList(){
+  var list=(CUSTOMERS||[]).filter(function(c){return !c.siteUid;});
+  var card=document.getElementById('CUST_DETAIL_CARD');
+  var h='<div class="ctitle">🌐 مشتریانی که تو سایت ثبت‌نام نکردن ('+list.length+' نفر)</div>';
+  h+='<p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:8px">این‌ها اگه تو سایت هم ثبت‌نام کنن، می‌تونن بعداً فاکتورها و وضعیت تحویل خریدشون رو تو حساب شخصی خودشون ببینن.</p>';
+  if(!list.length){h+='<div class="nores">همه‌ی مشتری‌ها حساب سایت دارن ✅</div>';}
+  else{
+    list.forEach(function(c){
+      h+='<div class="cust-row" onclick="renderCustomerDetail(\''+c.id+'\')">'+
+        '<div class="cust-avatar">'+(c.name||'؟').charAt(0)+'</div>'+
+        '<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>'+
+      '</div>';
+    });
+  }
+  h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
+  card.innerHTML=h;card.style.display='block';
+}
 function renderCustomerList(){
   var el=document.getElementById('CUST_LIST');if(!el)return;
+  checkBirthdaysToday();
   var q=(V('CUST_SEARCH')||'').trim();
   var list=CUSTOMERS;
   if(q){list=CUSTOMERS.filter(function(c){
@@ -5401,6 +5502,14 @@ function renderCustomerDetail(id){
   h+='<div class="cust-stat"><span class="cs-lbl">امتیاز وفاداری</span><span class="cs-val">'+(c.loyaltyPoints||0)+'</span></div>';
   h+='<div class="cust-stat"><span class="cs-lbl">کد پستی</span><span class="cs-val">'+escHtml(c.postalCode||'—')+'</span></div>';
   h+='</div>';
+  var catCounts={};
+  (c.purchases||[]).forEach(function(p){(p.categories||[]).forEach(function(cat){catCounts[cat]=(catCounts[cat]||0)+1;});});
+  var catRanked=Object.keys(catCounts).sort(function(a,b){return catCounts[b]-catCounts[a];});
+  if(catRanked.length){
+    h+='<div style="font-size:0.78rem;color:#5a4a3a;background:#f7efe6;border-radius:8px;padding:9px 11px;margin-bottom:10px">';
+    h+='<b>🛍️ سلیقه‌ی خرید:</b> '+catRanked.map(function(cat){return (TABLBL_FA[cat]||cat)+' ('+catCounts[cat]+')';}).join('، ');
+    h+='</div>';
+  }
   if(c.location&&c.location.lat){
     var gmapUrl='https://www.google.com/maps?q='+c.location.lat+','+c.location.lng;
     h+='<div style="font-size:0.76rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="color:#9a6e3a">📍 موقعیت مکانی:</span><a href="'+gmapUrl+'" target="_blank" rel="noopener" style="color:#3aa0c9;font-weight:700;text-decoration:none">مشاهده روی نقشه</a><span style="direction:ltr;color:#aaa;font-size:0.68rem">'+c.location.lat.toFixed(5)+', '+c.location.lng.toFixed(5)+'</span></div>';
@@ -5563,11 +5672,14 @@ function viewFullInvoice(custId,purId){
   }
   showToast('در حال ساخت فاکتور کامل...');
   var html=buildManualInvoiceHTML(c.name,c.phone,p.invoiceNumber,p.cart);
-  renderGenericPDF(html,function(err,blob){
-    if(err){alert('خطا در ساخت فاکتور: '+err);return;}
-    downloadBlobDirect(blob,'Invoice-RosaVie-'+p.invoiceNumber+'.pdf');
-    showToast('فاکتور کامل #'+p.invoiceNumber+' دانلود شد');
-  });
+  function finish(receiptDataUrl){
+    renderInvoiceWithReceiptPDF(html,receiptDataUrl,function(err,blob){
+      if(err){alert('خطا در ساخت فاکتور: '+err);return;}
+      downloadBlobDirect(blob,'Invoice-RosaVie-'+p.invoiceNumber+'.pdf');
+      showToast('فاکتور کامل #'+p.invoiceNumber+(receiptDataUrl?' + فیش واریزی':'')+' دانلود شد');
+    });
+  }
+  if(p.receiptImageId)idbGet(p.receiptImageId,finish);else finish(null);
 }
 function shareCustomerPurchase(custId,purId){
   var c=CUSTOMERS.find(function(x){return x.id===custId;});if(!c)return;
@@ -5576,26 +5688,29 @@ function shareCustomerPurchase(custId,purId){
   var html;
   if(p.cart&&p.cart.length)html=buildManualInvoiceHTML(c.name,c.phone,p.invoiceNumber,p.cart);
   else html=buildManualInvoiceHTML(c.name,c.phone,p.invoiceNumber);
-  renderGenericPDF(html,function(err,blob){
-    if(err){alert('خطا در ساخت فاکتور: '+err);return;}
-    var fname='Invoice-RosaVie-'+p.invoiceNumber+'.pdf';
-    var caption='🧾 فاکتور خرید شما از رُزاوی\nشماره فاکتور: '+p.invoiceNumber+'\nجمع کل: '+fmtP(p.total)+
-      '\n\n💳 شماره کارت: '+RV_CARD_NUMBER+
-      '\n🏦 شماره شبا: '+RV_SHEBA_NUMBER+
-      '\n\nبا تشکر از خرید شما 🌹';
-    try{
-      var file=new File([blob],fname,{type:'application/pdf'});
-      var canShareFile=navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}));
-      if(canShareFile){
-        navigator.share({files:[file],text:caption,title:'فاکتور RosaVie #'+p.invoiceNumber}).then(function(){
-          showToast('فاکتور برای اشتراک‌گذاری باز شد');
-        }).catch(function(){});
-        return;
-      }
-    }catch(e){}
-    downloadBlobDirect(blob,fname);
-    showToast('اشتراک مستقیم پشتیبانی نشد — فاکتور دانلود شد، از اونجا بفرست');
-  });
+  function finish(receiptDataUrl){
+    renderInvoiceWithReceiptPDF(html,receiptDataUrl,function(err,blob){
+      if(err){alert('خطا در ساخت فاکتور: '+err);return;}
+      var fname='Invoice-RosaVie-'+p.invoiceNumber+'.pdf';
+      var caption='🧾 فاکتور خرید شما از رُزاوی\nشماره فاکتور: '+p.invoiceNumber+'\nجمع کل: '+fmtP(p.total)+
+        '\n\n💳 شماره کارت: '+RV_CARD_NUMBER+
+        '\n🏦 شماره شبا: '+RV_SHEBA_NUMBER+
+        '\n\nبا تشکر از خرید شما 🌹';
+      try{
+        var file=new File([blob],fname,{type:'application/pdf'});
+        var canShareFile=navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}));
+        if(canShareFile){
+          navigator.share({files:[file],text:caption,title:'فاکتور RosaVie #'+p.invoiceNumber}).then(function(){
+            showToast('فاکتور برای اشتراک‌گذاری باز شد');
+          }).catch(function(){});
+          return;
+        }
+      }catch(e){}
+      downloadBlobDirect(blob,fname);
+      showToast('اشتراک مستقیم پشتیبانی نشد — فاکتور دانلود شد، از اونجا بفرست');
+    });
+  }
+  if(p.receiptImageId)idbGet(p.receiptImageId,finish);else finish(null);
 }
 function deletePurchase(custId,purId){
   if(!confirm('این فاکتور از تاریخچه مشتری حذف بشه؟'))return;
@@ -5615,6 +5730,13 @@ function openPurchaseForm(custId){
   h+='</div>';
   h+='<div class="g1"><span class="lbl">شرح اقلام خریداری‌شده</span><textarea class="fi" id="PF_ITEMS" rows="2" placeholder="مثال: سوتین کد 1234 x1 | شورت کد 5566 x2"></textarea></div>';
   h+='<div class="g1"><span class="lbl">مبلغ کل (تومان)</span><input class="fi" type="text" id="PF_TOTAL" placeholder="مثال: 850000"></div>';
+  h+='<div class="g1"><span class="lbl">دسته‌بندی این خرید (برای خلاصه‌ی سلیقه‌ی مشتری — می‌تونی چندتا انتخاب کنی)</span>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+  Object.keys(TABLBL_FA).forEach(function(tabKey){
+    h+='<label style="display:flex;align-items:center;gap:4px;background:#f7efe6;border:1px solid #e2cdb0;border-radius:8px;padding:6px 9px;font-size:0.76rem;cursor:pointer">'+
+       '<input type="checkbox" class="pf-cat-chk" value="'+tabKey+'" style="width:15px;height:15px">'+TABLBL_FA[tabKey]+'</label>';
+  });
+  h+='</div></div>';
   h+='<button class="sbig stg2" onclick="savePurchaseForm(\''+custId+'\')">💾 ثبت خرید</button>';
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="renderCustomerDetail(\''+custId+'\')">انصراف</button>';
   card.innerHTML=h;card.style.display='block';
@@ -5625,8 +5747,9 @@ function savePurchaseForm(custId){
   var totalRaw=toEnDigits(V('PF_TOTAL')).replace(/[^0-9]/g,'');
   var total=Number(totalRaw)||0;
   if(!itemsSummary){alert('لطفاً شرح خرید را وارد کنید');return;}
+  var categories=Array.prototype.slice.call(document.querySelectorAll('.pf-cat-chk:checked')).map(function(el){return el.value;});
   c.purchases=c.purchases||[];
-  c.purchases.unshift({id:custUid(),date:V('PF_DATE')||new Date().toISOString().slice(0,10),invoiceNumber:V('PF_INV')||nextInvoiceNumber(),itemsSummary:itemsSummary,total:total});
+  c.purchases.unshift({id:custUid(),date:V('PF_DATE')||new Date().toISOString().slice(0,10),invoiceNumber:V('PF_INV')||nextInvoiceNumber(),itemsSummary:itemsSummary,total:total,categories:categories});
   c.updatedAt=new Date().toISOString().slice(0,10);
   saveCustomers();renderCustomerList();renderCustomerDetail(custId);autoSyncCustomerChannel();
 }
@@ -8128,7 +8251,7 @@ function hydrateMissingSiteImages(){
   }).catch(function(e){console.error('hydrateMissingSiteImages error',e);});
 }
 setTimeout(hydrateMissingSiteImages,1200);
-setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();},600);
+setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();checkBirthdaysToday();},600);
 
 // ══════════ تست خودکار سیستم — چک‌های سریع روی منطق‌های مهم برنامه ══════════
 window.RV_TESTS=[
@@ -8192,16 +8315,102 @@ window.RV_TESTS=[
     whenAdminReady(function(){called=true;});
     ADMIN_IS_READY=savedReady;ADMIN_READY_QUEUE=savedQueue;
     if(!called)throw new Error('باید بلافاصله اجرا می‌شد');
+  }},
+  {name:'normPhone/findCustomerByPhone: فرمت‌های مختلف شماره باید یه مشتری شناخته بشن (رگرشن باگ قبلی)',fn:function(){
+    var savedCustomers=window.CUSTOMERS;
+    window.CUSTOMERS=[{id:'rvtest_c1',name:'مشتری تست',phone:'09123456789',purchases:[]}];
+    var variants=['09123456789','+989123456789','00989123456789','9123456789','0912 345 6789'];
+    var allOk=variants.every(function(v){var f=findCustomerByPhone(v);return f&&f.id==='rvtest_c1';});
+    window.CUSTOMERS=savedCustomers;
+    if(!allOk)throw new Error('یکی از فرمت‌های شماره به مشتری موجود متصل نشد');
+  }},
+  {name:'باشگاه مشتریان: تشخیص تولد امروز باید فقط مشتری درست رو نشون بده',fn:function(){
+    var saved=window.CUSTOMERS;
+    var now=new Date();
+    var todayISO='1995-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    window.CUSTOMERS=[{id:'b1',name:'تولددار امروز',phone:'1',birthdate:todayISO,purchases:[]},{id:'b2',name:'تولد دیگه',phone:'2',birthdate:'1990-01-01',purchases:[]}];
+    var banner=document.getElementById('CUST_BDAY_TODAY_BANNER');
+    var created=false;
+    if(!banner){banner=document.createElement('div');banner.id='CUST_BDAY_TODAY_BANNER';document.body.appendChild(banner);created=true;}
+    checkBirthdaysToday();
+    var html=banner.innerHTML;
+    if(created)banner.remove();
+    window.CUSTOMERS=saved;
+    if(!html.includes('تولددار امروز')||html.includes('تولد دیگه'))throw new Error('تشخیص تولد امروز درست کار نکرد');
+  }},
+  {name:'باشگاه مشتریان: لیست بدون تاریخ تولد و بدون حساب سایت باید درست فیلتر کنن',fn:function(){
+    var saved=window.CUSTOMERS;
+    window.CUSTOMERS=[{id:'x1',name:'کامل',phone:'1',birthdate:'1990-01-01',siteUid:'u1',purchases:[]},{id:'x2',name:'ناقص',phone:'2',purchases:[]}];
+    var card=document.getElementById('CUST_DETAIL_CARD');
+    var created=false;
+    if(!card){card=document.createElement('div');card.id='CUST_DETAIL_CARD';document.body.appendChild(card);created=true;}
+    showMissingBirthdateList();
+    var bdayHtml=card.innerHTML;
+    showNoSiteAccountList();
+    var siteHtml=card.innerHTML;
+    if(created)card.remove();
+    window.CUSTOMERS=saved;
+    if(!bdayHtml.includes('ناقص')||bdayHtml.includes('کامل'))throw new Error('فیلتر بدون‌تاریخ‌تولد اشتباهه');
+    if(!siteHtml.includes('ناقص')||siteHtml.includes('کامل'))throw new Error('فیلتر بدون‌حساب‌سایت اشتباهه');
+  }},
+  {name:'باشگاه مشتریان: خرید سایت باید دسته‌بندی و سبد کامل رو خودکار بگیره',fn:function(){
+    var saved=window.CUSTOMERS;
+    window.CUSTOMERS=[];
+    linkOrderToCustomerClub({customerPhone:'09122223333',customerName:'مشتری تست سایت',orderNo:'RVTESTORD',total:1000,
+      items:[{code:'C1',title:'م1',qty:1,price:500,tab:'p1'},{code:'C2',title:'م2',qty:1,price:500,tab:'p3'}]});
+    var cust=window.CUSTOMERS.find(function(c){return c.phone==='09122223333';});
+    var pur=cust?cust.purchases[0]:null;
+    window.CUSTOMERS=saved;
+    if(!pur)throw new Error('خرید ثبت نشد');
+    if(!pur.categories||pur.categories.sort().join(',')!=='p1,p3')throw new Error('دسته‌بندی خودکار درست نبود');
+    if(!pur.cart||pur.cart.length!==2)throw new Error('سبد خرید کامل ذخیره نشد، پس فاکتور کامل PDF بعداً کار نمی‌کنه');
+  }},
+  {name:'باشگاه مشتریان: خرید دستی باید دسته‌بندی انتخابی رو ذخیره و تو خلاصه نشون بده',fn:function(){
+    var saved=window.CUSTOMERS;
+    window.CUSTOMERS=[{id:'m1',name:'تست دستی',phone:'1',purchases:[]}];
+    openPurchaseForm('m1');
+    document.getElementById('PF_ITEMS').value='تست';
+    document.getElementById('PF_TOTAL').value='100000';
+    var firstChk=document.querySelector('.pf-cat-chk');
+    var chkVal=firstChk.value;
+    firstChk.checked=true;
+    savePurchaseForm('m1');
+    var pur=window.CUSTOMERS[0].purchases[0];
+    renderCustomerDetail('m1');
+    var detailHtml=document.getElementById('CUST_DETAIL_CARD').innerHTML;
+    window.CUSTOMERS=saved;
+    if(!pur||!pur.categories||pur.categories.indexOf(chkVal)===-1)throw new Error('دسته‌بندی خرید دستی ذخیره نشد');
+    if(!detailHtml.includes('سلیقه'))throw new Error('خلاصه‌ی سلیقه تو پروفایل نشون داده نشد');
+  }},
+  {name:'فاکتور PDF: وقتی فیش واریزی هست باید صفحه‌ی دوم اضافه بشه',fn:function(){
+    if(typeof window.jspdf==='undefined'||typeof window.html2canvas==='undefined')return; // کتابخانه لود نشده (بدون اینترنت) — رد میشه، نه فیل
+    return new Promise(function(resolve,reject){
+      var tinyPng='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+      renderInvoiceWithReceiptPDF('<div>x</div>',null,function(err1,blobNo){
+        renderInvoiceWithReceiptPDF('<div>x</div>',tinyPng,function(err2,blobWith){
+          try{
+            if(err1||err2)throw new Error('خطا در ساخت PDF: '+(err1||err2));
+            if(!blobNo||!blobWith)throw new Error('PDF ساخته نشد');
+            if(blobNo.size===0||blobWith.size===0)throw new Error('PDF خالیه');
+            if(blobWith.size<=blobNo.size)throw new Error('نسخه‌ی همراه فیش باید بزرگ‌تر باشه (صفحه‌ی اضافه)');
+            resolve();
+          }catch(e){reject(e);}
+        });
+      });
+    });
   }}
 ];
-function runAllTests(){
-  return window.RV_TESTS.map(function(t){
-    try{t.fn();return {name:t.name,pass:true};}
-    catch(e){return {name:t.name,pass:false,error:e.message};}
-  });
+async function runAllTests(){
+  var out=[];
+  for(var i=0;i<window.RV_TESTS.length;i++){
+    var t=window.RV_TESTS[i];
+    try{await t.fn();out.push({name:t.name,pass:true});}
+    catch(e){out.push({name:t.name,pass:false,error:e.message});}
+  }
+  return out;
 }
-function openTestPanel(){
-  var results=runAllTests();
+async function openTestPanel(){
+  var results=await runAllTests();
   var passCount=results.filter(function(r){return r.pass;}).length;
   var allOk=passCount===results.length;
   var html='<button onclick="closeTestPanel()" style="float:left;width:30px;height:30px;border-radius:50%;border:none;background:#f2e6d3;color:#9a6e3a;font-size:1rem;cursor:pointer">✕</button><div style="clear:both"></div>'+
