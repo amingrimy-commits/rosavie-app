@@ -5439,12 +5439,13 @@ function showMissingBirthdateList(){
     list.forEach(function(c){
       h+='<div class="cust-row" onclick="renderCustomerDetail(\''+c.id+'\')">'+
         '<div class="cust-avatar">'+(c.name||'؟').charAt(0)+'</div>'+
-        '<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>'+
+        '<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+' <span style="color:#c0304a">⚠️</span></div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>'+
       '</div>';
     });
   }
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
   card.innerHTML=h;card.style.display='block';
+  card.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function showNoSiteAccountList(){
   var list=(CUSTOMERS||[]).filter(function(c){return !c.siteUid;});
@@ -5456,12 +5457,13 @@ function showNoSiteAccountList(){
     list.forEach(function(c){
       h+='<div class="cust-row" onclick="renderCustomerDetail(\''+c.id+'\')">'+
         '<div class="cust-avatar">'+(c.name||'؟').charAt(0)+'</div>'+
-        '<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>'+
+        '<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+(isCustomerProfileIncomplete(c)?' <span title="اطلاعات ناقص (تاریخ تولد/آدرس/کدپستی)" style="color:#c0304a">⚠️</span>':'')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>'+
       '</div>';
     });
   }
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
   card.innerHTML=h;card.style.display='block';
+  card.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function jalaliStrToIso(str){
   if(!str)return '';
@@ -5544,6 +5546,9 @@ function importFromDirectExcel(inputEl){
   reader.onerror=function(){alert('خطا در خوندن فایل');inputEl.value='';};
   reader.readAsArrayBuffer(file);
 }
+function isCustomerProfileIncomplete(c){
+  return !c.birthdate||!c.address||!c.postalCode;
+}
 function renderCustomerList(){
   var el=document.getElementById('CUST_LIST');if(!el)return;
   checkBirthdaysToday();
@@ -5558,9 +5563,10 @@ function renderCustomerList(){
   list.forEach(function(c){
     var initial=(c.name||'؟').charAt(0);
     var purCount=c.purchases?c.purchases.length:0;
+    var incomplete=isCustomerProfileIncomplete(c);
     html+='<div class="cust-row" onclick="renderCustomerDetail(\''+c.id+'\')">';
     html+='<div class="cust-avatar">'+initial+'</div>';
-    html+='<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>';
+    html+='<div class="cust-info"><div class="cust-name">'+escHtml(c.name||'بدون نام')+(incomplete?' <span title="اطلاعات ناقص (تاریخ تولد/آدرس/کدپستی)" style="color:#c0304a">⚠️</span>':'')+'</div><div class="cust-sub">'+escHtml(c.phone||'—')+'</div></div>';
     if(purCount)html+='<span class="cust-badge">'+purCount+' خرید</span>';
     html+='</div>';
   });
@@ -8615,6 +8621,23 @@ window.RV_TESTS=[
     if(!unrelatedStillThere)throw new Error('مشتری بی‌ربط نباید دست‌خورده بشه');
     if(!survivor.purchases||survivor.purchases.length!==1)throw new Error('تاریخچه‌ی خرید باید حفظ بشه');
     if(survivor.siteUid!=='realsiteuid1')throw new Error('siteUid باید حفظ بشه');
+  }},
+  {name:'لیست مشتریان: علامت اخطار قرمز باید فقط رو پروفایل‌های ناقص نشون داده بشه',fn:function(){
+    var saved=window.CUSTOMERS;
+    window.CUSTOMERS=[
+      {id:'w1',name:'کامل',phone:'1',birthdate:'1990-01-01',address:'x',postalCode:'1234567890',purchases:[]},
+      {id:'w2',name:'ناقص',phone:'2',purchases:[]}
+    ];
+    renderCustomerList();
+    var rows=document.querySelectorAll('#CUST_LIST .cust-row');
+    var completeHasWarning=false,incompleteHasWarning=false;
+    rows.forEach(function(r){
+      if(r.textContent.indexOf('کامل')>-1&&r.textContent.indexOf('ناقص')===-1)completeHasWarning=r.innerHTML.indexOf('⚠️')>-1;
+      if(r.textContent.indexOf('ناقص')>-1)incompleteHasWarning=r.innerHTML.indexOf('⚠️')>-1;
+    });
+    window.CUSTOMERS=saved;renderCustomerList();
+    if(completeHasWarning)throw new Error('مشتری با اطلاعات کامل نباید علامت اخطار داشته باشه');
+    if(!incompleteHasWarning)throw new Error('مشتری با اطلاعات ناقص باید علامت اخطار داشته باشه');
   }}
 ];
 async function runAllTests(){
