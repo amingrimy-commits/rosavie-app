@@ -615,8 +615,9 @@ input[type=file]{display:none}
       <button class="sbig" style="background:#eef2f7;color:#0d47a1;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showMissingBirthdateList()">🎂 بدون تاریخ تولد</button>
       <button class="sbig" style="background:#eef7ee;color:#2a6b3a;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showNoSiteAccountList()">🌐 بدون حساب سایت</button>
     </div>
-    <button class="sbig" style="background:#eaf3ff;color:#0d47a1;margin-top:0;margin-bottom:10px" onclick="document.getElementById('DIRECT_IMPORT_FILE').click()">📥 وارد کردن از اکسل دایرکت</button>
+    <button class="sbig" style="background:#eaf3ff;color:#0d47a1;margin-top:0;margin-bottom:6px" onclick="document.getElementById('DIRECT_IMPORT_FILE').click()">📥 وارد کردن از اکسل دایرکت</button>
     <input type="file" id="DIRECT_IMPORT_FILE" accept=".xlsx,.xls" style="display:none" onchange="importFromDirectExcel(this)">
+    <button class="sbig" style="background:#fff3e0;color:#8a5a00;margin-top:0;margin-bottom:10px;font-size:0.76rem" onclick="fixBadImportedPhoneFormats()">🔧 اصلاح شماره‌های وارد‌شده با فرمت ۰۰ خراب</button>
     <div class="g1"><input class="fi" type="text" id="CUST_SEARCH" placeholder="جستجو با نام، شماره، استان، محله یا شماره فاکتور..." oninput="renderCustomerList()"></div>
     <button class="addb" onclick="openCustForm(null)">+ افزودن مشتری جدید</button>
     <div id="CUST_LIST"></div>
@@ -5478,6 +5479,18 @@ function cleanDirectCell(v){
   if(/^\d+\.0$/.test(s))s=s.slice(0,-2);
   return s==='nan'?'':s;
 }
+function fixBadImportedPhoneFormats(){
+  var fixed=0;
+  (CUSTOMERS||[]).forEach(function(c){
+    var raw=String(c.phone||'').trim();
+    if(/^00\d{8,}/.test(raw)){
+      var np=normPhone(raw);
+      if(np){c.phone='0'+np;c.updatedAt=new Date().toISOString().slice(0,10);fixed++;}
+    }
+  });
+  if(fixed){saveCustomers();renderCustomerList();alert('✅ '+fixed+' شماره‌ی با فرمت خراب (۰۰...) به فرمت درست (۰۹...) اصلاح شد.');}
+  else{alert('هیچ شماره‌ی خراب‌فرمتی پیدا نشد 👍');}
+}
 function importFromDirectExcel(inputEl){
   var file=inputEl.files&&inputEl.files[0];
   if(!file)return;
@@ -5493,6 +5506,7 @@ function importFromDirectExcel(inputEl){
         var rawPhone=cleanDirectCell(row['شماره تلفن']);
         var phone=normPhone(rawPhone);
         if(!phone){skipped++;return;}
+        var localPhone='0'+phone;
         var name=cleanDirectCell(row['نام و نام خانوادگی']);
         var birthdateIso=jalaliStrToIso(cleanDirectCell(row['تاریخ تولد']));
         var nationalId=cleanDirectCell(row['کد ملی']);
@@ -5513,7 +5527,7 @@ function importFromDirectExcel(inputEl){
           if(!existing.notes&&notes){existing.notes=notes;changed=true;}
           if(changed){existing.updatedAt=today;updated++;}
         }else{
-          CUSTOMERS.unshift({id:custUid(),name:name||'',phone:rawPhone,birthdate:birthdateIso,discountCode:'',loyaltyPoints:0,
+          CUSTOMERS.unshift({id:custUid(),name:name||'',phone:localPhone,birthdate:birthdateIso,discountCode:'',loyaltyPoints:0,
             address:addr,postalCode:postal,province:'',neighborhood:'',nationalId:nationalId,email:email,
             notes:notes||'وارد شده از دستگاه Direct',location:null,createdAt:today,updatedAt:today,purchases:[]});
           added++;
@@ -8478,8 +8492,8 @@ window.RV_TESTS=[
       var savedCustomers=window.CUSTOMERS,savedXLSX=window.XLSX,savedAlert=window.alert;
       window.CUSTOMERS=[{id:'rvtest_existing',name:'نام قبلی',phone:'09190134599',birthdate:'',purchases:[]}];
       window.XLSX={read:function(){return{SheetNames:['s'],Sheets:{s:{}}};},utils:{sheet_to_json:function(){return[
-        {'شماره تلفن':989190134599,'نام و نام خانوادگی':'نام جدید','تاریخ تولد':'1382/4/9','کد ملی':'','کد پستی':'','آدرس':'','توضیحات':'','ایمیل':''},
-        {'شماره تلفن':989120000000,'نام و نام خانوادگی':'','تاریخ تولد':'','کد ملی':'','کد پستی':'','آدرس':'','توضیحات':'','ایمیل':''}
+        {'شماره تلفن':'00989190134599','نام و نام خانوادگی':'نام جدید','تاریخ تولد':'1382/4/9','کد ملی':'','کد پستی':'','آدرس':'','توضیحات':'','ایمیل':''},
+        {'شماره تلفن':'00989120000000','نام و نام خانوادگی':'','تاریخ تولد':'','کد ملی':'','کد پستی':'','آدرس':'','توضیحات':'','ایمیل':''}
       ];}}};
       window.alert=function(){
         try{
@@ -8491,6 +8505,7 @@ window.RV_TESTS=[
           if(!merged||merged.name!=='نام قبلی')throw new Error('نام قبلیِ مشتری موجود نباید بازنویسی بشه');
           if(!merged||merged.birthdate!=='2003-06-30')throw new Error('تاریخ تولد خالی باید از فایل پر بشه');
           if(!newOne)throw new Error('مشتری جدید ساخته نشد');
+          if(newOne.phone!=='09120000000')throw new Error('شماره باید به فرمت 09... ذخیره بشه، نه با ۰۰ خام — دریافت شد: '+newOne.phone);
           resolve();
         }catch(e){
           window.CUSTOMERS=savedCustomers;window.XLSX=savedXLSX;window.alert=savedAlert;
@@ -8501,6 +8516,20 @@ window.RV_TESTS=[
       Object.defineProperty(input,'files',{value:[new File([new Uint8Array([1])],'x.xlsx')]});
       importFromDirectExcel(input);
     });
+  }},
+  {name:'اصلاح شماره‌های خراب: فرمت ۰۰... باید به ۰۹... تبدیل بشه و شماره‌ی سالم دست‌نخورده بمونه',fn:function(){
+    var savedCustomers=window.CUSTOMERS,savedAlert=window.alert;
+    window.CUSTOMERS=[
+      {id:'bad1',name:'خراب',phone:'00989122416035',purchases:[]},
+      {id:'ok1',name:'سالم',phone:'09353377150',purchases:[]}
+    ];
+    window.alert=function(){};
+    fixBadImportedPhoneFormats();
+    var bad=window.CUSTOMERS.find(function(c){return c.id==='bad1';});
+    var ok=window.CUSTOMERS.find(function(c){return c.id==='ok1';});
+    window.CUSTOMERS=savedCustomers;window.alert=savedAlert;
+    if(bad.phone!=='09122416035')throw new Error('شماره‌ی خراب درست اصلاح نشد: '+bad.phone);
+    if(ok.phone!=='09353377150')throw new Error('شماره‌ی سالم نباید دست‌خورده بشه: '+ok.phone);
   }}
 ];
 async function runAllTests(){
