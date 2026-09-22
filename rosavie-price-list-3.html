@@ -306,7 +306,30 @@ input[type=file]{display:none}
 </style>
 </head>
 <body>
-<div id="ADMIN_LOGIN_GATE" style="position:fixed;inset:0;z-index:99999;background:#3d2b1f;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+<div id="ROLE_SELECT_GATE" style="position:fixed;inset:0;z-index:99999;background:#3d2b1f;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:320px;background:#f9f0e8;border-radius:18px;padding:26px 22px;box-shadow:0 8px 30px rgba(0,0,0,0.35)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-weight:900;font-size:1.3rem;color:#3d2b1f;letter-spacing:1px">ROSA VIE</div>
+      <div style="font-size:0.78rem;color:#9a6e3a;margin-top:4px">وارد پنل مخصوص خودت شو</div>
+    </div>
+    <button onclick="showTeamLoginGate('ali')" style="width:100%;padding:14px;margin-bottom:10px;border:none;border-radius:11px;background:#eef2f7;color:#0d47a1;font-weight:900;font-size:0.92rem;cursor:pointer">👤 علی</button>
+    <button onclick="showTeamLoginGate('mobina')" style="width:100%;padding:14px;margin-bottom:18px;border:none;border-radius:11px;background:#eef7ee;color:#2a6b3a;font-weight:900;font-size:0.92rem;cursor:pointer">👤 مبینا</button>
+    <div style="text-align:center"><a href="javascript:void(0)" onclick="showOwnerLoginGate()" style="font-size:0.74rem;color:#9a6e3a;text-decoration:underline">ورود مدیر</a></div>
+  </div>
+</div>
+<div id="TEAM_LOGIN_GATE" style="position:fixed;inset:0;z-index:99999;background:#3d2b1f;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:320px;background:#f9f0e8;border-radius:18px;padding:26px 22px;box-shadow:0 8px 30px rgba(0,0,0,0.35)">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-weight:900;font-size:1.1rem;color:#3d2b1f" id="TEAM_LOGIN_TITLE">ورود</div>
+      <div style="font-size:0.76rem;color:#9a6e3a;margin-top:4px">رمز عبورت رو وارد کن</div>
+    </div>
+    <div style="margin-bottom:14px"><input id="TEAM_LOGIN_PIN" type="password" inputmode="numeric" placeholder="رمز عبور" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid #e2cdb0;font-size:1rem;direction:ltr;text-align:center;letter-spacing:4px" autocomplete="current-password"></div>
+    <div id="TEAM_LOGIN_ERR" style="color:#c0304a;font-size:0.76rem;text-align:center;min-height:16px;margin-bottom:6px"></div>
+    <button id="TEAM_LOGIN_BTN" onclick="teamDoLogin()" style="width:100%;padding:12px;border:none;border-radius:9px;background:#3d2b1f;color:#f9f0e8;font-weight:900;font-size:0.88rem;cursor:pointer;margin-bottom:10px">ورود</button>
+    <div style="text-align:center"><a href="javascript:void(0)" onclick="showRoleSelectGate()" style="font-size:0.74rem;color:#9a6e3a;text-decoration:underline">بازگشت</a></div>
+  </div>
+</div>
+<div id="ADMIN_LOGIN_GATE" style="position:fixed;inset:0;z-index:99999;background:#3d2b1f;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px">
   <div style="width:100%;max-width:320px;background:#f9f0e8;border-radius:18px;padding:26px 22px;box-shadow:0 8px 30px rgba(0,0,0,0.35)">
     <div style="text-align:center;margin-bottom:18px">
       <div style="font-weight:900;font-size:1.3rem;color:#3d2b1f;letter-spacing:1px">ROSA VIE</div>
@@ -315,7 +338,8 @@ input[type=file]{display:none}
     <div style="margin-bottom:10px"><input id="ADM_LOGIN_EMAIL" type="email" placeholder="ایمیل" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid #e2cdb0;font-size:0.85rem;direction:ltr;text-align:left" autocomplete="username"></div>
     <div style="margin-bottom:14px"><input id="ADM_LOGIN_PASS" type="password" placeholder="رمز عبور" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid #e2cdb0;font-size:0.85rem;direction:ltr;text-align:left" autocomplete="current-password"></div>
     <div id="ADM_LOGIN_ERR" style="color:#c0304a;font-size:0.76rem;text-align:center;min-height:16px;margin-bottom:6px"></div>
-    <button id="ADM_LOGIN_BTN" onclick="adminDoLogin()" style="width:100%;padding:12px;border:none;border-radius:9px;background:#3d2b1f;color:#f9f0e8;font-weight:900;font-size:0.88rem;cursor:pointer">ورود</button>
+    <button id="ADM_LOGIN_BTN" onclick="adminDoLogin()" style="width:100%;padding:12px;border:none;border-radius:9px;background:#3d2b1f;color:#f9f0e8;font-weight:900;font-size:0.88rem;cursor:pointer;margin-bottom:10px">ورود</button>
+    <div style="text-align:center"><a href="javascript:void(0)" onclick="showRoleSelectGate()" style="font-size:0.74rem;color:#9a6e3a;text-decoration:underline">بازگشت</a></div>
   </div>
 </div>
 <div id="APP_ROOT" style="display:none">
@@ -8638,6 +8662,29 @@ window.RV_TESTS=[
     window.CUSTOMERS=saved;renderCustomerList();
     if(completeHasWarning)throw new Error('مشتری با اطلاعات کامل نباید علامت اخطار داشته باشه');
     if(!incompleteHasWarning)throw new Error('مشتری با اطلاعات ناقص باید علامت اخطار داشته باشه');
+  }},
+  {name:'دسترسی تیمی: تبدیل رمز عبور PIN باید همیشه یکسان و قابل‌پیش‌بینی باشه',fn:function(){
+    if(teamPinToPassword('1379')!=='RVteam-1379')throw new Error('تبدیل رمز اشتباهه: '+teamPinToPassword('1379'));
+    if(teamPinToPassword('1387')!=='RVteam-1387')throw new Error('تبدیل رمز اشتباهه: '+teamPinToPassword('1387'));
+  }},
+  {name:'دسترسی تیمی: نقش «فروش» فقط باشگاه مشتریان رو ببینه، نقش «محتوا» محصولات و تولید محتوا رو',fn:function(){
+    var salesPerm=ROLE_PERMISSIONS.sales,contentPerm=ROLE_PERMISSIONS.content;
+    if(salesPerm.tabs.indexOf('pcust')===-1)throw new Error('نقش فروش باید به باشگاه مشتریان دسترسی داشته باشه');
+    if(salesPerm.tabs.indexOf('psettings')>-1)throw new Error('نقش فروش نباید به تنظیمات دسترسی داشته باشه');
+    if(salesPerm.tabs.indexOf('pf')>-1)throw new Error('نقش فروش نباید به گزارش مالی/خانه دسترسی داشته باشه');
+    if(contentPerm.tabs.indexOf('p1')===-1)throw new Error('نقش محتوا باید به تب‌های محصول (برای ویرایش قیمت) دسترسی داشته باشه');
+    if(contentPerm.tabs.indexOf('pcust')>-1)throw new Error('نقش محتوا نباید به باشگاه مشتریان دسترسی داشته باشه');
+    if(contentPerm.tabs.indexOf('psettings')>-1)throw new Error('نقش محتوا نباید به تنظیمات دسترسی داشته باشه');
+  }},
+  {name:'دسترسی تیمی: showTab باید جلوی رفتن به تب غیرمجاز رو بگیره (دفاع در عمق)',fn:function(){
+    var savedRole=window.CURRENT_ROLE;
+    window.CURRENT_ROLE='sales';
+    showTab('psettings',null);
+    var activeTab=document.querySelector('.pg.on')?document.querySelector('.pg.on').id:null;
+    window.CURRENT_ROLE=savedRole;
+    if(activeTab==='psettings')throw new Error('نقش فروش نباید بتونه به تب تنظیمات بره، ولی رفت');
+    if(activeTab!=='pcust')throw new Error('باید به‌جای تب غیرمجاز، به تب پیش‌فرض نقش (pcust) هدایت بشه، رفت به: '+activeTab);
+    showTab('pf',document.querySelector('.tab.on'));
   }}
 ];
 async function runAllTests(){
@@ -8674,7 +8721,132 @@ function closeTestPanel(){
 <script>
 // ── قفل ورود ادمین ──
 var ADMIN_UID='5OEb6mBf4mOwDPdOcAx4ycAUc692';
+var CURRENT_ROLE=null;
+var TEAM_MEMBERS={
+  ali:{label:'علی',email:'ali@rozavie-team.app',role:'sales'},
+  mobina:{label:'مبینا',email:'mobina@rozavie-team.app',role:'content'}
+};
+var TEAM_MEMBER_BY_EMAIL={};
+Object.keys(TEAM_MEMBERS).forEach(function(k){TEAM_MEMBER_BY_EMAIL[TEAM_MEMBERS[k].email]=TEAM_MEMBERS[k];});
+var ROLE_PERMISSIONS={
+  sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,defaultTab:'pcust'},
+  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps'],drawerGroups:['content','products'],showSettingsGear:false,defaultTab:'pc'}
+};
+function teamPinToPassword(pin){return 'RVteam-'+pin;}
+function showRoleSelectGate(){
+  document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
+  document.getElementById('TEAM_LOGIN_GATE').style.display='none';
+  document.getElementById('ROLE_SELECT_GATE').style.display='flex';
+}
+function showOwnerLoginGate(){
+  document.getElementById('ROLE_SELECT_GATE').style.display='none';
+  document.getElementById('TEAM_LOGIN_GATE').style.display='none';
+  document.getElementById('ADMIN_LOGIN_GATE').style.display='flex';
+}
+var TEAM_LOGIN_PENDING_KEY=null;
+function showTeamLoginGate(key){
+  TEAM_LOGIN_PENDING_KEY=key;
+  document.getElementById('ROLE_SELECT_GATE').style.display='none';
+  document.getElementById('TEAM_LOGIN_TITLE').textContent='ورود — '+TEAM_MEMBERS[key].label;
+  document.getElementById('TEAM_LOGIN_PIN').value='';
+  document.getElementById('TEAM_LOGIN_ERR').textContent='';
+  document.getElementById('TEAM_LOGIN_GATE').style.display='flex';
+}
+function teamDoLogin(){
+  if(!initFirebase())return;
+  var key=TEAM_LOGIN_PENDING_KEY;
+  if(!key)return;
+  var pin=toEnDigits(document.getElementById('TEAM_LOGIN_PIN').value||'').replace(/[^0-9]/g,'');
+  var err=document.getElementById('TEAM_LOGIN_ERR');
+  var btn=document.getElementById('TEAM_LOGIN_BTN');
+  if(!pin){err.textContent='رمز عبور رو وارد کن';return;}
+  err.textContent='';btn.disabled=true;btn.textContent='در حال ورود...';
+  firebase.auth().signInWithEmailAndPassword(TEAM_MEMBERS[key].email,teamPinToPassword(pin)).then(function(cred){
+    if(!TEAM_MEMBER_BY_EMAIL[cred.user.email]){
+      firebase.auth().signOut();
+      btn.disabled=false;btn.textContent='ورود';
+      err.textContent='این حساب دسترسی نداره';
+      return;
+    }
+    teamShowApp(TEAM_MEMBER_BY_EMAIL[cred.user.email].role);
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='ورود';
+    var m={'auth/wrong-password':'رمز عبور اشتباهه.','auth/user-not-found':'این حساب هنوز ساخته نشده.','auth/invalid-credential':'رمز عبور اشتباهه.','auth/network-request-failed':'مشکل در اتصال به اینترنت.','auth/too-many-requests':'تعداد تلاش زیاد بوده، چند دقیقه صبر کن.'};
+    err.textContent=m[e.code]||('خطا: '+(e.message||e.code));
+  });
+}
+function teamChangePassword(){
+  var newPin=prompt('رمز جدید رو وارد کن (فقط عدد، حداقل ۴ رقم):');
+  if(!newPin)return;
+  newPin=toEnDigits(newPin).replace(/[^0-9]/g,'');
+  if(newPin.length<4){alert('رمز باید حداقل ۴ رقم باشه');return;}
+  if(!firebase.auth().currentUser){alert('خطا: دوباره وارد شو و امتحان کن');return;}
+  firebase.auth().currentUser.updatePassword(teamPinToPassword(newPin)).then(function(){
+    alert('رمزت با موفقیت عوض شد ✅ دفعه‌ی بعد با همین رمز جدید وارد شو.');
+  }).catch(function(e){
+    alert('خطا تو عوض‌کردن رمز: '+(e.message||e.code)+'\n\nاگه پیام خطا گفت باید دوباره وارد بشی، یه بار خارج شو، دوباره با رمز فعلی وارد شو، و همین کارو دوباره امتحان کن.');
+  });
+}
+function teamLogout(){
+  firebase.auth().signOut().then(function(){location.reload();});
+}
+function injectTeamAccountBar(role){
+  var old=document.getElementById('TEAM_ACCOUNT_BAR');
+  if(old)old.remove();
+  var member=null;
+  Object.keys(TEAM_MEMBERS).forEach(function(k){if(TEAM_MEMBERS[k].role===role)member=TEAM_MEMBERS[k];});
+  if(!member)return;
+  var bar=document.createElement('div');
+  bar.id='TEAM_ACCOUNT_BAR';
+  bar.style.cssText='background:#3d2b1f;color:#f9f0e8;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;font-size:0.76rem;position:sticky;top:0;z-index:500';
+  bar.innerHTML='<span>👤 '+member.label+'</span><span><a href="javascript:void(0)" onclick="teamChangePassword()" style="color:#f9f0e8;text-decoration:underline;margin-left:12px">🔑 تغییر رمز</a><a href="javascript:void(0)" onclick="teamLogout()" style="color:#f9f0e8;text-decoration:underline">خروج</a></span>';
+  var root=document.getElementById('APP_ROOT');
+  root.insertBefore(bar,root.firstChild);
+}
+var _rvOrigShowTab=showTab;
+showTab=function(id,btn){
+  if(CURRENT_ROLE){
+    var perm=ROLE_PERMISSIONS[CURRENT_ROLE];
+    if(!perm||perm.tabs.indexOf(id)===-1){id=perm?perm.defaultTab:id;btn=null;}
+  }
+  _rvOrigShowTab(id,btn);
+};
+function applyRolePermissions(role){
+  CURRENT_ROLE=role;
+  var perm=ROLE_PERMISSIONS[role];
+  if(!perm)return;
+  var homeBtn=document.querySelector('.tab[onclick*="showTab(\'pf\'"]');
+  if(homeBtn)homeBtn.style.display='none';
+  var custBtn=document.querySelector('.tab[onclick*="showTab(\'pcust\'"]');
+  if(custBtn)custBtn.style.display=perm.tabs.indexOf('pcust')>-1?'':'none';
+  var contentBtn=document.querySelector('.tab[onclick*="openContentGroup"]');
+  if(contentBtn)contentBtn.style.display=perm.drawerGroups.indexOf('content')>-1?'':'none';
+  var productsBtn=document.querySelector('.tab[onclick*="openProductsGroup"]');
+  if(productsBtn)productsBtn.style.display=perm.drawerGroups.indexOf('products')>-1?'':'none';
+  var siteBtn=document.querySelector('.tab[onclick*="openSiteGroup"]');
+  if(siteBtn)siteBtn.style.display=perm.drawerGroups.indexOf('site')>-1?'':'none';
+  var gearBtn=document.querySelector('.ham-btn[onclick*="openSettingsPanel"]');
+  if(gearBtn)gearBtn.style.display=perm.showSettingsGear?'':'none';
+  var bellBtn=document.querySelector('.notif-btn[onclick*="openNotifPanel"]');
+  if(bellBtn)bellBtn.style.display='none';
+  injectTeamAccountBar(role);
+  showTab(perm.defaultTab,null);
+}
+function teamShowApp(role){
+  document.getElementById('ROLE_SELECT_GATE').style.display='none';
+  document.getElementById('TEAM_LOGIN_GATE').style.display='none';
+  document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
+  document.getElementById('APP_ROOT').style.display='';
+  ADMIN_IS_READY=true;
+  var q=ADMIN_READY_QUEUE;ADMIN_READY_QUEUE=[];
+  q.forEach(function(fn){try{fn();}catch(e){console.error('admin ready queue error',e);}});
+  checkServerConnection();
+  applyRolePermissions(role);
+}
 function adminShowApp(){
+  CURRENT_ROLE=null;
+  document.getElementById('ROLE_SELECT_GATE').style.display='none';
+  document.getElementById('TEAM_LOGIN_GATE').style.display='none';
   document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
   document.getElementById('APP_ROOT').style.display='';
   ADMIN_IS_READY=true;
@@ -8684,8 +8856,9 @@ function adminShowApp(){
 }
 function adminShowGate(msg){
   document.getElementById('APP_ROOT').style.display='none';
-  document.getElementById('ADMIN_LOGIN_GATE').style.display='flex';
-  if(msg)document.getElementById('ADM_LOGIN_ERR').textContent=msg;
+  document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
+  document.getElementById('TEAM_LOGIN_GATE').style.display='none';
+  document.getElementById('ROLE_SELECT_GATE').style.display='flex';
 }
 function adminDoLogin(){
   if(!initFirebase())return;
@@ -8713,6 +8886,7 @@ function adminDoLogin(){
   if(!initFirebase())return;
   firebase.auth().onAuthStateChanged(function(user){
     if(user&&user.uid===ADMIN_UID){adminShowApp();}
+    else if(user&&TEAM_MEMBER_BY_EMAIL[user.email]){teamShowApp(TEAM_MEMBER_BY_EMAIL[user.email].role);}
     else{if(user)firebase.auth().signOut();adminShowGate();}
   });
 })();
