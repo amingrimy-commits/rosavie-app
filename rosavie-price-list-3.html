@@ -8667,8 +8667,8 @@ window.RV_TESTS=[
     if(!incompleteHasWarning)throw new Error('مشتری با اطلاعات ناقص باید علامت اخطار داشته باشه');
   }},
   {name:'دسترسی تیمی: تبدیل رمز عبور PIN باید همیشه یکسان و قابل‌پیش‌بینی باشه',fn:function(){
-    if(teamPinToPassword('1379')!=='RVteam-1379')throw new Error('تبدیل رمز اشتباهه: '+teamPinToPassword('1379'));
-    if(teamPinToPassword('1387')!=='RVteam-1387')throw new Error('تبدیل رمز اشتباهه: '+teamPinToPassword('1387'));
+    if(teamPinToPassword('1379')!=='rv1379')throw new Error('تبدیل رمز اشتباهه: '+teamPinToPassword('1379'));
+    if(teamPinToPassword('1387')!=='rv1387')throw new Error('تبدیل رمز اشتباهه: '+teamPinToPassword('1387'));
   }},
   {name:'دسترسی تیمی: نقش «فروش» فقط باشگاه مشتریان رو ببینه، نقش «محتوا» محصولات و تولید محتوا رو',fn:function(){
     var salesPerm=ROLE_PERMISSIONS.sales,contentPerm=ROLE_PERMISSIONS.content;
@@ -8750,7 +8750,7 @@ var ROLE_PERMISSIONS={
   sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,defaultTab:'pcust'},
   content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps','pcust'],drawerGroups:['content','products'],showSettingsGear:false,defaultTab:'pc'}
 };
-function teamPinToPassword(pin){return 'RVteam-'+pin;}
+function teamPinToPassword(pin){return 'rv'+pin;}
 function showRoleSelectGate(){
   document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
   document.getElementById('TEAM_LOGIN_GATE').style.display='none';
@@ -8789,7 +8789,7 @@ function teamDoLogin(){
     teamShowApp(TEAM_MEMBER_BY_EMAIL[cred.user.email].role);
   }).catch(function(e){
     btn.disabled=false;btn.textContent='ورود';
-    var m={'auth/wrong-password':'رمز عبور اشتباهه.','auth/user-not-found':'این حساب هنوز ساخته نشده.','auth/invalid-credential':'رمز عبور اشتباهه.','auth/network-request-failed':'مشکل در اتصال به اینترنت.','auth/too-many-requests':'تعداد تلاش زیاد بوده، چند دقیقه صبر کن.'};
+    var m={'auth/wrong-password':'رمز عبور اشتباهه.','auth/user-not-found':'این حساب هنوز تو فایربیس ساخته نشده.','auth/invalid-credential':'یا رمز اشتباهه، یا این حساب هنوز تو فایربیس ساخته نشده (Authentication → Users رو چک کن).','auth/network-request-failed':'مشکل در اتصال به اینترنت.','auth/too-many-requests':'تعداد تلاش زیاد بوده، چند دقیقه صبر کن.'};
     err.textContent=m[e.code]||('خطا: '+(e.message||e.code));
   });
 }
