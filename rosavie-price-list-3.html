@@ -8781,6 +8781,28 @@ window.RV_TESTS=[
     if(aliLabel!=='علی')throw new Error('نام نقش فروش باید علی باشه، دریافت شد: '+aliLabel);
     if(mobinaLabel!=='مبینا')throw new Error('نام نقش محتوا باید مبینا باشه، دریافت شد: '+mobinaLabel);
     if(ownerLabel!==null)throw new Error('برای مدیر (بدون نقش) نباید اسمی برگرده');
+  }},
+  {name:'لوکیشن مشتری: باید یه‌بار به تلگرام بره، تکرارِ همون مختصات دوباره نفرسته، تغییر واقعی بفرسته',fn:function(){
+    var savedCustomers=window.CUSTOMERS,savedXMsg=window.xMsg,savedTgk=V('TGK'),savedCid=V('CONTENTBACKUPCID');
+    var calls=[];
+    window.xMsg=function(url,data,cb){calls.push({url:url,data:data});cb(null,{});};
+    document.getElementById('TGK').value='FAKE_TOKEN';
+    document.getElementById('CONTENTBACKUPCID').value='-100999';
+    window.CUSTOMERS=[{id:'loctest1',name:'مشتری تست',phone:'1',purchases:[],location:{lat:35.7219,lng:51.3347}}];
+    maybeSendLocationToTelegram(window.CUSTOMERS[0]);
+    var countAfterFirst=calls.length;
+    maybeSendLocationToTelegram(window.CUSTOMERS[0]);
+    var countAfterRepeat=calls.length;
+    window.CUSTOMERS[0].location={lat:36.0,lng:52.0};
+    maybeSendLocationToTelegram(window.CUSTOMERS[0]);
+    var countAfterChange=calls.length;
+    window.xMsg=savedXMsg;window.CUSTOMERS=savedCustomers;
+    document.getElementById('TGK').value=savedTgk||'';
+    document.getElementById('CONTENTBACKUPCID').value=savedCid||'';
+    if(countAfterFirst!==1)throw new Error('اولین بار باید دقیقاً یه پیام بفرسته، فرستاد: '+countAfterFirst);
+    if(countAfterRepeat!==1)throw new Error('تکرارِ همون مختصات نباید دوباره بفرسته، جمعاً شد: '+countAfterRepeat);
+    if(countAfterChange!==2)throw new Error('تغییر واقعی مختصات باید دوباره بفرسته، جمعاً شد: '+countAfterChange);
+    if(calls[0].url.indexOf('/sendVenue')===-1)throw new Error('باید از sendVenue استفاده کنه تا اسم مشتری هم پیوست بشه');
   }}
 ];
 async function runAllTests(){
@@ -9046,7 +9068,29 @@ saveCustForm=function(id){
   var wasNew=!id;
   _rvOrigSaveCustForm(id);
   if(CURRENT_ROLE)logTeamActivity(wasNew?'افزودن مشتری جدید':'ویرایش اطلاعات مشتری',null);
+  var savedCustomer=wasNew?CUSTOMERS[0]:CUSTOMERS.find(function(c){return c.id===id;});
+  if(savedCustomer)maybeSendLocationToTelegram(savedCustomer);
 };
+function maybeSendLocationToTelegram(customer){
+  if(!customer.location||typeof customer.location.lat!=='number')return;
+  var marker=customer.location.lat+','+customer.location.lng;
+  if(customer._locSentMarker===marker)return;
+  customer._locSentMarker=marker;
+  saveCustomers();
+  var tgToken=V('TGK'),cid=V('CONTENTBACKUPCID');
+  if(!tgToken||!cid)return;
+  var base='https://api.telegram.org/bot';
+  xMsg(base+tgToken+'/sendVenue',{
+    chat_id:cid,
+    latitude:customer.location.lat,
+    longitude:customer.location.lng,
+    title:'📍 '+(customer.name||'مشتری بدون نام'),
+    address:(customer.phone||'—')+(customer.address?(' — '+customer.address):'')
+  },function(err){
+    if(err)addNotif('⚠️ ارسال لوکیشن «'+(customer.name||'مشتری')+'» به تلگرام ناموفق بود: '+err);
+    else addNotif('📍 لوکیشن «'+(customer.name||'مشتری')+'» تو تلگرام ذخیره شد');
+  });
+}
 var _rvOrigSavePurchaseForm=savePurchaseForm;
 savePurchaseForm=function(custId){
   _rvOrigSavePurchaseForm(custId);
