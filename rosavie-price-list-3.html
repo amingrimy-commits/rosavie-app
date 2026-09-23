@@ -344,7 +344,7 @@ input[type=file]{display:none}
 </div>
 <div id="APP_ROOT" style="display:none">
 <div class="hdr">
-  <span class="hdr-sig">A♡R</span>
+  <span class="hdr-sig rv-owner-only">A♡R</span>
   <h1>ROSA VIE</h1><p>under wear</p>
   <div class="adm-topctl">
     <div style="display:flex;gap:6px">
@@ -374,6 +374,7 @@ input[type=file]{display:none}
   <button class="tab" onclick="openContentGroup();closeAdmDrawer()">تولید محتوا</button>
   <button class="tab" onclick="openProductsGroup();closeAdmDrawer()">🛍️ محصولات</button>
   <button class="tab" onclick="openSiteGroup();closeAdmDrawer()">🌐 سایت <span class="new-badge" id="SITEDOT" style="position:static;display:none;margin-right:6px;vertical-align:middle">NEW</span></button>
+  <button class="tab" onclick="hideSubNav();showTab('padmins',this);closeAdmDrawer()">🛡️ ادمین‌ها</button>
 </div>
 <div class="notif-overlay" id="NOTIFOV" onclick="closeNotifPanel()"></div>
 <div class="notif-overlay" id="ORDERSOV" onclick="closeOrdersPanel()"></div>
@@ -536,7 +537,7 @@ input[type=file]{display:none}
 
 <div class="tabs" id="SUBNAV" style="display:none"></div>
 <div class="pg on" id="pf">
-  <div class="fx-widgets-row">
+  <div class="fx-widgets-row rv-owner-only">
     <div class="fx-widget" id="FX_USD">
       <div class="fx-widget-top">
         <div class="fx-widget-title">US Dollar<br><span class="fx-widget-sub">USD</span></div>
@@ -603,7 +604,7 @@ input[type=file]{display:none}
         <div id="SETT_CHANNEL_ACTIVITY" style="font-size:0.78rem;color:#6a5a4a;padding:4px 2px">در حال دریافت...</div>
       </div>
     </div>
-    <div class="stats-group">
+    <div class="stats-group rv-owner-only">
       <div class="stats-group-title">💰 گزارش فروش</div>
       <div class="settings-section">
         <div class="chips" style="margin-bottom:12px">
@@ -633,7 +634,7 @@ input[type=file]{display:none}
     <div class="ctitle">👥 باشگاه مشتریان</div>
     <p style="font-size:0.74rem;color:#9a6e3a;margin-bottom:10px">با ثبت هر فاکتور از تب «فاکتور»، مشتری خودکار اینجا اضافه یا آپدیت میشه. برای فروش‌های بدون فاکتور رسمی هم می‌تونی از پروفایل مشتری، خرید رو دستی ثبت کنی.</p>
     <div id="CUST_BDAY_TODAY_BANNER"></div>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
+    <div class="rv-owner-only" style="display:flex;gap:6px;margin-bottom:10px">
       <button class="sbig" style="background:#eddfc9;color:#9a6e3a;margin-top:0;flex:1;width:auto" onclick="exportCustomersOnly()">⬇️ بکاپ مشتریان</button>
       <button class="sbig" style="background:#eddfc9;color:#9a6e3a;margin-top:0;flex:1;width:auto" onclick="document.getElementById('CUST_IMPORT_FILE').click()">⬆️ بازیابی بکاپ</button>
       <input type="file" id="CUST_IMPORT_FILE" accept="application/json" style="display:none" onchange="importCustomersOnly(this)">
@@ -642,15 +643,22 @@ input[type=file]{display:none}
       <button class="sbig" style="background:#eef2f7;color:#0d47a1;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showMissingBirthdateList()">🎂 بدون تاریخ تولد</button>
       <button class="sbig" style="background:#eef7ee;color:#2a6b3a;margin-top:0;flex:1;width:auto;font-size:0.72rem" onclick="showNoSiteAccountList()">🌐 بدون حساب سایت</button>
     </div>
+    <div class="rv-owner-only">
     <button class="sbig" style="background:#eaf3ff;color:#0d47a1;margin-top:0;margin-bottom:6px" onclick="document.getElementById('DIRECT_IMPORT_FILE').click()">📥 وارد کردن از اکسل دایرکت</button>
     <input type="file" id="DIRECT_IMPORT_FILE" accept=".xlsx,.xls" style="display:none" onchange="importFromDirectExcel(this)">
     <button class="sbig" style="background:#fff3e0;color:#8a5a00;margin-top:0;margin-bottom:6px;font-size:0.76rem" onclick="fixBadImportedPhoneFormats()">🔧 اصلاح شماره‌های وارد‌شده با فرمت ۰۰ خراب</button>
     <button class="sbig" style="background:#f3e8ff;color:#6a2fa0;margin-top:0;margin-bottom:10px;font-size:0.76rem" onclick="if(confirm('مشتری‌هایی که شماره‌ی یکسان دارن پیدا و با هم یکی می‌شن (اطلاعات کامل‌تر و تاریخچه‌ی خریدها حفظ می‌شه). ادامه بدم؟'))mergeDuplicateCustomers()">🔗 ادغام مشتری‌های تکراری</button>
+    </div>
     <div class="g1"><input class="fi" type="text" id="CUST_SEARCH" placeholder="جستجو با نام، شماره، استان، محله یا شماره فاکتور..." oninput="renderCustomerList()"></div>
     <button class="addb" onclick="openCustForm(null)">+ افزودن مشتری جدید</button>
     <div id="CUST_LIST"></div>
   </div>
-  <div class="card" id="CUST_DETAIL_CARD" style="display:none"></div>
+  <div id="CUST_DETAIL_CARD" style="display:none;position:fixed;inset:0;z-index:9000;background:#f9f0e8;overflow-y:auto">
+    <div style="position:sticky;top:0;z-index:10;background:#f9f0e8;border-bottom:1.5px solid #e2cdb0;padding:12px 14px;display:flex;align-items:center">
+      <button onclick="closeCustDetail()" style="border:none;background:#eddfc9;color:#9a6e3a;font-weight:900;font-size:0.82rem;padding:9px 14px;border-radius:9px;cursor:pointer">→ بازگشت</button>
+    </div>
+    <div class="card" id="CUST_DETAIL_BODY" style="margin:14px;border:none"></div>
+  </div>
 </div>
 
 <div class="pg" id="pc">
@@ -1149,6 +1157,29 @@ input[type=file]{display:none}
   <div class="card"><div class="ctitle">🧪 تست خودکار سیستم</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">یه سری چک خودکار روی محاسبات مهم برنامه (شماره فاکتور، قیمت، تاریخ و غیره) می‌زنه تا مطمئن بشی بعد از تغییرات اخیر چیزی خراب نشده. هر وقت خواستی، همینجا بزن.</p>
     <button class="sbig stg" onclick="openTestPanel()">▶️ اجرای تست‌ها</button>
+  </div>
+</div>
+<div class="pg" id="padmins">
+  <div class="card"><div class="ctitle">🔑 یادداشت رمز اعضا (فقط برای خودت)</div>
+    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">⚠️ این فقط یه یادداشت شخصیه، نه رمز واقعی زنده — فایربیس هیچ راهی برای نشون‌دادن رمز واقعی یه حساب دیگه نمی‌ده (حتی به خودِ مدیر). یعنی اگه علی یا مبینا خودشون از «تغییر رمز» رمزشون رو عوض کنن، این یادداشت دیگه به‌روز نیست و تو نمی‌تونی رمز جدیدشون رو از اینجا ببینی. اگه لازم شد، از همون Firebase Console → Authentication → Users → Reset password استفاده کن.</p>
+    <div class="g1"><span class="lbl">آخرین رمزی که برای علی تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_ALI" placeholder="مثلاً 1379" style="direction:ltr;text-align:left"></div>
+    <div class="g1"><span class="lbl">آخرین رمزی که برای مبینا تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_MOBINA" placeholder="مثلاً 1387" style="direction:ltr;text-align:left"></div>
+    <button class="sbig stg" onclick="saveAdminPasswordNotes()">💾 ذخیره یادداشت</button>
+    <div class="stat" id="ADM_NOTE_STAT"></div>
+  </div>
+  <div class="card"><div class="ctitle">📋 فعالیت روزانه‌ی اعضا</div>
+    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">هر بار وارد بشن، هر تبی که باز کنن، و هر کار مهمی (افزودن مشتری، ثبت خرید، ویرایش محصول) که انجام بدن، اینجا با ساعت دقیق ثبت می‌شه.</p>
+    <div class="g2">
+      <div><span class="lbl">تاریخ</span><input class="fi" type="date" id="ADM_LOG_DATE"></div>
+      <div><span class="lbl">فرد</span><select class="fi" id="ADM_LOG_PERSON"><option value="">همه</option><option value="علی">علی</option><option value="مبینا">مبینا</option></select></div>
+    </div>
+    <button class="sbig stg" onclick="loadTeamActivityLog()">🔍 نمایش فعالیت</button>
+    <div id="ADM_LOG_LIST" style="margin-top:10px"></div>
+  </div>
+  <div class="card"><div class="ctitle">📊 گزارش خلاصه‌ی عملکرد</div>
+    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">جمع‌بندی همون روز: هرکس چندبار وارد شد، و چقدر تو حوزه‌ی کاری خودش کار انجام داد.</p>
+    <button class="sbig stg2" onclick="loadTeamSummaryReport()">📊 ساخت گزارش برای همون تاریخ بالا</button>
+    <div id="ADM_SUMMARY_BOX" style="margin-top:10px"></div>
   </div>
 </div>
 <div class="test-panel-ov" id="TEST_PANEL_OV" onclick="if(event.target===this)closeTestPanel()">
@@ -5459,7 +5490,6 @@ function checkBirthdaysToday(){
 }
 function showMissingBirthdateList(){
   var list=(CUSTOMERS||[]).filter(function(c){return !c.birthdate;});
-  var card=document.getElementById('CUST_DETAIL_CARD');
   var h='<div class="ctitle">🎂 مشتریان بدون تاریخ تولد ('+list.length+' نفر)</div>';
   if(!list.length){h+='<div class="nores">همه‌ی مشتری‌ها تاریخ تولد ثبت‌شده دارن ✅</div>';}
   else{
@@ -5471,12 +5501,10 @@ function showMissingBirthdateList(){
     });
   }
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
-  card.innerHTML=h;card.style.display='block';
-  card.scrollIntoView({behavior:'smooth',block:'start'});
+  showCustDetailCard(h);
 }
 function showNoSiteAccountList(){
   var list=(CUSTOMERS||[]).filter(function(c){return !c.siteUid;});
-  var card=document.getElementById('CUST_DETAIL_CARD');
   var h='<div class="ctitle">🌐 مشتریانی که تو سایت ثبت‌نام نکردن ('+list.length+' نفر)</div>';
   h+='<p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:8px">این‌ها اگه تو سایت هم ثبت‌نام کنن، می‌تونن بعداً فاکتورها و وضعیت تحویل خریدشون رو تو حساب شخصی خودشون ببینن.</p>';
   if(!list.length){h+='<div class="nores">همه‌ی مشتری‌ها حساب سایت دارن ✅</div>';}
@@ -5489,8 +5517,7 @@ function showNoSiteAccountList(){
     });
   }
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="closeCustDetail()">بستن</button>';
-  card.innerHTML=h;card.style.display='block';
-  card.scrollIntoView({behavior:'smooth',block:'start'});
+  showCustDetailCard(h);
 }
 function jalaliStrToIso(str){
   if(!str)return '';
@@ -5599,10 +5626,22 @@ function renderCustomerList(){
   });
   el.innerHTML=html;
 }
-function closeCustDetail(){var card=document.getElementById('CUST_DETAIL_CARD');if(card){card.style.display='none';card.innerHTML='';}}
+function showCustDetailCard(html){
+  var card=document.getElementById('CUST_DETAIL_CARD');
+  var body=document.getElementById('CUST_DETAIL_BODY');
+  if(!card||!body)return;
+  body.innerHTML=html;
+  card.style.display='block';
+  card.scrollTop=0;
+  document.body.style.overflow='hidden';
+}
+function closeCustDetail(){
+  var card=document.getElementById('CUST_DETAIL_CARD');
+  if(card){card.style.display='none';document.getElementById('CUST_DETAIL_BODY').innerHTML='';}
+  document.body.style.overflow='';
+}
 function renderCustomerDetail(id){
   var c=CUSTOMERS.find(function(x){return x.id===id;});
-  var card=document.getElementById('CUST_DETAIL_CARD');
   if(!c){closeCustDetail();return;}
   var totalSpent=(c.purchases||[]).reduce(function(s,p){return s+(Number(p.total)||0);},0);
   var h='';
@@ -5656,8 +5695,7 @@ function renderCustomerDetail(id){
     });
   }
   h+='</div>';
-  card.innerHTML=h;
-  card.style.display='block';
+  showCustDetailCard(h);
   purchases.forEach(function(p){
     if(p.receiptImageId){
       idbGet(p.receiptImageId,function(dataUrl){
@@ -5669,7 +5707,6 @@ function renderCustomerDetail(id){
 }
 function openCustForm(id){
   var c=id?CUSTOMERS.find(function(x){return x.id===id;}):null;
-  var card=document.getElementById('CUST_DETAIL_CARD');
   var isNew=!c;
   var today=new Date().toISOString().slice(0,10);
   var v=c||{name:'',phone:'',birthdate:'',discountCode:'',loyaltyPoints:0,address:'',postalCode:'',province:'',neighborhood:'',notes:'',createdAt:today,location:null};
@@ -5698,8 +5735,7 @@ function openCustForm(id){
   h+='</div></div>';
   h+='<button class="sbig stg2" onclick="saveCustForm('+(isNew?'null':"'"+c.id+"'")+')">💾 ذخیره</button>';
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="'+(isNew?'closeCustDetail()':"renderCustomerDetail('"+c.id+"')")+'">انصراف</button>';
-  card.innerHTML=h;
-  card.style.display='block';
+  showCustDetailCard(h);
   renderHoodDatalist();
   initCustLocationMap(v.location);
 }
@@ -5900,7 +5936,6 @@ function deletePurchase(custId,purId){
 }
 function openPurchaseForm(custId){
   var c=CUSTOMERS.find(function(x){return x.id===custId;});if(!c)return;
-  var card=document.getElementById('CUST_DETAIL_CARD');
   var today=new Date().toISOString().slice(0,10);
   var h='';
   h+='<div class="ctitle">🧾 ثبت خرید دستی برای '+escHtml(c.name||'مشتری')+'</div>';
@@ -5919,7 +5954,7 @@ function openPurchaseForm(custId){
   h+='</div></div>';
   h+='<button class="sbig stg2" onclick="savePurchaseForm(\''+custId+'\')">💾 ثبت خرید</button>';
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="renderCustomerDetail(\''+custId+'\')">انصراف</button>';
-  card.innerHTML=h;card.style.display='block';
+  showCustDetailCard(h);
 }
 function savePurchaseForm(custId){
   var c=CUSTOMERS.find(function(x){return x.id===custId;});if(!c)return;
@@ -6300,8 +6335,7 @@ function openInvNewCustomerForm(){
   h+='<div class="g1"><span class="lbl">یادداشت</span><textarea class="fi" id="ICF_NOTES" rows="2"></textarea></div>';
   h+='<p style="font-size:0.66rem;color:#aaa;margin:2px 0 8px">برای ثبت لوکیشن روی نقشه، بعداً از تب «باشگاه مشتریان» پروفایل این مشتری رو ویرایش کن.</p>';
   h+='<button class="sbig stg2" onclick="saveInvNewCustomerForm()">💾 ثبت مشتری و تکمیل فاکتور</button>';
-  card.innerHTML=h;
-  card.style.display='block';
+  showCustDetailCard(h);
   renderHoodDatalist('ICF_HOOD_LIST');
 }
 function saveInvNewCustomerForm(){
@@ -8431,7 +8465,7 @@ function hydrateMissingSiteImages(){
   }).catch(function(e){console.error('hydrateMissingSiteImages error',e);});
 }
 setTimeout(hydrateMissingSiteImages,1200);
-setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();checkBirthdaysToday();},600);
+setTimeout(function(){checkWeeklyReportAuto();updateLastReportInfo();renderInvItems();renderReport(CUR_REPORT_PERIOD);initHomeStatWidgets();checkServerConnection();loadSiteAnalytics();loadTelegramMemberCounts();loadContentActivity();loadChannelActivity();checkBirthdaysToday();initAdminsTab();},600);
 
 // ══════════ تست خودکار سیستم — چک‌های سریع روی منطق‌های مهم برنامه ══════════
 window.RV_TESTS=[
@@ -8523,11 +8557,12 @@ window.RV_TESTS=[
     window.CUSTOMERS=[{id:'x1',name:'کامل',phone:'1',birthdate:'1990-01-01',siteUid:'u1',purchases:[]},{id:'x2',name:'ناقص',phone:'2',purchases:[]}];
     var card=document.getElementById('CUST_DETAIL_CARD');
     var created=false;
-    if(!card){card=document.createElement('div');card.id='CUST_DETAIL_CARD';document.body.appendChild(card);created=true;}
+    if(!card){card=document.createElement('div');card.id='CUST_DETAIL_CARD';var b=document.createElement('div');b.id='CUST_DETAIL_BODY';card.appendChild(b);document.body.appendChild(card);created=true;}
+    var body=document.getElementById('CUST_DETAIL_BODY');
     showMissingBirthdateList();
-    var bdayHtml=card.innerHTML;
+    var bdayHtml=body.innerHTML;
     showNoSiteAccountList();
-    var siteHtml=card.innerHTML;
+    var siteHtml=body.innerHTML;
     if(created)card.remove();
     window.CUSTOMERS=saved;
     if(!bdayHtml.includes('ناقص')||bdayHtml.includes('کامل'))throw new Error('فیلتر بدون‌تاریخ‌تولد اشتباهه');
@@ -8557,7 +8592,7 @@ window.RV_TESTS=[
     savePurchaseForm('m1');
     var pur=window.CUSTOMERS[0].purchases[0];
     renderCustomerDetail('m1');
-    var detailHtml=document.getElementById('CUST_DETAIL_CARD').innerHTML;
+    var detailHtml=document.getElementById('CUST_DETAIL_BODY').innerHTML;
     window.CUSTOMERS=saved;
     if(!pur||!pur.categories||pur.categories.indexOf(chkVal)===-1)throw new Error('دسته‌بندی خرید دستی ذخیره نشد');
     if(!detailHtml.includes('سلیقه'))throw new Error('خلاصه‌ی سلیقه تو پروفایل نشون داده نشد');
@@ -8689,20 +8724,63 @@ window.RV_TESTS=[
     if(activeTab!=='pcust')throw new Error('باید به‌جای تب غیرمجاز، به تب پیش‌فرض نقش (pcust) هدایت بشه، رفت به: '+activeTab);
     showTab('pf',document.querySelector('.tab.on'));
   }},
-  {name:'دسترسی تیمی: پنل سفارش‌ها/تنظیمات/اعلان‌ها نباید با فراخوانی مستقیم هم برای نقش‌های محدود باز بشه (دفاع در عمق)',fn:function(){
+  {name:'دسترسی تیمی: پنل سفارش‌ها (که الان مجازه) باز میشه، ولی پنل تنظیمات همچنان قفله (دفاع در عمق)',fn:function(){
     var savedRole=window.CURRENT_ROLE;
-    window.CURRENT_ROLE='sales';
     var ordersEl=document.getElementById('ORDERSPANEL'),settEl=document.getElementById('SETTPANEL');
     var ordersWasOpen=ordersEl.classList.contains('open'),settWasOpen=settEl.classList.contains('open');
+    window.CURRENT_ROLE='sales';
     openOrdersPanel();
-    var ordersOpenedForRestricted=ordersEl.classList.contains('open');
+    var ordersOpenedForSales=ordersEl.classList.contains('open');
+    if(!ordersWasOpen)ordersEl.classList.remove('open');
     openSettingsPanel();
     var settOpenedForRestricted=settEl.classList.contains('open');
-    if(!ordersWasOpen)ordersEl.classList.remove('open');
     if(!settWasOpen)settEl.classList.remove('open');
     window.CURRENT_ROLE=savedRole;
-    if(ordersOpenedForRestricted)throw new Error('پنل سفارش‌ها نباید برای نقش محدود باز بشه، حتی با فراخوانی مستقیم تابع');
+    if(!ordersOpenedForSales)throw new Error('پنل سفارش‌ها باید برای نقش فروش (علی) باز بشه، طبق دستور جدید');
     if(settOpenedForRestricted)throw new Error('پنل تنظیمات نباید برای نقش محدود باز بشه، حتی با فراخوانی مستقیم تابع');
+  }},
+  {name:'دسترسی تیمی: بخش مالی/حساس (بکاپ، دایرکت، واترمارک، طلا و دلار، گزارش فروش) باید یه‌جا با کلاس مشترک مخفی بشن',fn:function(){
+    var hidden=document.querySelectorAll('.rv-owner-only');
+    if(hidden.length<5)throw new Error('انتظار حداقل ۵ عنصر با کلاس rv-owner-only بود، پیدا شد: '+hidden.length);
+    var savedRole=window.CURRENT_ROLE;
+    window.CURRENT_ROLE='content';
+    document.querySelectorAll('.rv-owner-only').forEach(function(el){el.style.display='none';});
+    var stillVisible=Array.prototype.filter.call(hidden,function(el){return getComputedStyle(el).display!=='none';});
+    document.querySelectorAll('.rv-owner-only').forEach(function(el){el.style.display='';});
+    window.CURRENT_ROLE=savedRole;
+    if(stillVisible.length)throw new Error('بعضی عناصر حساس با کلاس مشترک درست مخفی نشدن');
+  }},
+  {name:'دسترسی تیمی: نقش محتوا باید تب خانه رو ببینه ولی padmins همیشه برای هر نقش محدود قفل باشه',fn:function(){
+    if(ROLE_PERMISSIONS.content.tabs.indexOf('pf')===-1)throw new Error('نقش محتوا باید به تب خانه (برای آمار) دسترسی داشته باشه');
+    if(ROLE_PERMISSIONS.sales.tabs.indexOf('padmins')>-1||ROLE_PERMISSIONS.content.tabs.indexOf('padmins')>-1)throw new Error('هیچ نقش محدودی نباید تو لیست تب‌های مجازش padmins داشته باشه');
+    var savedRole=window.CURRENT_ROLE;
+    window.CURRENT_ROLE='content';
+    showTab('padmins',null);
+    var activeTab=document.querySelector('.pg.on')?document.querySelector('.pg.on').id:null;
+    window.CURRENT_ROLE=savedRole;
+    if(activeTab==='padmins')throw new Error('نقش محدود نباید هرگز بتونه به تب ادمین‌ها برسه');
+    showTab('pf',document.querySelector('.tab.on'));
+  }},
+  {name:'ثبت فعالیت تیمی: نباید هیچ‌وقت برای خودِ مدیر (بدون نقش) فعالیتی ثبت کنه',fn:function(){
+    var savedRole=window.CURRENT_ROLE;
+    window.CURRENT_ROLE=null;
+    var threw=false;
+    try{logTeamActivity('تست',null);}catch(e){threw=true;}
+    window.CURRENT_ROLE=savedRole;
+    if(threw)throw new Error('logTeamActivity نباید حتی برای مدیر خطا بده (باید فقط بی‌صدا رد بشه)');
+  }},
+  {name:'ثبت فعالیت تیمی: نام درست عضو تیم رو برای هر نقش برگردونه',fn:function(){
+    var savedRole=window.CURRENT_ROLE;
+    window.CURRENT_ROLE='sales';
+    var aliLabel=currentTeamMemberLabel();
+    window.CURRENT_ROLE='content';
+    var mobinaLabel=currentTeamMemberLabel();
+    window.CURRENT_ROLE=null;
+    var ownerLabel=currentTeamMemberLabel();
+    window.CURRENT_ROLE=savedRole;
+    if(aliLabel!=='علی')throw new Error('نام نقش فروش باید علی باشه، دریافت شد: '+aliLabel);
+    if(mobinaLabel!=='مبینا')throw new Error('نام نقش محتوا باید مبینا باشه، دریافت شد: '+mobinaLabel);
+    if(ownerLabel!==null)throw new Error('برای مدیر (بدون نقش) نباید اسمی برگرده');
   }}
 ];
 async function runAllTests(){
@@ -8711,6 +8789,8 @@ async function runAllTests(){
     var t=window.RV_TESTS[i];
     try{await t.fn();out.push({name:t.name,pass:true});}
     catch(e){out.push({name:t.name,pass:false,error:e.message});}
+    if(typeof closeCustDetail==='function')closeCustDetail();
+    document.body.style.overflow='';
   }
   return out;
 }
@@ -8747,9 +8827,119 @@ var TEAM_MEMBERS={
 var TEAM_MEMBER_BY_EMAIL={};
 Object.keys(TEAM_MEMBERS).forEach(function(k){TEAM_MEMBER_BY_EMAIL[TEAM_MEMBERS[k].email]=TEAM_MEMBERS[k];});
 var ROLE_PERMISSIONS={
-  sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,defaultTab:'pcust'},
-  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps','pcust'],drawerGroups:['content','products'],showSettingsGear:false,defaultTab:'pc'}
+  sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pcust'},
+  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps','pcust','pf'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc'}
 };
+function currentTeamMemberLabel(){
+  if(!CURRENT_ROLE)return null;
+  var m=null;
+  Object.keys(TEAM_MEMBERS).forEach(function(k){if(TEAM_MEMBERS[k].role===CURRENT_ROLE)m=TEAM_MEMBERS[k];});
+  return m?m.label:null;
+}
+function logTeamActivity(action,detail){
+  if(!CURRENT_ROLE)return;
+  var label=currentTeamMemberLabel();
+  if(!label)return;
+  if(!initFirebase())return;
+  try{
+    fbDb.collection('teamActivityLog').add({
+      person:label,
+      role:CURRENT_ROLE,
+      action:action,
+      detail:detail||null,
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+      dateKey:new Date().toISOString().slice(0,10)
+    }).catch(function(e){console.error('log activity error',e);});
+  }catch(e){}
+}
+function saveAdminPasswordNotes(){
+  if(!initFirebase())return;
+  var stat=document.getElementById('ADM_NOTE_STAT');
+  stat.textContent='در حال ذخیره...';stat.className='stat sload';
+  var data={ali:V('ADM_NOTE_ALI'),mobina:V('ADM_NOTE_MOBINA'),updatedAt:new Date().toISOString()};
+  fbDb.collection('settings').doc('teamPasswordNotes').set(data).then(function(){
+    stat.textContent='ذخیره شد ✅';stat.className='stat sok';
+  }).catch(function(e){
+    stat.textContent='خطا: '+(e.message||e.code);stat.className='stat serr';
+  });
+}
+function loadAdminPasswordNotes(){
+  if(!initFirebase())return;
+  fbDb.collection('settings').doc('teamPasswordNotes').get().then(function(doc){
+    if(!doc.exists)return;
+    var d=doc.data();
+    var aliEl=document.getElementById('ADM_NOTE_ALI'),mobinaEl=document.getElementById('ADM_NOTE_MOBINA');
+    if(aliEl&&d.ali)aliEl.value=d.ali;
+    if(mobinaEl&&d.mobina)mobinaEl.value=d.mobina;
+  }).catch(function(e){console.error('load password notes error',e);});
+}
+function loadTeamActivityLog(){
+  if(!initFirebase())return;
+  var dateStr=V('ADM_LOG_DATE')||new Date().toISOString().slice(0,10);
+  var person=V('ADM_LOG_PERSON');
+  var list=document.getElementById('ADM_LOG_LIST');
+  list.innerHTML='<div class="stat sload">در حال دریافت...</div>';
+  var q=fbDb.collection('teamActivityLog').where('dateKey','==',dateStr);
+  if(person)q=q.where('person','==',person);
+  q.orderBy('ts','desc').limit(300).get().then(function(snap){
+    if(snap.empty){list.innerHTML='<div class="nores">هیچ فعالیتی تو این تاریخ ثبت نشده</div>';return;}
+    var h='';
+    snap.forEach(function(doc){
+      var d=doc.data();
+      var timeStr='—';
+      if(d.ts&&d.ts.toDate)timeStr=d.ts.toDate().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+      h+='<div style="padding:8px 0;border-bottom:1px solid #f0e6d8;font-size:0.78rem">'+
+        '<b style="color:#3d2b1f">'+escHtml(d.person||'—')+'</b> — '+escHtml(d.action||'')+
+        (d.detail?(' <span style="color:#9a6e3a">('+escHtml(d.detail)+')</span>'):'')+
+        '<span style="float:left;color:#aaa;direction:ltr">'+timeStr+'</span>'+
+      '</div>';
+    });
+    list.innerHTML=h;
+  }).catch(function(e){
+    list.innerHTML='<div class="stat serr">خطا: '+(e.message||e.code)+'</div>';
+  });
+}
+function loadTeamSummaryReport(){
+  if(!initFirebase())return;
+  var dateStr=V('ADM_LOG_DATE')||new Date().toISOString().slice(0,10);
+  var box=document.getElementById('ADM_SUMMARY_BOX');
+  box.innerHTML='<div class="stat sload">در حال ساخت گزارش...</div>';
+  fbDb.collection('teamActivityLog').where('dateKey','==',dateStr).get().then(function(snap){
+    if(snap.empty){box.innerHTML='<div class="nores">هیچ فعالیتی تو این تاریخ ثبت نشده</div>';return;}
+    var byPerson={};
+    snap.forEach(function(doc){
+      var d=doc.data();
+      var p=d.person||'—';
+      byPerson[p]=byPerson[p]||{logins:0,actions:{}};
+      if(d.action==='ورود به پنل')byPerson[p].logins++;
+      else{byPerson[p].actions[d.action]=(byPerson[p].actions[d.action]||0)+1;}
+    });
+    var h='';
+    Object.keys(byPerson).forEach(function(p){
+      var info=byPerson[p];
+      h+='<div style="background:#f7efe6;border-radius:10px;padding:12px;margin-bottom:10px">';
+      h+='<div style="font-weight:900;color:#3d2b1f;margin-bottom:6px">👤 '+escHtml(p)+'</div>';
+      h+='<div style="font-size:0.78rem;color:#9a6e3a">🔑 '+info.logins+' بار وارد پنل شد</div>';
+      var actionKeys=Object.keys(info.actions);
+      if(!actionKeys.length){h+='<div style="font-size:0.78rem;color:#c0304a;margin-top:4px">هیچ کار ثبت‌شده‌ای انجام نداد (فقط وارد شد یا فقط تب‌ها رو نگاه کرد)</div>';}
+      else{
+        actionKeys.forEach(function(a){
+          h+='<div style="font-size:0.78rem;color:#3d2b1f;margin-top:4px">✅ '+escHtml(a)+': '+info.actions[a]+' بار</div>';
+        });
+      }
+      h+='</div>';
+    });
+    box.innerHTML=h;
+  }).catch(function(e){
+    box.innerHTML='<div class="stat serr">خطا: '+(e.message||e.code)+'</div>';
+  });
+}
+function initAdminsTab(){
+  if(CURRENT_ROLE)return;
+  var dateEl=document.getElementById('ADM_LOG_DATE');
+  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);
+  loadAdminPasswordNotes();
+}
 function teamPinToPassword(pin){return 'rv'+pin;}
 function showRoleSelectGate(){
   document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
@@ -8806,7 +8996,8 @@ function teamChangePassword(){
   });
 }
 function teamLogout(){
-  firebase.auth().signOut().then(function(){location.reload();});
+  logTeamActivity('خروج از پنل',null);
+  setTimeout(function(){firebase.auth().signOut().then(function(){location.reload();});},400);
 }
 function ownerLogout(){
   firebase.auth().signOut().then(function(){location.reload();});
@@ -8825,10 +9016,12 @@ function injectTeamAccountBar(role){
   root.insertBefore(bar,root.firstChild);
 }
 var _rvOrigShowTab=showTab;
+var TAB_LABELS_FA={pf:'خانه',pcust:'باشگاه مشتریان',pc:'تولید محتوا',psitecontent:'محتوای سایت',p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',ppdf:'PDF قیمت',ps:'جستجو',pa:'آرشیو',psite:'سایت',psettings:'تنظیمات اتصال',padmins:'ادمین‌ها'};
 showTab=function(id,btn){
   if(CURRENT_ROLE){
     var perm=ROLE_PERMISSIONS[CURRENT_ROLE];
     if(!perm||perm.tabs.indexOf(id)===-1){id=perm?perm.defaultTab:id;btn=null;}
+    logTeamActivity('باز کردن بخش',TAB_LABELS_FA[id]||id);
   }
   _rvOrigShowTab(id,btn);
 };
@@ -8839,7 +9032,8 @@ openSettingsPanel=function(){
 };
 var _rvOrigOpenOrdersPanel=openOrdersPanel;
 openOrdersPanel=function(){
-  if(CURRENT_ROLE)return;
+  if(CURRENT_ROLE&&!(ROLE_PERMISSIONS[CURRENT_ROLE]&&ROLE_PERMISSIONS[CURRENT_ROLE].showOrdersPanel))return;
+  logTeamActivity('باز کردن پنل سفارش‌ها و فاکتور',null);
   _rvOrigOpenOrdersPanel();
 };
 var _rvOrigOpenNotifPanel=openNotifPanel;
@@ -8847,12 +9041,29 @@ openNotifPanel=function(){
   if(CURRENT_ROLE)return;
   _rvOrigOpenNotifPanel();
 };
+var _rvOrigSaveCustForm=saveCustForm;
+saveCustForm=function(id){
+  var wasNew=!id;
+  _rvOrigSaveCustForm(id);
+  if(CURRENT_ROLE)logTeamActivity(wasNew?'افزودن مشتری جدید':'ویرایش اطلاعات مشتری',null);
+};
+var _rvOrigSavePurchaseForm=savePurchaseForm;
+savePurchaseForm=function(custId){
+  _rvOrigSavePurchaseForm(custId);
+  if(CURRENT_ROLE)logTeamActivity('ثبت خرید دستی برای مشتری',null);
+};
+var _rvOrigSaveProductWithDuplicateCheck=saveProductWithDuplicateCheck;
+saveProductWithDuplicateCheck=function(data,onResolved){
+  if(CURRENT_ROLE)logTeamActivity('ذخیره/ویرایش محصول',data&&data.code?('کد '+data.code):null);
+  _rvOrigSaveProductWithDuplicateCheck(data,onResolved);
+};
 function applyRolePermissions(role){
   CURRENT_ROLE=role;
   var perm=ROLE_PERMISSIONS[role];
   if(!perm)return;
+  document.querySelectorAll('.rv-owner-only').forEach(function(el){el.style.display='none';});
   var homeBtn=document.querySelector('.tab[onclick*="showTab(\'pf\'"]');
-  if(homeBtn)homeBtn.style.display='none';
+  if(homeBtn)homeBtn.style.display=perm.tabs.indexOf('pf')>-1?'':'none';
   var custBtn=document.querySelector('.tab[onclick*="showTab(\'pcust\'"]');
   if(custBtn)custBtn.style.display=perm.tabs.indexOf('pcust')>-1?'':'none';
   var contentBtn=document.querySelector('.tab[onclick*="openContentGroup"]');
@@ -8866,8 +9077,11 @@ function applyRolePermissions(role){
   var bellBtn=document.querySelector('.notif-btn[onclick*="openNotifPanel"]');
   if(bellBtn)bellBtn.style.display='none';
   var ordersBtn=document.querySelector('.notif-btn[onclick*="openOrdersPanel"]');
-  if(ordersBtn)ordersBtn.style.display='none';
+  if(ordersBtn)ordersBtn.style.display=perm.showOrdersPanel?'':'none';
+  var adminsBtn=document.querySelector('.tab[onclick*="showTab(\'padmins\'"]');
+  if(adminsBtn)adminsBtn.style.display='none';
   injectTeamAccountBar(role);
+  logTeamActivity('ورود به پنل',null);
   showTab(perm.defaultTab,null);
 }
 function teamShowApp(role){
