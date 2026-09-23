@@ -1125,6 +1125,14 @@ input[type=file]{display:none}
       <p style="font-size:0.68rem;color:#5a7a9a;margin-top:4px">اگه این رو پر کنی، موقع ارسال هر محصول، عکسِ بدون واترمارک + کپشنِ آماده (بدون لینک) + توضیحات کاملی که می‌نویسی، خودکار به این کانال هم ذخیره می‌شه تا هروقت خواستی برای تولید محتوای خودت (اینستاگرام و غیره) دوباره پیداشون کنی و از نو زحمت نکشی.</p>
       <p style="font-size:0.68rem;color:#8a7a6c;margin-top:6px;line-height:1.9">راهنما: یه کانال تلگرام جدید و پرایوت بساز، ربات رو با یوزرنیمش ادمین کانال کن، یه پیام توی کانال بفرست، بعد دکمه‌ی بالا رو بزن.</p>
     </div>
+    <div class="g1" style="margin-top:12px;background:#fdeee6;border:1.5px dashed #d8a67a;border-radius:10px;padding:10px">
+      <span class="lbl">📍 Chat ID کانال «لوکیشن مشتریان»</span>
+      <input class="fi" type="text" id="LOCCID" autocomplete="off" style="direction:ltr" placeholder="مثال: -1001234567890">
+      <button class="sbig" style="background:#f2ddc9;color:#8a5a2a;margin-top:8px" onclick="fetchLocChatId()">دریافت خودکار شناسه کانال</button>
+      <div class="stat" id="LOCCIDSTAT"></div>
+      <p style="font-size:0.68rem;color:#9a6e3a;margin-top:4px">اگه این رو پر کنی، هر بار لوکیشن یه مشتری رو ثبت/تغییر بدی، یه پین لوکیشن واقعی (قابل‌بازکردن با هر اپ نقشه‌ای که رو گوشیت داری) با اسم و شماره‌ی مشتری، خودکار به این کانال فرستاده می‌شه.</p>
+      <p style="font-size:0.68rem;color:#8a7a6c;margin-top:6px;line-height:1.9">راهنما: مثل بالا — کانال جدید بساز، ربات رو ادمینش کن، یه پیام بفرست، بعد دکمه‌ی بالا رو بزن.</p>
+    </div>
   </div>
   <div class="card"><div class="ctitle">📥 دریافت سفارش مشتری</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">وقتی مشتری از صفحه جستجو فرم سفارش را پر می‌کند، پیام مستقیم به این چت‌ها ارسال می‌شود.</p>
@@ -5389,6 +5397,8 @@ function parseLocationFromText(text){
   text=(text||'').trim();if(!text)return null;
   var m=text.match(/@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
   if(m)return{lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+  m=text.match(/[?&]lat=(-?\d{1,3}\.\d+)&(?:amp;)?lng=(-?\d{1,3}\.\d+)/i);
+  if(m)return{lat:parseFloat(m[1]),lng:parseFloat(m[2])};
   m=text.match(/[?&](?:q|ll|loc|daddr)=(-?\d{1,3}\.\d+)[,%](?:2C)?(-?\d{1,3}\.\d+)/i);
   if(m)return{lat:parseFloat(m[1]),lng:parseFloat(m[2])};
   m=text.match(/geo:(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
@@ -5397,11 +5407,37 @@ function parseLocationFromText(text){
   if(m){var lat=parseFloat(m[1]),lng=parseFloat(m[2]);if(lat>=-90&&lat<=90&&lng>=-180&&lng<=180)return{lat:lat,lng:lng};}
   return null;
 }
+function isShortResolvableLink(text){
+  return /^https?:\/\/(www\.)?(nshn\.ir|neshan\.org|balad\.ir)\/[A-Za-z0-9_\-]+\/?(\?.*)?$/i.test(text.trim())&&!parseLocationFromText(text);
+}
+function resolveShortLinkAndExtract(url,cb){
+  var done=false;
+  function finish(loc){if(done)return;done=true;cb(loc);}
+  try{
+    fetch(url,{method:'GET',redirect:'follow',mode:'cors'}).then(function(res){
+      var loc=parseLocationFromText(res.url||'');
+      if(loc){finish(loc);return;}
+      res.text().then(function(body){finish(parseLocationFromText(body));}).catch(function(){finish(null);});
+    }).catch(function(){finish(null);});
+  }catch(e){finish(null);}
+  setTimeout(function(){finish(null);},9000);
+}
 function applyLocationFromText(){
   var text=document.getElementById('CF_LOC_TEXT').value;
   var loc=parseLocationFromText(text);
-  if(!loc){alert('مختصات پیدا نشد. اگه لینک از نشان/بلد جواب نداد، مستقیم روی نقشه کلیک کن یا مختصات رو به شکل "35.70, 51.38" بفرست.');return;}
-  setCustLocation(loc.lat,loc.lng);
+  if(loc){setCustLocation(loc.lat,loc.lng);return;}
+  if(isShortResolvableLink(text)){
+    var btn=document.getElementById('CF_LOC_EXTRACT_BTN');
+    var origLabel=btn.textContent;
+    btn.textContent='در حال باز کردن...';btn.disabled=true;
+    resolveShortLinkAndExtract(text.trim(),function(loc){
+      btn.textContent=origLabel;btn.disabled=false;
+      if(loc){setCustLocation(loc.lat,loc.lng);return;}
+      alert('این یه لینک کوتاهه و مرورگر نذاشت خودکار بازش کنم (معمولاً به‌خاطر محدودیت امنیتی خودِ نشان/بلد، نه مشکل اپ ما).\n\nراه مطمئن: رو نقشه‌ی نشان یا بلد، به‌جای دکمه‌ی «ارسال»، رو نقطه لمس‌ممتد (Long Press) کن تا گزینه‌ی «کپی مختصات اینجا» بیاد، بزنش، و همون رو اینجا Paste کن.');
+    });
+    return;
+  }
+  alert('مختصات پیدا نشد. اگه لینک از نشان/بلد جواب نداد، مستقیم روی نقشه کلیک کن یا مختصات رو به شکل "35.70, 51.38" بفرست.');
 }
 function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -5726,7 +5762,7 @@ function openCustForm(id){
   h+='</div>';
   h+='<div class="g1"><span class="lbl">یادداشت</span><textarea class="fi" id="CF_NOTES" rows="2">'+escHtml(v.notes)+'</textarea></div>';
   h+='<div class="g1"><span class="lbl">📍 موقعیت مکانی — لینک یا متن لوکیشن (تلگرام، نشان، بلد، گوگل‌مپ...)</span>';
-  h+='<div style="display:flex;gap:6px"><input class="fi" type="text" id="CF_LOC_TEXT" style="direction:ltr" placeholder="لینک یا مختصات را اینجا Paste کن"><button type="button" class="blb" style="flex-shrink:0" onclick="applyLocationFromText()">استخراج</button></div>';
+  h+='<div style="display:flex;gap:6px"><input class="fi" type="text" id="CF_LOC_TEXT" style="direction:ltr" placeholder="لینک یا مختصات را اینجا Paste کن"><button type="button" class="blb" id="CF_LOC_EXTRACT_BTN" style="flex-shrink:0" onclick="applyLocationFromText()">استخراج</button></div>';
   h+='<p style="font-size:0.66rem;color:#aaa;margin-top:4px;line-height:1.9">راهنمای کپی مختصات از گوگل‌مپ: روی نقطه مورد نظر روی نقشه گوگل‌مپ نگه‌دار (Long Press) تا یه پین قرمز بیفته؛ پایین صفحه عددهای مختصات (مثل 35.7219, 51.3347) نشون داده می‌شه؛ روش ضربه بزن تا کپی بشه؛ برگرد اینجا و توی همین باکس Paste کن و «استخراج» رو بزن. یا اینکه مستقیم روی نقشه پایین کلیک کن.</p>';
   h+='<div id="CF_MAP" style="height:220px;border-radius:10px;overflow:hidden;border:1.5px solid #e2cdb0;margin-top:6px"></div>';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">';
@@ -6012,6 +6048,33 @@ function fetchContentBackupChatId(){
       var chatId=msg.chat.id;
       var name=msg.chat.title||msg.chat.first_name||msg.chat.username||'';
       document.getElementById('CONTENTBACKUPCID').value=chatId;
+      stat.textContent='پیدا شد! "'+name+'" ثبت شد';stat.className='stat sok';
+      save();
+    }catch(e){stat.textContent='خطا در پردازش پاسخ';stat.className='stat serr';}
+  };
+  x.onerror=function(){stat.textContent='خطا در اتصال';stat.className='stat serr';};
+  x.ontimeout=function(){stat.textContent='زمان تموم شد';stat.className='stat serr';};
+  x.send();
+}
+function fetchLocChatId(){
+  var token=V('TGK');
+  var stat=document.getElementById('LOCCIDSTAT');
+  if(!token){stat.textContent='ابتدا Token ربات را وارد کنید';stat.className='stat serr';return;}
+  stat.textContent='در حال جستجو...';stat.className='stat sload';
+  var x=new XMLHttpRequest();
+  x.open('GET',TGB+token+'/getUpdates?limit=20',true);
+  x.timeout=15000;
+  x.onload=function(){
+    try{
+      var r=JSON.parse(x.responseText);
+      if(!r.ok){stat.textContent='خطا: '+r.description;stat.className='stat serr';return;}
+      if(!r.result||!r.result.length){stat.textContent='پیامی پیدا نشد. یه پیام با / توی کانال بفرست یا Privacy Mode ربات رو خاموش کن';stat.className='stat serr';return;}
+      var last=r.result[r.result.length-1];
+      var msg=last.message||last.channel_post;
+      if(!msg||!msg.chat){stat.textContent='پیام معتبری پیدا نشد';stat.className='stat serr';return;}
+      var chatId=msg.chat.id;
+      var name=msg.chat.title||msg.chat.first_name||msg.chat.username||'';
+      document.getElementById('LOCCID').value=chatId;
       stat.textContent='پیدا شد! "'+name+'" ثبت شد';stat.className='stat sok';
       save();
     }catch(e){stat.textContent='خطا در پردازش پاسخ';stat.className='stat serr';}
@@ -8215,7 +8278,7 @@ function save(){
   if(_loading)return;
   try{
     var sel={};[1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(ch){var cb=document.getElementById('S'+n+'C'+ch);if(cb)sel[n+''+ch]=cb.checked;});});
-    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),contentBackupCid:V('CONTENTBACKUPCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,bannerMessages:BANNER_MESSAGE,autoSync:AUTO_SYNC_ENABLED};
+    var d={v:1,note:V('NOTE'),tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),contentBackupCid:V('CONTENTBACKUPCID'),locCid:V('LOCCID'),orderCid:V('ORDERCID'),orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),sel:sel,arch:ARCHIVE,bannerIds:BANNER_IDS,vip:VIP_PRODUCTS,bannerProdCodes:BANNER_PRODUCT_CODE,bannerMessages:BANNER_MESSAGE,autoSync:AUTO_SYNC_ENABLED};
     TABS.forEach(function(tab){
       var brands=[];
       document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
@@ -8251,6 +8314,7 @@ function load(){
     if(d.tgcid2)document.getElementById('TGCID2').value=d.tgcid2;
     if(d.galleryCid)document.getElementById('GALLERYCID').value=d.galleryCid;
     if(d.contentBackupCid)document.getElementById('CONTENTBACKUPCID').value=d.contentBackupCid;
+    if(d.locCid)document.getElementById('LOCCID').value=d.locCid;
     setTimeout(function(){
       var bad=[];
       if(looksLikeBotToken(d.tgcid))bad.push('کانال ۱');
@@ -8377,6 +8441,7 @@ window.addEventListener('message',function(e){
 document.getElementById('TGCID2').oninput=save;
 document.getElementById('GALLERYCID').oninput=save;
 document.getElementById('CONTENTBACKUPCID').oninput=save;
+document.getElementById('LOCCID').oninput=save;
 document.getElementById('ORDERCID').oninput=save;
 document.getElementById('ORDERCID2').oninput=save;
 document.getElementById('REPORTCID').oninput=save;
@@ -8783,11 +8848,11 @@ window.RV_TESTS=[
     if(ownerLabel!==null)throw new Error('برای مدیر (بدون نقش) نباید اسمی برگرده');
   }},
   {name:'لوکیشن مشتری: باید یه‌بار به تلگرام بره، تکرارِ همون مختصات دوباره نفرسته، تغییر واقعی بفرسته',fn:function(){
-    var savedCustomers=window.CUSTOMERS,savedXMsg=window.xMsg,savedTgk=V('TGK'),savedCid=V('CONTENTBACKUPCID');
+    var savedCustomers=window.CUSTOMERS,savedXMsg=window.xMsg,savedTgk=V('TGK'),savedCid=V('LOCCID');
     var calls=[];
     window.xMsg=function(url,data,cb){calls.push({url:url,data:data});cb(null,{});};
     document.getElementById('TGK').value='FAKE_TOKEN';
-    document.getElementById('CONTENTBACKUPCID').value='-100999';
+    document.getElementById('LOCCID').value='-100999';
     window.CUSTOMERS=[{id:'loctest1',name:'مشتری تست',phone:'1',purchases:[],location:{lat:35.7219,lng:51.3347}}];
     maybeSendLocationToTelegram(window.CUSTOMERS[0]);
     var countAfterFirst=calls.length;
@@ -8798,11 +8863,25 @@ window.RV_TESTS=[
     var countAfterChange=calls.length;
     window.xMsg=savedXMsg;window.CUSTOMERS=savedCustomers;
     document.getElementById('TGK').value=savedTgk||'';
-    document.getElementById('CONTENTBACKUPCID').value=savedCid||'';
+    document.getElementById('LOCCID').value=savedCid||'';
     if(countAfterFirst!==1)throw new Error('اولین بار باید دقیقاً یه پیام بفرسته، فرستاد: '+countAfterFirst);
     if(countAfterRepeat!==1)throw new Error('تکرارِ همون مختصات نباید دوباره بفرسته، جمعاً شد: '+countAfterRepeat);
     if(countAfterChange!==2)throw new Error('تغییر واقعی مختصات باید دوباره بفرسته، جمعاً شد: '+countAfterChange);
     if(calls[0].url.indexOf('/sendVenue')===-1)throw new Error('باید از sendVenue استفاده کنه تا اسم مشتری هم پیوست بشه');
+  }},
+  {name:'استخراج لوکیشن: فرمت مستقیم نشان (lat=&lng=) باید کار کنه، لینک‌های سالم دیگه هم نباید بشکنه',fn:function(){
+    var neshanDirect=parseLocationFromText('https://nshn.ir/?lat=35.7077402&lng=51.1828453');
+    if(!neshanDirect||Math.abs(neshanDirect.lat-35.7077402)>0.0001)throw new Error('فرمت مستقیم نشان درست پارس نشد');
+    var gmaps=parseLocationFromText('https://www.google.com/maps/@35.7219,51.3347,15z');
+    if(!gmaps||Math.abs(gmaps.lat-35.7219)>0.0001)throw new Error('پارس گوگل‌مپ خراب شد (رگرشن)');
+    var raw=parseLocationFromText('35.7219, 51.3347');
+    if(!raw)throw new Error('پارس مختصات خام خراب شد (رگرشن)');
+  }},
+  {name:'استخراج لوکیشن: لینک کوتاه نشان/بلد درست تشخیص داده بشه، لینک‌های کامل اشتباهی به‌عنوان کوتاه علامت نخورن',fn:function(){
+    if(!isShortResolvableLink('https://nshn.ir/rbv8Xz5xijcK'))throw new Error('لینک کوتاه نشان باید تشخیص داده بشه');
+    if(isShortResolvableLink('https://nshn.ir/?lat=35.7&lng=51.3'))throw new Error('لینکی که خودش مختصات داره نباید «کوتاه» علامت بخوره');
+    if(isShortResolvableLink('https://www.google.com/maps/@35.7219,51.3347,15z'))throw new Error('لینک گوگل‌مپ نباید «کوتاه» علامت بخوره');
+    if(isShortResolvableLink('یه متن ساده بدون لینک'))throw new Error('متن معمولی نباید «کوتاه» علامت بخوره');
   }}
 ];
 async function runAllTests(){
@@ -9077,7 +9156,7 @@ function maybeSendLocationToTelegram(customer){
   if(customer._locSentMarker===marker)return;
   customer._locSentMarker=marker;
   saveCustomers();
-  var tgToken=V('TGK'),cid=V('CONTENTBACKUPCID');
+  var tgToken=V('TGK'),cid=V('LOCCID');
   if(!tgToken||!cid)return;
   var base='https://api.telegram.org/bot';
   xMsg(base+tgToken+'/sendVenue',{
