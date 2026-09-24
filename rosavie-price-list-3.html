@@ -381,7 +381,7 @@ input[type=file]{display:none}
 <div class="notif-panel" id="ORDERSPANEL">
   <div class="notif-panel-head"><span>👥 سفارش‌ها و مشتریان</span><button class="notif-panel-close" onclick="closeOrdersPanel()">✕</button></div>
   <div class="notif-panel-body">
-    <div class="card" style="border:2px solid #2a9d5c"><div class="ctitle">🛒 سفارش‌های آنلاین جدید</div>
+    <div class="card" id="ONLINE_ORDERS_CARD" style="border:2px solid #2a9d5c"><div class="ctitle">🛒 سفارش‌های آنلاین جدید</div>
       <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">سفارش‌هایی که مشتری‌ها از توی سایت shop.html ثبت می‌کنن، اینجا زنده نشون داده می‌شه و اعلانش هم میاد. با زدن «انجام شد» سفارش از این لیست میره و توی لیست انجام‌شده‌ها قابل مشاهده‌ست.</p>
       <div id="ORDERS_LIST" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
       <div style="border-top:1.5px dashed #d4a87a;margin:14px 0 10px;padding-top:10px">
@@ -1169,7 +1169,7 @@ input[type=file]{display:none}
 </div>
 <div class="pg" id="padmins">
   <div class="card"><div class="ctitle">🔑 یادداشت رمز اعضا (فقط برای خودت)</div>
-    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">⚠️ این فقط یه یادداشت شخصیه، نه رمز واقعی زنده — فایربیس هیچ راهی برای نشون‌دادن رمز واقعی یه حساب دیگه نمی‌ده (حتی به خودِ مدیر). یعنی اگه علی یا مبینا خودشون از «تغییر رمز» رمزشون رو عوض کنن، این یادداشت دیگه به‌روز نیست و تو نمی‌تونی رمز جدیدشون رو از اینجا ببینی. اگه لازم شد، از همون Firebase Console → Authentication → Users → Reset password استفاده کن.</p>
+    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">⚠️ فایربیس هیچ راهی برای نشون‌دادن رمز واقعی یه حساب دیگه نمی‌ده — این یه محدودیت امنیتیه که حتی خودِ فایربیس/گوگل هم دورش نمی‌زنن، نه محدودیت این اپ. برای همین، دیگه علی/مبینا خودشون نمی‌تونن رمزشون رو عوض کنن — فقط تو، از همینجا یا از Firebase Console → Authentication → Users → Reset password، می‌تونی رمزشون رو عوض کنی. یعنی این یادداشت همیشه دقیقاً همون چیزیه که الان هست.</p>
     <div class="g1"><span class="lbl">آخرین رمزی که برای علی تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_ALI" placeholder="مثلاً 1379" style="direction:ltr;text-align:left"></div>
     <div class="g1"><span class="lbl">آخرین رمزی که برای مبینا تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_MOBINA" placeholder="مثلاً 1387" style="direction:ltr;text-align:left"></div>
     <button class="sbig stg" onclick="saveAdminPasswordNotes()">💾 ذخیره یادداشت</button>
@@ -1178,7 +1178,7 @@ input[type=file]{display:none}
   <div class="card"><div class="ctitle">📋 فعالیت روزانه‌ی اعضا</div>
     <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">هر بار وارد بشن، هر تبی که باز کنن، و هر کار مهمی (افزودن مشتری، ثبت خرید، ویرایش محصول) که انجام بدن، اینجا با ساعت دقیق ثبت می‌شه.</p>
     <div class="g2">
-      <div><span class="lbl">تاریخ</span><input class="fi" type="date" id="ADM_LOG_DATE"></div>
+      <div><span class="lbl">تاریخ (شمسی)</span><input class="fi" type="text" id="ADM_LOG_DATE_DISP" readonly style="cursor:pointer;background:#fff" value="" onclick="openJalaliCal('ADM_LOG_DATE_DISP','ADM_LOG_DATE',this)"><input type="hidden" id="ADM_LOG_DATE" value=""></div>
       <div><span class="lbl">فرد</span><select class="fi" id="ADM_LOG_PERSON"><option value="">همه</option><option value="علی">علی</option><option value="مبینا">مبینا</option></select></div>
     </div>
     <button class="sbig stg" onclick="loadTeamActivityLog()">🔍 نمایش فعالیت</button>
@@ -8882,6 +8882,44 @@ window.RV_TESTS=[
     if(isShortResolvableLink('https://nshn.ir/?lat=35.7&lng=51.3'))throw new Error('لینکی که خودش مختصات داره نباید «کوتاه» علامت بخوره');
     if(isShortResolvableLink('https://www.google.com/maps/@35.7219,51.3347,15z'))throw new Error('لینک گوگل‌مپ نباید «کوتاه» علامت بخوره');
     if(isShortResolvableLink('یه متن ساده بدون لینک'))throw new Error('متن معمولی نباید «کوتاه» علامت بخوره');
+  }},
+  {name:'دسترسی تیمی: علی نباید سفارش‌های آنلاین رو تو پنل سفارش‌ها ببینه، ولی فاکتور دستی چرا',fn:function(){
+    var savedRole=window.CURRENT_ROLE;
+    window.CURRENT_ROLE='sales';
+    openOrdersPanel();
+    var onlineCard=document.getElementById('ONLINE_ORDERS_CARD');
+    var manualCard=Array.prototype.filter.call(document.querySelectorAll('.card'),function(c){return c.textContent.indexOf('ثبت دستی فاکتور جدید')>-1;})[0];
+    var onlineHidden=onlineCard&&getComputedStyle(onlineCard).display==='none';
+    var manualVisible=manualCard&&getComputedStyle(manualCard).display!=='none';
+    closeOrdersPanel();
+    window.CURRENT_ROLE='content';
+    openOrdersPanel();
+    var onlineVisibleForMobina=onlineCard&&getComputedStyle(onlineCard).display!=='none';
+    closeOrdersPanel();
+    window.CURRENT_ROLE=savedRole;
+    if(!onlineHidden)throw new Error('سفارش‌های آنلاین باید برای علی مخفی باشه');
+    if(!manualVisible)throw new Error('فاکتور دستی باید برای علی نمایان باشه');
+    if(!onlineVisibleForMobina)throw new Error('سفارش‌های آنلاین باید برای مبینا نمایان بمونه');
+  }},
+  {name:'فعالیت روزانه: کوئری نباید از orderBy فایرستور استفاده کنه (نیاز به Index دستی نداشته باشه)',fn:function(){
+    var src=loadTeamActivityLog.toString();
+    if(src.indexOf('.orderBy(')>-1)throw new Error('کوئری نباید از orderBy استفاده کنه — باعث ارور «نیاز به Index» تو فایرستور واقعی می‌شه؛ مرتب‌سازی باید تو خودِ جاوااسکریپت انجام بشه');
+  }},
+  {name:'تب ادمین‌ها: فیلد تاریخ فعالیت باید شمسی باشه و دکمه‌ی «تغییر رمز» تیمی دیگه نباید جایی وجود داشته باشه',fn:function(){
+    var dispEl=document.getElementById('ADM_LOG_DATE_DISP');
+    if(!dispEl)throw new Error('فیلد نمایش تاریخ شمسی پیدا نشد');
+    if(dispEl.type!=='text')throw new Error('فیلد تاریخ باید از تقویم شمسی سفارشی استفاده کنه، نه type=date مرورگر');
+    if(typeof teamChangePassword!=='undefined')throw new Error('تابع تغییر رمز خودسرویس باید کامل حذف شده باشه');
+    var testBar=document.createElement('div');
+    testBar.id='TEAM_ACCOUNT_BAR_TEST_TMP';
+    document.body.appendChild(testBar);
+    var savedInject=injectTeamAccountBar;
+    injectTeamAccountBar('sales');
+    var barEl=document.getElementById('TEAM_ACCOUNT_BAR');
+    var barHtml=barEl?barEl.innerHTML:'';
+    if(barEl)barEl.remove();
+    testBar.remove();
+    if(barHtml.indexOf('تغییر رمز')>-1)throw new Error('دیگه نباید هیچ دکمه‌ای به تغییر رمز خودسرویس اشاره کنه');
   }}
 ];
 async function runAllTests(){
@@ -8928,7 +8966,7 @@ var TEAM_MEMBERS={
 var TEAM_MEMBER_BY_EMAIL={};
 Object.keys(TEAM_MEMBERS).forEach(function(k){TEAM_MEMBER_BY_EMAIL[TEAM_MEMBERS[k].email]=TEAM_MEMBERS[k];});
 var ROLE_PERMISSIONS={
-  sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pcust'},
+  sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,showOrdersPanel:true,hideOnlineOrders:true,defaultTab:'pcust'},
   content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps','pcust','pf'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc'}
 };
 function currentTeamMemberLabel(){
@@ -8982,11 +9020,17 @@ function loadTeamActivityLog(){
   list.innerHTML='<div class="stat sload">در حال دریافت...</div>';
   var q=fbDb.collection('teamActivityLog').where('dateKey','==',dateStr);
   if(person)q=q.where('person','==',person);
-  q.orderBy('ts','desc').limit(300).get().then(function(snap){
+  q.limit(300).get().then(function(snap){
     if(snap.empty){list.innerHTML='<div class="nores">هیچ فعالیتی تو این تاریخ ثبت نشده</div>';return;}
+    var rows=[];
+    snap.forEach(function(doc){rows.push(doc.data());});
+    rows.sort(function(a,b){
+      var at=(a.ts&&a.ts.toMillis)?a.ts.toMillis():0;
+      var bt=(b.ts&&b.ts.toMillis)?b.ts.toMillis():0;
+      return bt-at;
+    });
     var h='';
-    snap.forEach(function(doc){
-      var d=doc.data();
+    rows.forEach(function(d){
       var timeStr='—';
       if(d.ts&&d.ts.toDate)timeStr=d.ts.toDate().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
       h+='<div style="padding:8px 0;border-bottom:1px solid #f0e6d8;font-size:0.78rem">'+
@@ -9038,7 +9082,12 @@ function loadTeamSummaryReport(){
 function initAdminsTab(){
   if(CURRENT_ROLE)return;
   var dateEl=document.getElementById('ADM_LOG_DATE');
-  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);
+  if(dateEl&&!dateEl.value){
+    var todayIso=new Date().toISOString().slice(0,10);
+    dateEl.value=todayIso;
+    var dispEl=document.getElementById('ADM_LOG_DATE_DISP');
+    if(dispEl)dispEl.value=isoToJalaliDisp(todayIso);
+  }
   loadAdminPasswordNotes();
 }
 function teamPinToPassword(pin){return 'rv'+pin;}
@@ -9084,18 +9133,7 @@ function teamDoLogin(){
     err.textContent=m[e.code]||('خطا: '+(e.message||e.code));
   });
 }
-function teamChangePassword(){
-  var newPin=prompt('رمز جدید رو وارد کن (فقط عدد، حداقل ۴ رقم):');
-  if(!newPin)return;
-  newPin=toEnDigits(newPin).replace(/[^0-9]/g,'');
-  if(newPin.length<4){alert('رمز باید حداقل ۴ رقم باشه');return;}
-  if(!firebase.auth().currentUser){alert('خطا: دوباره وارد شو و امتحان کن');return;}
-  firebase.auth().currentUser.updatePassword(teamPinToPassword(newPin)).then(function(){
-    alert('رمزت با موفقیت عوض شد ✅ دفعه‌ی بعد با همین رمز جدید وارد شو.');
-  }).catch(function(e){
-    alert('خطا تو عوض‌کردن رمز: '+(e.message||e.code)+'\n\nاگه پیام خطا گفت باید دوباره وارد بشی، یه بار خارج شو، دوباره با رمز فعلی وارد شو، و همین کارو دوباره امتحان کن.');
-  });
-}
+
 function teamLogout(){
   logTeamActivity('خروج از پنل',null);
   setTimeout(function(){firebase.auth().signOut().then(function(){location.reload();});},400);
@@ -9112,7 +9150,7 @@ function injectTeamAccountBar(role){
   var bar=document.createElement('div');
   bar.id='TEAM_ACCOUNT_BAR';
   bar.style.cssText='background:#3d2b1f;color:#f9f0e8;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;font-size:0.76rem;position:sticky;top:0;z-index:500';
-  bar.innerHTML='<span>👤 '+member.label+'</span><span><a href="javascript:void(0)" onclick="teamChangePassword()" style="color:#f9f0e8;text-decoration:underline;margin-left:12px">🔑 تغییر رمز</a><a href="javascript:void(0)" onclick="teamLogout()" style="color:#f9f0e8;text-decoration:underline">خروج</a></span>';
+  bar.innerHTML='<span>👤 '+member.label+'</span><span><a href="javascript:void(0)" onclick="teamLogout()" style="color:#f9f0e8;text-decoration:underline">خروج</a></span>';
   var root=document.getElementById('APP_ROOT');
   root.insertBefore(bar,root.firstChild);
 }
@@ -9136,6 +9174,11 @@ openOrdersPanel=function(){
   if(CURRENT_ROLE&&!(ROLE_PERMISSIONS[CURRENT_ROLE]&&ROLE_PERMISSIONS[CURRENT_ROLE].showOrdersPanel))return;
   logTeamActivity('باز کردن پنل سفارش‌ها و فاکتور',null);
   _rvOrigOpenOrdersPanel();
+  var onlineCard=document.getElementById('ONLINE_ORDERS_CARD');
+  if(onlineCard){
+    var perm=CURRENT_ROLE?ROLE_PERMISSIONS[CURRENT_ROLE]:null;
+    onlineCard.style.display=(perm&&perm.hideOnlineOrders)?'none':'';
+  }
 };
 var _rvOrigOpenNotifPanel=openNotifPanel;
 openNotifPanel=function(){
