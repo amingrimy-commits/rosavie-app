@@ -427,6 +427,12 @@ input[type=file]{display:none}
     <button class="sett-qbtn" onclick="closeOrdersPanel();openAdmDrawer();showTab('pcust',document.querySelector('#ADMDR .tab[onclick*=pcust]'));">👥 مشاهده کامل باشگاه مشتریان</button>
   </div>
 </div>
+<div class="notif-panel" id="TASKPANEL">
+  <div class="notif-panel-head"><span>📋 وظایف من</span><button class="notif-panel-close" onclick="closeTaskPanel()">✕</button></div>
+  <div class="notif-panel-body">
+    <div id="TASK_LIST_TEAM" style="font-size:0.78rem;color:#9a6e3a">در حال اتصال...</div>
+  </div>
+</div>
 <div class="notif-overlay" id="SETTOV" onclick="closeSettingsPanel()"></div>
 <div class="notif-panel" id="SETTPANEL">
   <div class="notif-panel-head"><span>⚙️ تنظیمات</span><button class="notif-panel-close" onclick="closeSettingsPanel()">✕</button></div>
@@ -1174,6 +1180,24 @@ input[type=file]{display:none}
   </div>
 </div>
 <div class="pg" id="padmins">
+  <div class="card"><div class="ctitle">📋 ارسال وظیفه‌ی روزانه</div>
+    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">وظیفه رو براشون بفرست تا تو پنل خودشون (روی همون آیکون 📋 بالای صفحه) ببینن. می‌تونن تیک بزنن و براش توضیح، عکس یا ویس به‌عنوان مدرک بذارن.</p>
+    <div class="g1"><span class="lbl">برای کی؟</span>
+      <select class="fi" id="TASK_PERSON"><option value="sales">علی</option><option value="content">مبینا</option></select>
+    </div>
+    <div class="g1"><span class="lbl">متن وظیفه</span>
+      <textarea class="fi" id="TASK_TEXT" rows="3" placeholder="مثلاً: امروز باید ۵ تا محصول جدید بذاری تو کانال..."></textarea>
+    </div>
+    <div class="g1"><span class="lbl">پیام صوتی (اختیاری)</span>
+      <div id="TVWRAP_new"><button type="button" class="sbig" id="TVBTN_new" style="background:#eee;color:#555;padding:8px" onclick="toggleTaskVoiceRec('new')">🎤 ضبط ویس</button></div>
+    </div>
+    <button class="sbig stg" onclick="sendNewTeamTask()">🚀 ارسال وظیفه</button>
+    <div class="stat" id="TASK_SEND_STAT"></div>
+  </div>
+  <div class="card"><div class="ctitle">📋 وظایف امروز و وضعیت‌شون</div>
+    <button class="sbig" style="background:#eee2d0;color:#3d2b1f;margin-bottom:8px" onclick="loadTeamTasksAdmin()">🔄 بروزرسانی</button>
+    <div id="TASK_LIST_ADMIN" style="margin-top:6px"></div>
+  </div>
   <div class="card"><div class="ctitle">🔑 یادداشت رمز اعضا (فقط برای خودت)</div>
     <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">⚠️ فایربیس هیچ راهی برای نشون‌دادن رمز واقعی یه حساب دیگه نمی‌ده — این یه محدودیت امنیتیه که حتی خودِ فایربیس/گوگل هم دورش نمی‌زنن، نه محدودیت این اپ. برای همین، دیگه علی/مبینا خودشون نمی‌تونن رمزشون رو عوض کنن — فقط تو، از همینجا یا از Firebase Console → Authentication → Users → Reset password، می‌تونی رمزشون رو عوض کنی. یعنی این یادداشت همیشه دقیقاً همون چیزیه که الان هست.</p>
     <div class="g1"><span class="lbl">آخرین رمزی که برای علی تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_ALI" placeholder="مثلاً 1379" style="direction:ltr;text-align:left"></div>
@@ -8297,6 +8321,50 @@ function save(){
   }catch(e){console.error('save error',e);}
 }
 
+function hydrateProductsFromFirestore(){
+  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});return;}
+  fbDb.collection('products').get().then(function(snap){
+    if(snap.empty){TABS.forEach(function(t){addBrand(t);});return;}
+    var byTabBrand={};
+    snap.forEach(function(doc){
+      var p=doc.data();
+      if(!p||!p.tab||!p.code)return;
+      var brandName=p.brand||'';
+      byTabBrand[p.tab]=byTabBrand[p.tab]||{};
+      byTabBrand[p.tab][brandName]=byTabBrand[p.tab][brandName]||[];
+      byTabBrand[p.tab][brandName].push({
+        type:p.type||'',code:p.code||'',sizes:p.sizes||'',colors:p.colors||'',
+        minO:p.minOrder||'',price:p.price||'',stock:p.stock||'in',
+        imgId:null,outSince:null,title:p.title||'',
+        material:p.material||'',country:p.country||'',
+        desc1:p.desc1||'',desc2:p.desc2||'',sleeve:p.sleeve||'',
+        tglink:p.tgLink||'',fulldesc:p.fullDesc||'',
+        colorlist:JSON.stringify(p.colorList||[]),
+        mixenabled:p.mixEnabled?'1':'',mixdesc:p.mixDesc||'',mixminorder:p.mixMinOrder||'',
+        sizepricelist:JSON.stringify(p.sizePriceList||[]),
+        fabrictags:JSON.stringify(p.fabricTags||[]),
+        siteimg:p.img||null,siteimg2:p.img2||null
+      });
+    });
+    var restoredCount=0;
+    TABS.forEach(function(tab){
+      var brandsForTab=byTabBrand[tab];
+      if(!brandsForTab){addBrand(tab);return;}
+      Object.keys(brandsForTab).forEach(function(brandName){
+        restoredCount+=brandsForTab[brandName].length;
+        addBrand(tab,brandName,brandsForTab[brandName]);
+      });
+    });
+    setTimeout(function(){
+      save();
+      addNotif('📦 '+restoredCount+' محصول از فایربیس روی این دستگاه بازسازی شد');
+    },300);
+  }).catch(function(e){
+    console.error('hydrateProductsFromFirestore error',e);
+    TABS.forEach(function(t){addBrand(t);});
+    addNotif('❌ بازسازی محصولات از فایربیس ناموفق بود: '+(e&&e.message?e.message:e));
+  });
+}
 var _loading=false;
 function load(){
   _loading=true;
@@ -8304,7 +8372,7 @@ function load(){
     var archRaw=localStorage.getItem('rv_archive');
     if(archRaw)try{ARCHIVE=JSON.parse(archRaw)||[];}catch(e){ARCHIVE=[];}
     var raw=localStorage.getItem('rv10')||localStorage.getItem('rv_final')||localStorage.getItem('rv9')||localStorage.getItem('rv8');
-    if(!raw){TABS.forEach(function(t){addBrand(t);});_loading=false;initBanners();return;}
+    if(!raw){hydrateProductsFromFirestore();_loading=false;initBanners();return;}
     var d=JSON.parse(raw);
     if(d.note)document.getElementById('NOTE').value=d.note;
     if(d.tgk)document.getElementById('TGK').value=d.tgk;
@@ -8934,6 +9002,44 @@ window.RV_TESTS=[
     if(!document.getElementById('p3').classList.contains('on'))throw new Error('انتخاب یه دسته‌ی دیگه باید تب رو عوض کنه');
     if(getComputedStyle(document.getElementById('SUBNAV')).display!=='none')throw new Error('بعد از انتخاب، کرکره باید خودکار جمع بشه');
     showTab('pf',document.querySelector('.tab.on'));
+  }},
+  {name:'وظایف تیم: نمایش لیست و نشان تعداد وظایف انجام‌نشده باید درست باشه',fn:function(){
+    var savedRows=TEAM_TASKS_ROWS;
+    var fakeRows=[
+      {id:'t1',text:'وظیفه اول',voice:null,done:false},
+      {id:'t2',text:'وظیفه دوم',voice:null,done:true,doneNote:'انجام شد',donePhoto:null,doneVoice:null}
+    ];
+    // مطمئن شو عنصر نشان برای تست موجوده (تو نقش مدیر تزریق نمی‌شه، پس موقتاً می‌سازیمش)
+    var dotExisted=!!document.getElementById('TASKDOT');
+    var tempDot=null;
+    if(!dotExisted){tempDot=document.createElement('span');tempDot.id='TASKDOT';document.body.appendChild(tempDot);}
+    TEAM_TASKS_ROWS=fakeRows;
+    renderTeamTaskList(fakeRows);
+    var listHtml=document.getElementById('TASK_LIST_TEAM').innerHTML;
+    var pendingCount=fakeRows.filter(function(t){return !t.done;}).length;
+    document.getElementById('TASKDOT').textContent=pendingCount;
+    var dotText=document.getElementById('TASKDOT').textContent;
+    if(tempDot)tempDot.remove();
+    TEAM_TASKS_ROWS=savedRows;
+    if(listHtml.indexOf('وظیفه اول')===-1)throw new Error('وظیفه‌ی انجام‌نشده باید تو لیست نشون داده بشه');
+    if(listHtml.indexOf('انجام شد')===-1)throw new Error('وظیفه‌ی انجام‌شده باید وضعیتش رو نشون بده');
+    if(listHtml.indexOf('✅ انجام دادم')===-1)throw new Error('برای وظیفه‌ی انجام‌نشده باید دکمه‌ی تکمیل باشه');
+    if(dotText!=='1')throw new Error('نشان باید تعداد وظایف انجام‌نشده (۱) رو نشون بده، دریافت شد: '+dotText);
+  }},
+  {name:'وظایف تیم: ضبط ویس - پاک‌کردن باید state رو کامل خالی کنه',fn:function(){
+    TASK_VOICE.data['test_target']='data:audio/webm;base64,FAKE';
+    var tempWrap=document.createElement('div');
+    tempWrap.id='TVWRAP_test_target';
+    document.body.appendChild(tempWrap);
+    renderTaskVoiceUI('test_target');
+    var hasAudioBeforeClear=tempWrap.innerHTML.indexOf('<audio')>-1;
+    clearTaskVoice('test_target');
+    var stillHasData='test_target' in TASK_VOICE.data;
+    var hasButtonAfterClear=tempWrap.innerHTML.indexOf('🎤 ضبط ویس')>-1;
+    tempWrap.remove();
+    if(!hasAudioBeforeClear)throw new Error('قبل از پاک‌کردن باید پخش‌کننده‌ی ویس نشون داده بشه');
+    if(stillHasData)throw new Error('بعد از حذف، دیتای ویس باید کامل از state پاک بشه');
+    if(!hasButtonAfterClear)throw new Error('بعد از حذف، دوباره باید دکمه‌ی ضبط نشون داده بشه');
   }}
 ];
 async function runAllTests(){
@@ -9093,6 +9199,210 @@ function loadTeamSummaryReport(){
     box.innerHTML='<div class="stat serr">خطا: '+(e.message||e.code)+'</div>';
   });
 }
+// ══════════ سیستم وظایف روزانه‌ی تیم ══════════
+var TASK_VOICE={recorder:null,chunks:[],stream:null,startTime:0,timer:null,target:null,data:{}};
+var TEAM_TASKS_UNSUB=null;
+var TEAM_TASKS_ROWS=[];
+function toggleTaskVoiceRec(target){
+  if(TASK_VOICE.recorder&&TASK_VOICE.recorder.state==='recording'){stopTaskVoiceRec();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){alert('مرورگرت از ضبط صدا پشتیبانی نمی‌کنه');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    TASK_VOICE.stream=stream;TASK_VOICE.chunks=[];TASK_VOICE.target=target;
+    var mime=(window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported('audio/webm'))?'audio/webm':'';
+    TASK_VOICE.recorder=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+    TASK_VOICE.recorder.ondataavailable=function(e){if(e.data&&e.data.size>0)TASK_VOICE.chunks.push(e.data);};
+    TASK_VOICE.recorder.onstop=function(){
+      var blob=new Blob(TASK_VOICE.chunks,{type:TASK_VOICE.recorder.mimeType||'audio/webm'});
+      var reader=new FileReader();
+      reader.onload=function(){TASK_VOICE.data[target]=reader.result;renderTaskVoiceUI(target);};
+      reader.readAsDataURL(blob);
+      stream.getTracks().forEach(function(t){t.stop();});
+    };
+    TASK_VOICE.recorder.start();
+    TASK_VOICE.startTime=Date.now();
+    updateTaskVoiceBtnTimer(target);
+    TASK_VOICE.timer=setInterval(function(){updateTaskVoiceBtnTimer(target);},500);
+  }).catch(function(err){
+    alert('اجازه‌ی دسترسی به میکروفون داده نشد.\n'+(err&&err.message?err.message:''));
+  });
+}
+function stopTaskVoiceRec(){
+  if(TASK_VOICE.timer){clearInterval(TASK_VOICE.timer);TASK_VOICE.timer=null;}
+  if(TASK_VOICE.recorder&&TASK_VOICE.recorder.state==='recording')TASK_VOICE.recorder.stop();
+}
+function updateTaskVoiceBtnTimer(target){
+  var btn=document.getElementById('TVBTN_'+target);
+  if(!btn)return;
+  var secs=Math.floor((Date.now()-TASK_VOICE.startTime)/1000);
+  var mm=Math.floor(secs/60),ss=secs%60;
+  btn.textContent='⏹️ توقف ('+mm+':'+(ss<10?'0':'')+ss+')';
+}
+function renderTaskVoiceUI(target){
+  var container=document.getElementById('TVWRAP_'+target);
+  if(!container)return;
+  var b64=TASK_VOICE.data[target];
+  if(b64){
+    container.innerHTML='<audio controls src="'+b64+'" style="width:100%;height:34px;margin-top:4px"></audio>'+
+      '<button type="button" class="sbig" style="background:#eee;color:#555;margin-top:6px;padding:8px" onclick="clearTaskVoice(\''+target+'\')">🗑️ حذف و ضبط دوباره</button>';
+  }else{
+    container.innerHTML='<button type="button" class="sbig" id="TVBTN_'+target+'" style="background:#eee;color:#555;padding:8px" onclick="toggleTaskVoiceRec(\''+target+'\')">🎤 ضبط ویس</button>';
+  }
+}
+function clearTaskVoice(target){delete TASK_VOICE.data[target];renderTaskVoiceUI(target);}
+function sendNewTeamTask(){
+  if(!initFirebase())return;
+  var person=V('TASK_PERSON');
+  var text=document.getElementById('TASK_TEXT').value.trim();
+  var stat=document.getElementById('TASK_SEND_STAT');
+  if(!text){stat.textContent='متن وظیفه رو بنویس';stat.className='stat serr';return;}
+  var todayIso=new Date().toISOString().slice(0,10);
+  stat.textContent='در حال ارسال...';stat.className='stat sload';
+  fbDb.collection('teamTasks').add({
+    person:person,text:text,voice:TASK_VOICE.data['new']||null,
+    dateKey:todayIso,createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    done:false,doneAt:null,doneNote:null,donePhoto:null,doneVoice:null
+  }).then(function(){
+    stat.textContent='✅ وظیفه ارسال شد';stat.className='stat sok';
+    document.getElementById('TASK_TEXT').value='';
+    clearTaskVoice('new');
+    loadTeamTasksAdmin();
+  }).catch(function(e){
+    stat.textContent='خطا: '+(e.message||e);stat.className='stat serr';
+  });
+}
+function loadTeamTasksAdmin(){
+  if(!initFirebase())return;
+  var list=document.getElementById('TASK_LIST_ADMIN');
+  if(!list)return;
+  list.innerHTML='<div class="stat sload">در حال دریافت...</div>';
+  var todayIso=new Date().toISOString().slice(0,10);
+  fbDb.collection('teamTasks').where('dateKey','==',todayIso).limit(100).get().then(function(snap){
+    if(snap.empty){list.innerHTML='<div class="nores">هنوز وظیفه‌ای برای امروز ثبت نشده</div>';return;}
+    var rows=[];
+    snap.forEach(function(doc){rows.push(Object.assign({id:doc.id},doc.data()));});
+    rows.sort(function(a,b){
+      var at=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+      var bt=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+      return bt-at;
+    });
+    var h='';
+    rows.forEach(function(t){
+      var name=t.person==='sales'?'علی':'مبینا';
+      h+='<div class="card" style="border:1.5px solid '+(t.done?'#2a9d5c':'#d4a87a')+';margin-bottom:8px;padding:10px">';
+      h+='<div style="font-weight:900;color:#3d2b1f;font-size:0.82rem">'+(t.done?'✅':'⏳')+' '+name+'</div>';
+      h+='<div style="font-size:0.8rem;color:#3d2b1f;margin-top:4px">'+escHtml(t.text)+'</div>';
+      if(t.voice)h+='<audio controls src="'+t.voice+'" style="width:100%;height:32px;margin-top:6px"></audio>';
+      if(t.done){
+        h+='<div style="border-top:1px dashed #d4a87a;margin-top:8px;padding-top:8px;font-size:0.76rem;color:#2a9d5c">گزارش انجام:</div>';
+        if(t.doneNote)h+='<div style="font-size:0.78rem;color:#3d2b1f;margin-top:2px">'+escHtml(t.doneNote)+'</div>';
+        if(t.donePhoto)h+='<img src="'+t.donePhoto+'" style="max-width:100%;border-radius:8px;margin-top:6px">';
+        if(t.doneVoice)h+='<audio controls src="'+t.doneVoice+'" style="width:100%;height:32px;margin-top:6px"></audio>';
+      }
+      h+='</div>';
+    });
+    list.innerHTML=h;
+  }).catch(function(e){list.innerHTML='<div class="stat serr">خطا: '+(e.message||e)+'</div>';});
+}
+function startTeamTasksListener(){
+  if(!CURRENT_ROLE)return;
+  if(!ADMIN_IS_READY){whenAdminReady(startTeamTasksListener);return;}
+  if(!initFirebase())return;
+  if(TEAM_TASKS_UNSUB){TEAM_TASKS_UNSUB();TEAM_TASKS_UNSUB=null;}
+  TEAM_TASKS_UNSUB=fbDb.collection('teamTasks').where('person','==',CURRENT_ROLE).onSnapshot(function(snap){
+    var rows=[];
+    snap.forEach(function(doc){rows.push(Object.assign({id:doc.id},doc.data()));});
+    rows.sort(function(a,b){
+      var at=(a.createdAt&&a.createdAt.toMillis)?a.createdAt.toMillis():0;
+      var bt=(b.createdAt&&b.createdAt.toMillis)?b.createdAt.toMillis():0;
+      return bt-at;
+    });
+    TEAM_TASKS_ROWS=rows;
+    var pendingCount=rows.filter(function(t){return !t.done;}).length;
+    var dot=document.getElementById('TASKDOT');
+    if(dot){
+      if(pendingCount>0){dot.textContent=pendingCount;dot.style.display='block';}
+      else{dot.style.display='none';}
+    }
+    renderTeamTaskList(rows);
+  },function(err){
+    var list=document.getElementById('TASK_LIST_TEAM');
+    if(list)list.innerHTML='<div class="stat serr">خطا در دریافت وظایف: '+(err.message||err)+'</div>';
+  });
+}
+function renderTeamTaskList(rows){
+  var list=document.getElementById('TASK_LIST_TEAM');
+  if(!list)return;
+  if(!rows.length){list.innerHTML='<div class="nores">هنوز وظیفه‌ای برات ثبت نشده</div>';return;}
+  var h='';
+  rows.forEach(function(t){
+    h+='<div class="card" style="border:1.5px solid '+(t.done?'#2a9d5c':'#d4a87a')+';margin-bottom:8px;padding:10px">';
+    h+='<div style="font-size:0.82rem;color:#3d2b1f;font-weight:700">'+escHtml(t.text)+'</div>';
+    if(t.voice)h+='<audio controls src="'+t.voice+'" style="width:100%;height:32px;margin-top:6px"></audio>';
+    if(t.done){
+      h+='<div style="color:#2a9d5c;font-size:0.78rem;font-weight:900;margin-top:8px">✅ انجام شد</div>';
+      if(t.doneNote)h+='<div style="font-size:0.76rem;color:#5a4a3a;margin-top:2px">'+escHtml(t.doneNote)+'</div>';
+      if(t.donePhoto)h+='<img src="'+t.donePhoto+'" style="max-width:100%;border-radius:8px;margin-top:6px">';
+      if(t.doneVoice)h+='<audio controls src="'+t.doneVoice+'" style="width:100%;height:32px;margin-top:6px"></audio>';
+    }else{
+      h+='<button type="button" class="sbig stg" style="margin-top:8px" onclick="openTaskDoneForm(\''+t.id+'\')">✅ انجام دادم</button>';
+      h+='<div id="TDFORM_'+t.id+'" style="display:none;margin-top:8px;border-top:1px dashed #d4a87a;padding-top:8px">'+
+        '<textarea class="fi" id="TDNOTE_'+t.id+'" rows="2" placeholder="توضیح کوتاه (اختیاری)"></textarea>'+
+        '<input type="file" accept="image/*" id="TDPHOTO_'+t.id+'" style="margin-top:6px;font-size:0.72rem">'+
+        '<div id="TVWRAP_done_'+t.id+'" style="margin-top:6px"><button type="button" class="sbig" id="TVBTN_done_'+t.id+'" style="background:#eee;color:#555;padding:8px" onclick="toggleTaskVoiceRec(\'done_'+t.id+'\')">🎤 ضبط ویس</button></div>'+
+        '<button type="button" class="sbig stg" style="margin-top:8px" onclick="submitTaskDone(\''+t.id+'\')">ثبت انجام وظیفه</button>'+
+        '<div class="stat" id="TDSTAT_'+t.id+'"></div>'+
+      '</div>';
+    }
+    h+='</div>';
+  });
+  list.innerHTML=h;
+}
+function openTaskDoneForm(taskId){
+  var form=document.getElementById('TDFORM_'+taskId);
+  if(form)form.style.display=form.style.display==='none'?'block':'none';
+}
+function submitTaskDone(taskId){
+  if(!initFirebase())return;
+  var stat=document.getElementById('TDSTAT_'+taskId);
+  var note=document.getElementById('TDNOTE_'+taskId).value.trim();
+  var fileInput=document.getElementById('TDPHOTO_'+taskId);
+  var voiceB64=TASK_VOICE.data['done_'+taskId]||null;
+  stat.textContent='در حال ثبت...';stat.className='stat sload';
+  function finish(photoB64){
+    fbDb.collection('teamTasks').doc(taskId).update({
+      done:true,doneAt:firebase.firestore.FieldValue.serverTimestamp(),
+      doneNote:note||null,donePhoto:photoB64||null,doneVoice:voiceB64
+    }).then(function(){
+      stat.textContent='✅ ثبت شد';stat.className='stat sok';
+      clearTaskVoice('done_'+taskId);
+      var row=TEAM_TASKS_ROWS.find(function(t){return t.id===taskId;});
+      if(row){
+        row.done=true;row.doneNote=note||null;row.donePhoto=photoB64||null;row.doneVoice=voiceB64;
+        renderTeamTaskList(TEAM_TASKS_ROWS);
+        var dot=document.getElementById('TASKDOT');
+        if(dot){
+          var pendingCount=TEAM_TASKS_ROWS.filter(function(t){return !t.done;}).length;
+          if(pendingCount>0){dot.textContent=pendingCount;dot.style.display='block';}
+          else{dot.style.display='none';}
+        }
+      }
+    }).catch(function(e){
+      stat.textContent='خطا: '+(e.message||e);stat.className='stat serr';
+    });
+  }
+  var f=fileInput.files[0];
+  if(f){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      resizeDataUrl(e.target.result,800,0.7,function(resized){finish(resized);});
+    };
+    reader.readAsDataURL(f);
+  }else{
+    finish(null);
+  }
+}
+function openTaskPanel(){document.getElementById('TASKPANEL').classList.add('open');}
+function closeTaskPanel(){document.getElementById('TASKPANEL').classList.remove('open');}
 function initAdminsTab(){
   if(CURRENT_ROLE)return;
   var dateEl=document.getElementById('ADM_LOG_DATE');
@@ -9103,6 +9413,7 @@ function initAdminsTab(){
     if(dispEl)dispEl.value=isoToJalaliDisp(todayIso);
   }
   loadAdminPasswordNotes();
+  loadTeamTasksAdmin();
 }
 function teamPinToPassword(pin){return 'rv'+pin;}
 function showRoleSelectGate(){
@@ -9167,6 +9478,19 @@ function injectTeamAccountBar(role){
   bar.innerHTML='<span>👤 '+member.label+'</span><span><a href="javascript:void(0)" onclick="teamLogout()" style="color:#f9f0e8;text-decoration:underline">خروج</a></span>';
   var root=document.getElementById('APP_ROOT');
   root.insertBefore(bar,root.firstChild);
+  if(!document.getElementById('TASK_BTN')){
+    var wrap=document.querySelector('.notif-wrap');
+    if(wrap){
+      var tbtn=document.createElement('button');
+      tbtn.className='notif-btn';
+      tbtn.id='TASK_BTN';
+      tbtn.setAttribute('aria-label','وظایف من');
+      tbtn.setAttribute('onclick','openTaskPanel()');
+      tbtn.innerHTML='📋<span class="new-badge" id="TASKDOT" style="background:#c0304a;border-color:#8a2038">0</span>';
+      wrap.insertBefore(tbtn,wrap.firstChild);
+    }
+  }
+  startTeamTasksListener();
 }
 var _rvOrigShowTab=showTab;
 var TAB_LABELS_FA={pf:'خانه',pcust:'باشگاه مشتریان',pc:'تولید محتوا',psitecontent:'محتوای سایت',p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',ppdf:'PDF قیمت',ps:'جستجو',pa:'آرشیو',psite:'سایت',psettings:'تنظیمات اتصال',padmins:'ادمین‌ها'};
