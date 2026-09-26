@@ -484,6 +484,13 @@ input[type=file]{display:none}
   <button type="button" class="jcal-today" onclick="jcalToday()">امروز</button>
 </div>
 </div>
+<div id="SUBNAV_WRAP" style="display:none;position:sticky;top:0;z-index:400;background:#f9f0e8;padding-bottom:8px;margin-bottom:8px;border-bottom:2px solid #e2cdb0">
+  <button type="button" id="SUBNAV_TOGGLE" onclick="toggleSubNavAccordion()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1.5px solid #d4a87a;border-radius:10px;background:#fff;font-weight:900;color:#3d2b1f;font-size:0.86rem;cursor:pointer">
+    <span>📂 دسته‌بندی: <span id="SUBNAV_CURRENT_LABEL" style="color:#7a5c1a"></span></span>
+    <span id="SUBNAV_ARROW" style="transition:transform 0.2s">▾</span>
+  </button>
+  <div class="tabs" id="SUBNAV" style="display:none;flex-direction:column;overflow-x:visible;max-height:60vh;overflow-y:auto;background:#fff;border:1.5px solid #d4a87a;border-top:none;border-radius:0 0 10px 10px;margin-top:-1px;padding:6px"></div>
+</div>
 <div class="pg" id="p1"><div class="card"><div class="ctitle">سوتین و ست سوتین</div><button class="addb" onclick="addBrand('p1')">+ افزودن برند</button><div id="BB-p1"></div></div></div>
 <div class="pg" id="p2"><div class="card"><div class="ctitle">نیمتنه و ست نیمتنه</div><button class="addb" onclick="addBrand('p2')">+ افزودن برند</button><div id="BB-p2"></div></div></div>
 <div class="pg" id="p3"><div class="card"><div class="ctitle">شورت</div><button class="addb" onclick="addBrand('p3')">+ افزودن برند</button><div id="BB-p3"></div></div></div>
@@ -535,7 +542,6 @@ input[type=file]{display:none}
 </div>
 
 
-<div class="tabs" id="SUBNAV" style="display:none"></div>
 <div class="pg on" id="pf">
   <div class="fx-widgets-row rv-owner-only">
     <div class="fx-widget" id="FX_USD">
@@ -3116,14 +3122,34 @@ var SITE_GROUP_TABS=[
   {id:'psite',l:'سایت'},{id:'psettings',l:'تنظیمات اتصال'}
 ];
 function renderSubNavAndOpen(list,defaultId){
+  var wrap=document.getElementById('SUBNAV_WRAP');
   var el=document.getElementById('SUBNAV');
   el.innerHTML=list.map(function(t){
-    return '<button type="button" class="tab" onclick="showTab(\''+t.id+'\',this)">'+t.l+'</button>';
+    return '<button type="button" class="tab" style="width:100%;text-align:right;margin-bottom:4px" data-tabid="'+t.id+'" onclick="selectSubNavTab(\''+t.id+'\',this)">'+t.l+'</button>';
   }).join('');
-  el.style.display='flex';
-  var defBtn=el.querySelector('button');
-  list.forEach(function(t,i){if(t.id===defaultId)defBtn=el.children[i];});
-  showTab(defaultId,defBtn);
+  wrap.style.display='block';
+  el.style.display='none';
+  document.getElementById('SUBNAV_ARROW').style.transform='rotate(0deg)';
+  var defLabel=defaultId;
+  list.forEach(function(t){if(t.id===defaultId)defLabel=t.l;});
+  document.getElementById('SUBNAV_CURRENT_LABEL').textContent=defLabel;
+  showTab(defaultId,null);
+}
+function toggleSubNavAccordion(){
+  var el=document.getElementById('SUBNAV');
+  var arrow=document.getElementById('SUBNAV_ARROW');
+  var isOpen=el.style.display==='block';
+  el.style.display=isOpen?'none':'block';
+  arrow.style.transform=isOpen?'rotate(0deg)':'rotate(180deg)';
+}
+function selectSubNavTab(id,btn){
+  var wrap=document.getElementById('SUBNAV_WRAP');
+  var label=btn?btn.textContent:id;
+  document.getElementById('SUBNAV_CURRENT_LABEL').textContent=label;
+  document.getElementById('SUBNAV').style.display='none';
+  document.getElementById('SUBNAV_ARROW').style.transform='rotate(0deg)';
+  showTab(id,null);
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function openProductsGroup(){renderSubNavAndOpen(PRODUCTS_GROUP_TABS,'p1');}
 function openSiteGroup(){renderSubNavAndOpen(SITE_GROUP_TABS,'psite');}
@@ -7214,13 +7240,6 @@ function toggleCgCup(cup,btn){
   if(idx>-1){CG_CUPS.splice(idx,1);btn.classList.remove('on');}
   else{CG_CUPS.push(cup);btn.classList.add('on');}
 }
-function setCgBraSizePreset(sizeText,cups){
-  document.getElementById('CG_SIZE_RANGE').value=sizeText;
-  CG_CUPS=cups.slice();
-  document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(btn){
-    btn.classList.toggle('on',cups.indexOf(btn.textContent.trim())>-1);
-  });
-}
 function expandBandRange(text){
   var v=toEnDigits(text||'').trim();
   if(!v)return '';
@@ -7785,11 +7804,6 @@ function resetSendMedia(){
   SEND_MEDIA=[];
   renderSendMediaList();
 }
-function dataURLtoBlob(dataurl){
-  var arr=dataurl.split(','), mime=arr[0].match(/:(.*?);/)[1], bstr=atob(arr[1]), n=bstr.length, u8arr=new Uint8Array(n);
-  while(n--){u8arr[n]=bstr.charCodeAt(n);}
-  return new Blob([u8arr],{type:mime});
-}
 function addSendMediaFiles(fileList){
   Array.from(fileList).forEach(function(f){
     if(f.type.indexOf('video')===0){
@@ -7847,22 +7861,6 @@ function removeSendMedia(idx){
   SEND_MEDIA.splice(idx,1);
   if(wasPrimary&&SEND_MEDIA.length)SEND_MEDIA[0].primary=true;
   renderSendMediaList();
-}
-function sendPhotoTo(baseUrl,token,chatId,blob,caption,cb){
-  var fd=new FormData();
-  fd.append('chat_id',chatId);
-  fd.append('photo',blob,'image.jpg');
-  fd.append('caption',caption);
-  var xhr=new XMLHttpRequest();
-  xhr.open('POST',baseUrl+token+'/sendPhoto',true);
-  xhr.timeout=60000;
-  xhr.onload=function(){
-    try{var r=JSON.parse(xhr.responseText);cb(r.ok?null:(r.description||'خطا'));}
-    catch(e){cb('خطا در پاسخ');}
-  };
-  xhr.onerror=function(){cb('خطا در اتصال');};
-  xhr.ontimeout=function(){cb('زمان تمام شد');};
-  xhr.send(fd);
 }
 var SITE_BASE_URL='https://amingrimy-commits.github.io/rosavie-app/shop.html';
 function escapeHtmlCaption(text){
@@ -8920,6 +8918,22 @@ window.RV_TESTS=[
     if(barEl)barEl.remove();
     testBar.remove();
     if(barHtml.indexOf('تغییر رمز')>-1)throw new Error('دیگه نباید هیچ دکمه‌ای به تغییر رمز خودسرویس اشاره کنه');
+  }},
+  {name:'منوی دسته‌بندی محصولات: باید بالای صفحه و کرکره‌ای باشه، بعد از انتخاب جمع بشه',fn:function(){
+    openProductsGroup();
+    var wrap=document.getElementById('SUBNAV_WRAP');
+    if(getComputedStyle(wrap).position!=='sticky')throw new Error('منوی دسته‌بندی باید همیشه بالای صفحه بچسبه (sticky)');
+    if(getComputedStyle(document.getElementById('SUBNAV')).display!=='none')throw new Error('لیست دسته‌بندی باید در حالت اول بسته باشه');
+    if(document.getElementById('SUBNAV_CURRENT_LABEL').textContent!=='سوتین+ست')throw new Error('برچسب دسته‌بندی فعلی درست نشون داده نشد');
+    toggleSubNavAccordion();
+    if(getComputedStyle(document.getElementById('SUBNAV')).display!=='block')throw new Error('با زدن دکمه باید لیست باز بشه');
+    var opts=document.querySelectorAll('#SUBNAV button.tab');
+    if(opts.length!==PRODUCTS_GROUP_TABS.length)throw new Error('تعداد گزینه‌های دسته‌بندی درست نیست');
+    var p3Btn=Array.prototype.filter.call(opts,function(b){return b.getAttribute('data-tabid')==='p3';})[0];
+    p3Btn.click();
+    if(!document.getElementById('p3').classList.contains('on'))throw new Error('انتخاب یه دسته‌ی دیگه باید تب رو عوض کنه');
+    if(getComputedStyle(document.getElementById('SUBNAV')).display!=='none')throw new Error('بعد از انتخاب، کرکره باید خودکار جمع بشه');
+    showTab('pf',document.querySelector('.tab.on'));
   }}
 ];
 async function runAllTests(){

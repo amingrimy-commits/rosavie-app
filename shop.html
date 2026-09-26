@@ -1027,11 +1027,6 @@ function setCatFromHome(v){
   body.classList.remove('open');
   chev.classList.remove('open');
 }
-function setCat(v){
-  if(v!=='all'&&!requireLoginGate())return;
-  CUR_CAT=v;CUR_BRAND='all';CUR_FABRIC_TAGS=[];renderChips();renderGrid();
-}
-
 function productCardHTML(p,clickExpr,groupCount){
   var st=p.stock==='in'?'<span class="badge-in">موجود</span>':p.stock==='call'?'<span class="badge-call">تماس بگیرید</span>':'<span class="badge-out">ناموجود</span>';
   var nm=productDisplayName(p);
@@ -1111,10 +1106,6 @@ function openModalForGroupInternal(group){
   window._CURGROUP=group;
   window._CURVARIANT=0;
   renderModalContent();
-}
-function openModalForProduct(p){
-  if(!p)return;
-  navTo('p~'+encodeURIComponent(p.code));
 }
 function setModalImgIdx(i){
   var p=window._CURGROUP&&window._CURGROUP[window._CURVARIANT];
@@ -1769,17 +1760,6 @@ function loadLaterList(){
   try{var raw=localStorage.getItem('rv_shop_later');LATER_LIST=raw?JSON.parse(raw):[];}catch(e){LATER_LIST=[];}
 }
 function saveLaterList(){try{localStorage.setItem('rv_shop_later',JSON.stringify(LATER_LIST));}catch(e){}}
-function moveCartItemToLater(i){
-  var c=CART[i];
-  if(!c)return;
-  var key='cart_'+(c.key||i);
-  scheduleRemoval(key,function(){
-    var idx=CART.findIndex(function(x){return (x.key||'')===(c.key||'')&&x.title===c.title;});
-    if(idx>-1)CART.splice(idx,1);
-    LATER_LIST.push({code:c.code,title:c.title,price:c.price,img:c.img||null,colorNote:c.colorNote||'',addedAt:Date.now()});
-    saveCart();saveLaterList();updateFab();updateListsHeaderBadge();
-  },'renderCart');
-}
 // ── مودال «ذخیره کالا در» — جایگزین حذف با شمارش معکوس برای «بعدا می‌خرم» ──
 var SAVE_LATER_CART_IDX=null;
 function openSaveLaterModal(i){
@@ -2037,7 +2017,6 @@ function goHome(){
   if(location.hash){navTo('');}
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function goProducts(){silentCloseDrawer();document.getElementById('GRID').scrollIntoView({behavior:'smooth',block:'start'});}
 function toggleProductsAcc(){
   var body=document.getElementById('PROD_ACC_BODY');
   var chev=document.getElementById('PROD_ACC_CHEV');
@@ -2068,7 +2047,6 @@ function openAccount(){
   navTo('account');
 }
 function closeAccount(){goHome();}
-function silentCloseAccount(){document.getElementById('ACCOUNT_OV').classList.remove('open');}
 
 // ── احراز هویت مشتری (نام + شماره تماس + رمز) ──
 var fbAuth=null;
@@ -2586,7 +2564,6 @@ var MAG_VIEW='list';
 function openMagazine(){
   navTo('magazine');
 }
-function closeMagazine(){goBack();}
 function magazineBack(){goBack();}
 function estimateReadingTime(a){
   var text=(a.richHtml||a.content||a.summary||'').replace(/<[^>]+>/g,' ');
@@ -3655,9 +3632,6 @@ setInterval(function(){
 },1000);
 function openVipProduct(code,discountPrice){
   navTo('p~'+encodeURIComponent(code)+(discountPrice?('~'+encodeURIComponent(discountPrice)):''));
-}
-function openByCode(code){
-  navTo('p~'+encodeURIComponent(code));
 }
 function loadSiteData(){
   db.collection('siteData').doc('homepage').get().then(function(doc){
