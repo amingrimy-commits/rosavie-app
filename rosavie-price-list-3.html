@@ -1911,6 +1911,7 @@ function startOrdersListener(){
   });
 }
 setTimeout(startOrdersListener,1200);
+setTimeout(startSettingsListener,1000);
 setTimeout(startConfirmedOrdersListener,1250);
 
 // ── پیام‌های پشتیبانی (زنده از Firestore) ──
@@ -3688,7 +3689,7 @@ function checkArchive(){
     row.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];
     if(_archProd&&_archProd.id)autoSyncDeleteProduct(_archProd.id);
   });
-  if(toArc.length)save();
+  if(toArc.length){save();syncArchiveToFirestore();}
 }
 function renderArchive(){
   var el=document.getElementById('ARCH_LIST');if(!el)return;
@@ -3712,7 +3713,7 @@ function restoreArc(id){
   document.querySelectorAll('[id^="B"][data-tab="'+a.tab+'"]').forEach(function(bl){var bn=document.getElementById('BN'+bl.id.slice(1));if(bn&&bn.value.trim()===a.brandName)bid=bl.id.slice(1);});
   if(bid){addRow(bid,a.tab,a.type,a.code,a.sizes,a.colors,a.minO,a.price,'in',a.imgId,null,a.title);}
   else{addBrand(a.tab,a.brandName,[{type:a.type,code:a.code,sizes:a.sizes,colors:a.colors,minO:a.minO,price:a.price,stock:'in',imgId:a.imgId,outSince:null,title:a.title}]);}
-  ARCHIVE.splice(i,1);save();renderArchive();setAStat('محصول به لیست قیمت برگشت','sok');
+  ARCHIVE.splice(i,1);save();syncArchiveToFirestore();renderArchive();setAStat('محصول به لیست قیمت برگشت','sok');
 }
 
 // ── SEARCH ──
@@ -4805,7 +4806,7 @@ function autoSyncBanners(){
 // ── VIP ──
 var VIP_PRODUCTS=[];
 var AUTO_SYNC_ENABLED=true;
-function toggleAutoSync(checked){AUTO_SYNC_ENABLED=checked;save();syncAutoSyncCheckboxes();}
+function toggleAutoSync(checked){AUTO_SYNC_ENABLED=checked;save();syncAutoSyncCheckboxes();syncSettingsToFirestore();}
 
 function vipSearch(q){
   var el=document.getElementById('VSRCH_RES');if(!el)return;
@@ -5245,6 +5246,44 @@ function startCustomerClubSync(){
     if(pg&&pg.classList.contains('on')&&typeof renderCustomerList==='function')renderCustomerList();
     CUSTOMER_CLUB_FIRST_LOAD=false;
   },function(err){console.error('customerClub listener error',err);});
+}
+function syncSettingsToFirestore(){
+  if(!initFirebase())return;
+  var payload={
+    tgk:V('TGK'),tgcid:V('TGCID'),tgcid2:V('TGCID2'),galleryCid:V('GALLERYCID'),
+    contentBackupCid:V('CONTENTBACKUPCID'),locCid:V('LOCCID'),orderCid:V('ORDERCID'),
+    orderCid2:V('ORDERCID2'),reportCid:V('REPORTCID'),backupCid:V('BACKUPCID'),custCid:V('CUSTCID'),
+    autoSync:AUTO_SYNC_ENABLED,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  fbDb.collection('settings').doc('appConfig').set(payload,{merge:true}).catch(function(e){
+    console.error('syncSettingsToFirestore error',e);
+  });
+}
+var SETTINGS_FIRST_LOAD=true;
+function startSettingsListener(){
+  if(!ADMIN_IS_READY){whenAdminReady(startSettingsListener);return;}
+  if(!initFirebase())return;
+  fbDb.collection('settings').doc('appConfig').onSnapshot(function(doc){
+    if(!doc.exists){
+      if(SETTINGS_FIRST_LOAD&&!CURRENT_ROLE){SETTINGS_FIRST_LOAD=false;syncSettingsToFirestore();}
+      return;
+    }
+    SETTINGS_FIRST_LOAD=false;
+    var d=doc.data();
+    SETTINGS_SYNC_APPLYING=true;
+    var fieldMap={tgk:'TGK',tgcid:'TGCID',tgcid2:'TGCID2',galleryCid:'GALLERYCID',contentBackupCid:'CONTENTBACKUPCID',locCid:'LOCCID',orderCid:'ORDERCID',orderCid2:'ORDERCID2',reportCid:'REPORTCID',backupCid:'BACKUPCID',custCid:'CUSTCID'};
+    Object.keys(fieldMap).forEach(function(k){
+      if(d[k]===undefined||d[k]===null)return;
+      var el=document.getElementById(fieldMap[k]);
+      if(el&&document.activeElement!==el)el.value=d[k];
+    });
+    if(typeof d.autoSync==='boolean'){
+      AUTO_SYNC_ENABLED=d.autoSync;
+      syncAutoSyncCheckboxes();
+    }
+    SETTINGS_SYNC_APPLYING=false;
+  },function(err){console.error('settings listener error',err);});
 }
 function syncCustomerClubToFirestore(){
   if(!initFirebase())return;
@@ -8321,6 +8360,39 @@ function save(){
   }catch(e){console.error('save error',e);}
 }
 
+function syncArchiveToFirestore(){
+  if(!initFirebase())return;
+  fbDb.collection('adminData').doc('archive').set({
+    items:ARCHIVE,updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){console.error('syncArchiveToFirestore error',e);});
+}
+function hydrateArchiveFromFirestore(){
+  if(!initFirebase())return;
+  fbDb.collection('adminData').doc('archive').get().then(function(doc){
+    if(!doc.exists)return;
+    var d=doc.data();
+    if(Array.isArray(d.items)){ARCHIVE=d.items;try{localStorage.setItem('rv_archive',JSON.stringify(ARCHIVE));}catch(e){}if(typeof renderArchive==='function')renderArchive();}
+  }).catch(function(e){console.error('hydrateArchiveFromFirestore error',e);});
+}
+function hydrateBannersAndVipFromFirestore(){
+  if(!initFirebase())return;
+  fbDb.collection('siteData').doc('homepage').get().then(function(doc){
+    if(!doc.exists)return;
+    var d=doc.data();
+    if(Array.isArray(d.banners)){
+      d.banners.forEach(function(b,i){
+        if(i>3)return;
+        if(b&&b.img)BANNERS[i]=b.img;
+        if(b&&b.link)BANNER_PRODUCT_CODE[i]=b.link;
+      });
+      initBanners();
+    }
+    if(Array.isArray(d.vip)){
+      VIP_PRODUCTS=d.vip;
+      if(typeof renderVipList==='function')renderVipList();
+    }
+  }).catch(function(e){console.error('hydrateBannersAndVipFromFirestore error',e);});
+}
 function hydrateProductsFromFirestore(){
   if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});return;}
   fbDb.collection('products').get().then(function(snap){
@@ -8371,8 +8443,9 @@ function load(){
   try{
     var archRaw=localStorage.getItem('rv_archive');
     if(archRaw)try{ARCHIVE=JSON.parse(archRaw)||[];}catch(e){ARCHIVE=[];}
+    else{hydrateArchiveFromFirestore();}
     var raw=localStorage.getItem('rv10')||localStorage.getItem('rv_final')||localStorage.getItem('rv9')||localStorage.getItem('rv8');
-    if(!raw){hydrateProductsFromFirestore();_loading=false;initBanners();return;}
+    if(!raw){hydrateProductsFromFirestore();hydrateBannersAndVipFromFirestore();_loading=false;initBanners();return;}
     var d=JSON.parse(raw);
     if(d.note)document.getElementById('NOTE').value=d.note;
     if(d.tgk)document.getElementById('TGK').value=d.tgk;
@@ -8504,15 +8577,17 @@ window.addEventListener('message',function(e){
 
 // auto-save checkboxes and fields
 [1,2,3,4,5,6,7,8,9,10,11].forEach(function(n){[1,2].forEach(function(c){var cb=document.getElementById('S'+n+'C'+c);if(cb)cb.onchange=save;});});
-document.getElementById('TGCID2').oninput=save;
-document.getElementById('GALLERYCID').oninput=save;
-document.getElementById('CONTENTBACKUPCID').oninput=save;
-document.getElementById('LOCCID').oninput=save;
-document.getElementById('ORDERCID').oninput=save;
-document.getElementById('ORDERCID2').oninput=save;
-document.getElementById('REPORTCID').oninput=save;
-document.getElementById('BACKUPCID').oninput=save;
-document.getElementById('CUSTCID').oninput=save;
+document.getElementById('TGK').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('TGCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('TGCID2').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('GALLERYCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('CONTENTBACKUPCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('LOCCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('ORDERCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('ORDERCID2').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('REPORTCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('BACKUPCID').oninput=function(){save();syncSettingsToFirestore();};
+document.getElementById('CUSTCID').oninput=function(){save();syncSettingsToFirestore();};
 document.getElementById('SEND_MEDIA_FILE').addEventListener('change',function(){
   if(this.files&&this.files.length)addSendMediaFiles(this.files);
   this.value='';
@@ -9087,7 +9162,7 @@ var TEAM_MEMBER_BY_EMAIL={};
 Object.keys(TEAM_MEMBERS).forEach(function(k){TEAM_MEMBER_BY_EMAIL[TEAM_MEMBERS[k].email]=TEAM_MEMBERS[k];});
 var ROLE_PERMISSIONS={
   sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,showOrdersPanel:true,hideOnlineOrders:true,defaultTab:'pcust'},
-  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps','pcust','pf'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc'}
+  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','ppdf','ps','pa','pcust','pf'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc'}
 };
 function currentTeamMemberLabel(){
   if(!CURRENT_ROLE)return null;
