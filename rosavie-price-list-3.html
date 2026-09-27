@@ -1089,12 +1089,12 @@ input[type=file]{display:none}
     <div class="stat" id="FBSTAT"></div>
   </div>
   <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔄 همگام‌سازی محصولات با سایت آنلاین</div>
-    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">با زدن این دکمه، همه‌ی محصولات (کد، قیمت، سایز، رنگ، موجودی، عکس و...) از این اپ به سرور فرستاده می‌شه. محصولاتی که از اپ حذف کرده باشی هم از سرور حذف می‌شن.</p>
-    <button class="sbig stg" onclick="syncProductsToFirestore()">🔄 همگام‌سازی محصولات الان</button>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">✅ از الان به بعد، هر محصولی که اضافه/ویرایش/حذف کنی (تو هر پنلی، خودت یا تیم)، خودکار و فوری با سرور همگام می‌شه — همیشه، بدون نیاز به هیچ تنظیمی. این دکمه فقط برای یه همگام‌سازیِ کامل و دستیِ کل لیست قیمته (مثلاً بعد از یه مشکل شبکه‌ای که چندتا محصول جا مونده باشن).</p>
+    <button class="sbig stg" onclick="syncProductsToFirestore()">🔄 همگام‌سازی کامل الان</button>
     <div class="stat" id="SYNCSTAT"></div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#9a6e3a;margin-top:10px;cursor:pointer">
       <input type="checkbox" id="AUTOSYNC_CHK" style="width:17px;height:17px" onchange="toggleAutoSync(this.checked)">
-      همگام‌سازی خودکار — هر محصولی که اضافه/ویرایش/حذف کنم، فقط همون یکی خودش سریع با سایت همگام بشه
+      همگام‌سازی خودکار بنرهای سایت (محصولات همیشه خودکارن، این فقط برای بنر صفحه‌ی اوله)
     </label>
   </div>
   <div class="card" style="border:2px solid #d4a87a"><div class="ctitle">📦 پشتیبان‌گیری کامل (برای مهاجرت به میزبانی جدید)</div>
@@ -1180,6 +1180,11 @@ input[type=file]{display:none}
   </div>
 </div>
 <div class="pg" id="padmins">
+  <div class="card" style="border:2px solid #c0304a"><div class="ctitle">🔄 همگام‌سازی کامل با فایربیس</div>
+    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">اگه علی/مبینا محصولی رو تو گوشیِ خودشون نمی‌بینن، یعنی احتمالاً اون‌ها هنوز به فایربیس نرسیدن (مثلاً چون «همگام‌سازی خودکار» یه زمانی خاموش بوده). این دکمه همه‌ی محصولاتِ همین گوشی رو یک‌جا به فایربیس می‌فرسته. بسته به تعداد محصول ممکنه چند دقیقه طول بکشه — صفحه رو باز نگه دار تا تموم بشه.</p>
+    <button class="sbig" style="background:#c0304a;color:#fff" onclick="if(confirm('همه‌ی محصولات همین گوشی به فایربیس فرستاده بشن؟ ممکنه چند دقیقه طول بکشه.'))fullSyncAllProductsToFirestore()">🔄 همگام‌سازی کامل همه‌ی محصولات</button>
+    <div class="stat" id="FULLSYNC_STAT"></div>
+  </div>
   <div class="card"><div class="ctitle">📋 ارسال وظیفه‌ی روزانه</div>
     <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">وظیفه رو براشون بفرست تا تو پنل خودشون (روی همون آیکون 📋 بالای صفحه) ببینن. می‌تونن تیک بزنن و براش توضیح، عکس یا ویس به‌عنوان مدرک بذارن.</p>
     <div class="g1"><span class="lbl">برای کی؟</span>
@@ -2418,8 +2423,7 @@ function collectSingleProduct(targetRid){
   }
   return result;
 }
-function autoSyncSingleProduct(rid){
-  if(!AUTO_SYNC_ENABLED)return;
+function autoSyncSingleProduct(rid,force,silent){
   if(!initFirebase())return;
   var prod=collectSingleProduct(rid);
   if(!prod||!prod.code)return;
@@ -2429,7 +2433,7 @@ function autoSyncSingleProduct(rid){
     var payload=Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
     var approxSize=JSON.stringify(payload).length;
     if(approxSize>200000){
-      addNotif('⚠️ «'+(prod.title||prod.code)+'» حجمش خیلی زیاده ('+Math.round(approxSize/1024)+'KB) — دارم عکسش رو بیشتر فشرده می‌کنم...');
+      if(!silent)addNotif('⚠️ «'+(prod.title||prod.code)+'» حجمش خیلی زیاده ('+Math.round(approxSize/1024)+'KB) — دارم عکسش رو بیشتر فشرده می‌کنم...');
       resizeDataUrl(imgData,480,0.7,function(smaller){
         prod.img=smaller;
         var payload2=Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
@@ -2441,11 +2445,13 @@ function autoSyncSingleProduct(rid){
   }
   function writeToFirestore(payload){
     fbDb.collection('products').doc(prod.id).set(payload).then(function(){
-      addNotif('🔄 «'+(prod.title||prod.code)+'» خودکار با سایت همگام شد');
+      if(!silent)addNotif('🔄 «'+(prod.title||prod.code)+'» خودکار با سایت همگام شد');
       trackContentActivity();
+      if(FULL_SYNC_RESOLVE)FULL_SYNC_RESOLVE(true);
     }).catch(function(e){
       addNotif('❌ همگام‌سازی «'+(prod.title||prod.code)+'» با سایت شکست خورد: '+(e&&e.message?e.message:e));
       console.error('autoSyncSingleProduct error',e);
+      if(FULL_SYNC_RESOLVE)FULL_SYNC_RESOLVE(false);
     });
   }
   if(prod.img){
@@ -2458,8 +2464,50 @@ function autoSyncSingleProduct(rid){
     pushIt(null);
   }
 }
+var FULL_SYNC_RESOLVE=null;
+function fullSyncAllProductsToFirestore(){
+  if(!initFirebase())return;
+  var allRids=[];
+  TABS.forEach(function(tab){
+    document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(bl){
+      bl.querySelectorAll(':scope .wt-row,:scope .nt-row,:scope .t5-row').forEach(function(row){
+        var rid=row.id.slice(1),cdEl=document.getElementById('CD'+rid);
+        if(!cdEl||!cdEl.value.trim())return;
+        allRids.push(rid);
+      });
+    });
+  });
+  var stat=document.getElementById('FULLSYNC_STAT');
+  if(!allRids.length){if(stat){stat.textContent='هیچ محصولی برای همگام‌سازی پیدا نشد';stat.className='stat serr';}return;}
+  if(stat){stat.textContent='در حال همگام‌سازی... 0 از '+allRids.length;stat.className='stat sload';}
+  var done=0,failed=0,i=0;
+  function next(){
+    if(i>=allRids.length){
+      if(stat){stat.textContent='✅ تمام شد: '+done+' موفق'+(failed?('، '+failed+' ناموفق'):'');stat.className=failed?'stat serr':'stat sok';}
+      addNotif('✅ همگام‌سازی کامل تمام شد: '+done+' محصول از '+allRids.length+' با فایربیس همگام شد');
+      if(!AUTO_SYNC_ENABLED){
+        setTimeout(function(){
+          if(confirm('همگام‌سازی کامل تموم شد ✅\n\nولی «همگام‌سازی خودکار» الان خاموشه — یعنی هر محصول جدیدی که بعد از این اضافه کنی، دوباره به فایربیس نمی‌رسه مگه اینکه دوباره همین دکمه رو بزنی.\n\nمی‌خوای همین الان روشنش کنم تا این مشکل دیگه تکرار نشه؟')){
+            document.getElementById('AUTOSYNC_CHK').checked=true;
+            toggleAutoSync(true);
+          }
+        },300);
+      }
+      FULL_SYNC_RESOLVE=null;
+      return;
+    }
+    var rid=allRids[i];i++;
+    FULL_SYNC_RESOLVE=function(ok){
+      FULL_SYNC_RESOLVE=null;
+      if(ok)done++;else failed++;
+      if(stat)stat.textContent='در حال همگام‌سازی... '+(done+failed)+' از '+allRids.length;
+      setTimeout(next,250);
+    };
+    autoSyncSingleProduct(rid,true,true);
+  }
+  next();
+}
 function autoSyncDeleteProduct(docId){
-  if(!AUTO_SYNC_ENABLED)return;
   if(!initFirebase())return;
   fbDb.collection('products').doc(docId).delete().then(function(){
     addNotif('🗑️ محصول از سایت هم حذف شد');
@@ -3644,7 +3692,7 @@ function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressRatio(f,3,4,40
 function togT(rid,tab){var btn=document.getElementById('TT'+rid);if(!btn)return;var seq=TSEQ[tab]||[];var i=seq.indexOf(btn.dataset.t);var nxt=seq[(i+1)%seq.length];btn.dataset.t=nxt;btn.className=TCLS[nxt];btn.textContent=TLBL[nxt];var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,tab);save();}
 function togSleeve(rid){var btn=document.getElementById('TS'+rid);if(!btn)return;var i=SLEEVE_SEQ.indexOf(btn.dataset.s);var nxt=SLEEVE_SEQ[(i+1)%SLEEVE_SEQ.length];btn.dataset.s=nxt;btn.className=SLEEVE_CLS[nxt];btn.textContent=SLEEVE_LBL[nxt];var row=document.getElementById('R'+rid);if(row)row.dataset.sleeve=nxt;save();}
 function togS(rid){var btn=document.getElementById('ST'+rid);if(!btn)return;if(btn.classList.contains('s-in')){btn.classList.replace('s-in','s-call');btn.textContent='تماس بگیرید';delete OUT_SINCE[rid];}else if(btn.classList.contains('s-call')){btn.classList.replace('s-call','s-out');btn.textContent='ناموجود';OUT_SINCE[rid]=Date.now();}else{btn.classList.replace('s-out','s-in');btn.textContent='موجود';delete OUT_SINCE[rid];}var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,row.dataset.tab);save();}
-function delR(rid){var el=document.getElementById('R'+rid);if(el){var _delProd=AUTO_SYNC_ENABLED?collectSingleProduct(rid):null;el.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];save();if(_delProd&&_delProd.id)autoSyncDeleteProduct(_delProd.id);}}
+function delR(rid){var el=document.getElementById('R'+rid);if(el){var _delProd=collectSingleProduct(rid);el.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];save();if(_delProd&&_delProd.id)autoSyncDeleteProduct(_delProd.id);}}
 
 // ── GET DATA ──
 function getBrands(tab){
@@ -3685,7 +3733,7 @@ function checkArchive(){
     ARCHIVE.push({id:genId(),tab:tab,brandName:bnEl?bnEl.value.trim():'',type:ttEl?ttEl.dataset.t:defType,
       code:V('CD'+rid)||'--',sizes:V('SZ'+rid)||'--',colors:V('CL'+rid)||'--',minO:V('MO'+rid)||'--',
       price:V('PR'+rid)||'--',imgId:IMG_IDS[rid]||null,title:tiEl?tiEl.value:'',archivedAt:Date.now()});
-    var _archProd=AUTO_SYNC_ENABLED?collectSingleProduct(rid):null;
+    var _archProd=collectSingleProduct(rid);
     row.remove();delete OUT_SINCE[rid];delete IMG_IDS[rid];delete IMAGES[rid];
     if(_archProd&&_archProd.id)autoSyncDeleteProduct(_archProd.id);
   });
@@ -7734,12 +7782,8 @@ function updateExistingProduct(rid,data){
   save();
   EDITING_RID=null;
   document.getElementById('EDIT_BANNER').style.display='none';
-  if(AUTO_SYNC_ENABLED){
-    delete CATALOG_IMG_CACHE[rid];
-    setTimeout(function(){autoSyncSingleProduct(rid);},600);
-  }else{
-    addNotif('ℹ️ همگام‌سازی خودکار خاموشه — این ویرایش فقط توی اپ ذخیره شد');
-  }
+  delete CATALOG_IMG_CACHE[rid];
+  setTimeout(function(){autoSyncSingleProduct(rid);},600);
   return true;
 }
 function saveProductFromCaption(data){
@@ -7773,12 +7817,8 @@ function saveProductFromCaption(data){
     addBrand(data.category,data.brand,[{type:data.type,code:data.code,sizes:data.finalSize,colors:data.color,minO:data.minOrder,price:data.price,stock:'in',imgId:newImgId,outSince:null,title:data.title,material:data.material,country:data.country,desc1:data.desc1,desc2:data.desc2,extraImgIds:extraInfo.extraImgIds,fulldesc:data.fullDesc,tglink:data.manualTgLink||'',colorlist:extraInfo.colorlist,mixenabled:extraInfo.mixenabled,mixdesc:extraInfo.mixdesc,mixminorder:extraInfo.mixminorder,sizepricelist:extraInfo.sizepricelist,siteimg:extraInfo.siteimg,siteimg2:extraInfo.siteimg2,fabrictags:extraInfo.fabrictags,patterntags:extraInfo.patterntags}]);
   }
   save();
-  if(AUTO_SYNC_ENABLED){
-    var _newRid=findRowIdByCode(data.code);
-    if(_newRid)setTimeout(function(){autoSyncSingleProduct(_newRid);},1200);
-  }else{
-    addNotif('ℹ️ همگام‌سازی خودکار خاموشه — این محصول فقط توی اپ ذخیره شد، برای رفتن به سایت باید همگام‌سازی کامل رو بزنی یا تیک «همگام‌سازی خودکار» رو روشن کنی');
-  }
+  var _newRid=findRowIdByCode(data.code);
+  if(_newRid)setTimeout(function(){autoSyncSingleProduct(_newRid);},1200);
   return true;
 }
 function saveProductWithDuplicateCheck(data,onResolved){
@@ -8394,9 +8434,15 @@ function hydrateBannersAndVipFromFirestore(){
   }).catch(function(e){console.error('hydrateBannersAndVipFromFirestore error',e);});
 }
 function hydrateProductsFromFirestore(){
-  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});return;}
+  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;return;}
   fbDb.collection('products').get().then(function(snap){
-    if(snap.empty){TABS.forEach(function(t){addBrand(t);});return;}
+    document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){bl.remove();});
+    if(snap.empty){
+      TABS.forEach(function(t){addBrand(t);});
+      _loading=false;
+      setTimeout(function(){preloadAll(function(){});checkArchive();renderVipList();},400);
+      return;
+    }
     var byTabBrand={};
     snap.forEach(function(doc){
       var p=doc.data();
@@ -8427,14 +8473,16 @@ function hydrateProductsFromFirestore(){
         addBrand(tab,brandName,brandsForTab[brandName]);
       });
     });
+    _loading=false;
     setTimeout(function(){
       save();
-      addNotif('📦 '+restoredCount+' محصول از فایربیس روی این دستگاه بازسازی شد');
-    },300);
+      preloadAll(function(){});checkArchive();renderVipList();
+    },400);
   }).catch(function(e){
     console.error('hydrateProductsFromFirestore error',e);
     TABS.forEach(function(t){addBrand(t);});
-    addNotif('❌ بازسازی محصولات از فایربیس ناموفق بود: '+(e&&e.message?e.message:e));
+    _loading=false;
+    addNotif('⚠️ اتصال به فایربیس برای محصولات برقرار نشد. اگه اینترنت وصله، یه‌بار صفحه رو Refresh کن.');
   });
 }
 var _loading=false;
@@ -8445,7 +8493,7 @@ function load(){
     if(archRaw)try{ARCHIVE=JSON.parse(archRaw)||[];}catch(e){ARCHIVE=[];}
     else{hydrateArchiveFromFirestore();}
     var raw=localStorage.getItem('rv10')||localStorage.getItem('rv_final')||localStorage.getItem('rv9')||localStorage.getItem('rv8');
-    if(!raw){hydrateProductsFromFirestore();hydrateBannersAndVipFromFirestore();_loading=false;initBanners();return;}
+    if(!raw){hydrateBannersAndVipFromFirestore();initBanners();hydrateProductsFromFirestore();return;}
     var d=JSON.parse(raw);
     if(d.note)document.getElementById('NOTE').value=d.note;
     if(d.tgk)document.getElementById('TGK').value=d.tgk;
@@ -8484,28 +8532,7 @@ function load(){
       if(!bTotal){initBanners();}
       else{d.bannerIds.forEach(function(id,i){if(!id){bLoaded++;if(bLoaded>=bTotal)initBanners();return;}idbGet(id,function(data){if(data)BANNERS[i]=data;bLoaded++;if(bLoaded>=bTotal)initBanners();});});}
     } else {initBanners();}
-    var tabQueue=TABS.slice();
-    function processNextTab(){
-      if(!tabQueue.length){
-        _loading=false;
-        setTimeout(function(){preloadAll(function(){});checkArchive();renderVipList();},400);
-        return;
-      }
-      var tab=tabQueue.shift();
-      var brands=d[tab]||[];
-      if(!brands.length){addBrand(tab);}
-      else{
-        brands.forEach(function(b){
-          var rows=b.rows||[];
-          if(rows.length&&Array.isArray(rows[0])){rows=rows.map(function(r){return{type:r[0]||'',code:r[1]||'',sizes:r[2]||'',colors:r[3]||'',minO:r[4]||'',price:r[5]||'',stock:r[6]||'in',imgId:r[7]||null,outSince:r[8]||null,title:r[9]||''};});}
-          var logoId=b.logoId||b.l||null;
-          var logo=null;if(logoId&&logoId.indexOf('data:')===0){logo=logoId;logoId=null;}
-          addBrand(tab,b.name||b.n||'',rows.length?rows:null,logoId,logo);
-        });
-      }
-      setTimeout(processNextTab,0);
-    }
-    processNextTab();
+    hydrateProductsFromFirestore();
   }catch(e){console.error('load error',e);TABS.forEach(function(t){addBrand(t);});_loading=false;}
 }
 
