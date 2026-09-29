@@ -1345,6 +1345,20 @@ function renderOrdersList(list){
   if(!el)return;
   if(!list.length){el.innerHTML='<div style="color:#9a6e3a">سفارش جدیدی نیست.</div>';return;}
   el.innerHTML=list.map(function(o){
+    if(o.source==='manual'){
+      var mItemsTxt=(o.items||[]).map(function(it){
+        var line=it.title+' — کد '+(it.code||'?')+' ×'+it.qty;
+        if(it.color)line+=' — رنگ/سایز: '+it.color;
+        return line;
+      }).join('<br>');
+      return '<div style="background:#fbf6ee;border:1.5px dashed #9a6e3a;border-radius:10px;padding:10px 12px;margin-bottom:8px" data-order-id="'+o._id+'">'+
+        '<div style="font-weight:900;color:#3d2b1f;display:flex;justify-content:space-between"><span>'+(o.customerName||'')+'</span><span style="color:#2a9d5c">'+fmtP(o.total)+'</span></div>'+
+        '<div style="color:#9a6e3a;font-size:0.72rem;margin-top:3px">شماره فاکتور: '+o.orderNo+'</div>'+
+        '<div style="color:#7a5c1a;font-size:0.72rem;margin-top:4px;background:#f2e6d0;border-radius:6px;padding:5px 8px;display:inline-block">📝 ثبت دستی توسط '+(o.enteredBy||'—')+'</div>'+
+        '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:6px">'+mItemsTxt+'</div>'+
+        (o.customerPhone?('<a href="tel:'+o.customerPhone+'" style="display:block;text-align:center;margin-top:8px;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'):'')+
+      '</div>';
+    }
     var itemsTxt=(o.items||[]).map(function(it){
       var line=it.title+' — کد '+(it.code||'?')+' ×'+it.qty;
       if(it.color)line+=' — رنگ/سایز: '+it.color;
@@ -1915,9 +1929,9 @@ function startOrdersListener(){
     if(el)el.innerHTML='خطا در دریافت سفارش‌ها: '+(err&&err.message?err.message:err);
   });
 }
-setTimeout(startOrdersListener,1200);
-setTimeout(startSettingsListener,1000);
-setTimeout(startConfirmedOrdersListener,1250);
+setTimeout(startOrdersListener,50);
+setTimeout(startConfirmedOrdersListener,80);
+setTimeout(function(){startSettingsListener();startTeamTasksListener();},250);
 
 // ── پیام‌های پشتیبانی (زنده از Firestore) ──
 var SUPPORTMSG_SEEN_IDS={},SUPPORTMSG_FIRST_LOAD=true;
@@ -3269,7 +3283,8 @@ function updateNotifDot(){
 var NEW_ORDERS_COUNT=0,NEW_SUPPORTMSG_COUNT=0,NEW_REVIEWS_COUNT=0,NEW_CUSTOMERS_COUNT=0;
 function updateOrdersDot(){
   var dot=document.getElementById('ORDERSDOT');
-  if(dot)dot.style.display=(NEW_ORDERS_COUNT+CONFIRMED_ORDERS_COUNT)>0?'inline-block':'none';
+  var hideForRole=CURRENT_ROLE&&ROLE_PERMISSIONS[CURRENT_ROLE]&&ROLE_PERMISSIONS[CURRENT_ROLE].hideOnlineOrders;
+  if(dot)dot.style.display=(!hideForRole&&(NEW_ORDERS_COUNT+CONFIRMED_ORDERS_COUNT)>0)?'inline-block':'none';
   var sdot=document.getElementById('SITEDOT');
   if(sdot)sdot.style.display=(NEW_SUPPORTMSG_COUNT+NEW_REVIEWS_COUNT+NEW_CUSTOMERS_COUNT)>0?'inline-block':'none';
 }
@@ -3666,7 +3681,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
     '<button class="ddel" onclick="delR('+rid+')">x</button>';
   document.getElementById('RR'+bid).appendChild(div);
   document.getElementById('PIF'+rid).onchange=function(){loadImg(rid,this);};
-  if(imgId){idbGet(imgId,function(d){if(d){IMAGES[rid]=d;var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}}});}
+  if(imgId){idbGet(imgId,function(d){if(d){IMAGES[rid]=d;var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.id='PIM'+rid;im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}}});}
   ['TI','CD','SZ','CL','MO','PR'].forEach(function(p){var el=document.getElementById(p+rid);if(el)el.oninput=save;});
   var mzEl=document.getElementById('MO'+rid);
   if(mzEl)mzEl.addEventListener('blur',function(){var v=normalizeQty(this.value);if(v!==this.value){this.value=v;save();}});
@@ -5264,6 +5279,19 @@ function logInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer
   if(existingIdx>-1)INVOICE_LOG[existingIdx]=entry;else INVOICE_LOG.push(entry);
   saveInvoiceLog();
   upsertCustomerFromInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer);
+  pushManualInvoiceToOrdersList(cName,cPhone,total,invoiceNumber,cart);
+}
+function pushManualInvoiceToOrdersList(cName,cPhone,total,invoiceNumber,cart){
+  if(!initFirebase())return;
+  var enteredBy=CURRENT_ROLE?currentTeamMemberLabel():'امین';
+  var orderItems=(cart||[]).map(function(c){
+    return {title:c.title||'',code:c.code||'',qty:c.qty||1,color:c.colors||''};
+  });
+  fbDb.collection('orders').doc('manual_'+invoiceNumber).set({
+    customerName:cName||'',customerPhone:cPhone||'',total:total||0,orderNo:invoiceNumber,
+    items:orderItems,status:'new',source:'manual',enteredBy:enteredBy||'امین',
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){console.error('pushManualInvoiceToOrdersList error',e);});
 }
 
 // ── باشگاه مشتریان (CRM) ──
@@ -8440,7 +8468,7 @@ function hydrateProductsFromFirestore(){
     if(snap.empty){
       TABS.forEach(function(t){addBrand(t);});
       _loading=false;
-      setTimeout(function(){preloadAll(function(){});checkArchive();renderVipList();},400);
+      setTimeout(function(){preloadAll(function(){});checkArchive();renderVipList();},200);
       return;
     }
     var byTabBrand={};
@@ -8450,10 +8478,12 @@ function hydrateProductsFromFirestore(){
       var brandName=p.brand||'';
       byTabBrand[p.tab]=byTabBrand[p.tab]||{};
       byTabBrand[p.tab][brandName]=byTabBrand[p.tab][brandName]||[];
+      var rowImgId=null;
+      if(p.img){rowImgId=genId();idbPut(rowImgId,p.img);}
       byTabBrand[p.tab][brandName].push({
         type:p.type||'',code:p.code||'',sizes:p.sizes||'',colors:p.colors||'',
         minO:p.minOrder||'',price:p.price||'',stock:p.stock||'in',
-        imgId:null,outSince:null,title:p.title||'',
+        imgId:rowImgId,outSince:null,title:p.title||'',
         material:p.material||'',country:p.country||'',
         desc1:p.desc1||'',desc2:p.desc2||'',sleeve:p.sleeve||'',
         tglink:p.tgLink||'',fulldesc:p.fullDesc||'',
@@ -8465,19 +8495,28 @@ function hydrateProductsFromFirestore(){
       });
     });
     var restoredCount=0;
-    TABS.forEach(function(tab){
+    var tabQueue=TABS.slice();
+    function processNextTab(){
+      if(!tabQueue.length){
+        _loading=false;
+        setTimeout(function(){
+          save();
+          preloadAll(function(){});checkArchive();renderVipList();
+        },200);
+        return;
+      }
+      var tab=tabQueue.shift();
       var brandsForTab=byTabBrand[tab];
-      if(!brandsForTab){addBrand(tab);return;}
-      Object.keys(brandsForTab).forEach(function(brandName){
-        restoredCount+=brandsForTab[brandName].length;
-        addBrand(tab,brandName,brandsForTab[brandName]);
-      });
-    });
-    _loading=false;
-    setTimeout(function(){
-      save();
-      preloadAll(function(){});checkArchive();renderVipList();
-    },400);
+      if(!brandsForTab){addBrand(tab);}
+      else{
+        Object.keys(brandsForTab).forEach(function(brandName){
+          restoredCount+=brandsForTab[brandName].length;
+          addBrand(tab,brandName,brandsForTab[brandName]);
+        });
+      }
+      setTimeout(processNextTab,0);
+    }
+    processNextTab();
   }).catch(function(e){
     console.error('hydrateProductsFromFirestore error',e);
     TABS.forEach(function(t){addBrand(t);});
@@ -8630,9 +8669,11 @@ updateLiveClock();
 setInterval(updateLiveClock,1000);
 loadNotifs();
 
-loadInvoiceLog();
-loadCustomers();
-if(!CUSTOMERS.length&&!INVOICE_LOG.length)setTimeout(function(){whenAdminReady(pullCustomerDataFromFirestore);},0);
+setTimeout(function(){
+  loadInvoiceLog();
+  loadCustomers();
+  if(!CUSTOMERS.length&&!INVOICE_LOG.length)setTimeout(function(){whenAdminReady(pullCustomerDataFromFirestore);},0);
+},450);
 renderCgTypeChips();
 var _cgPriceEl=document.getElementById('CG_PRICE');
 if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceShorthand(this.value);if(v!==this.value)this.value=v;});
@@ -8667,7 +8708,7 @@ if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceSho
     localStorage.setItem('rv10',JSON.stringify(d));
   }catch(e){console.error('shrinkOversizedRv10 error',e);}
 })();
-load();
+setTimeout(load,700);
 function hydrateMissingSiteImages(){
   if(typeof fbDb==='undefined'||!fbDb)return;
   fbDb.collection('products').get().then(function(snap){
@@ -9592,7 +9633,6 @@ function injectTeamAccountBar(role){
       wrap.insertBefore(tbtn,wrap.firstChild);
     }
   }
-  startTeamTasksListener();
 }
 var _rvOrigShowTab=showTab;
 var TAB_LABELS_FA={pf:'خانه',pcust:'باشگاه مشتریان',pc:'تولید محتوا',psitecontent:'محتوای سایت',p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',ppdf:'PDF قیمت',ps:'جستجو',pa:'آرشیو',psite:'سایت',psettings:'تنظیمات اتصال',padmins:'ادمین‌ها'};
