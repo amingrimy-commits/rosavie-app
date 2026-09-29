@@ -467,6 +467,7 @@ input[type=file]{display:none}
   <div class="notif-panel-body"><div id="NOTIF_LIST"></div></div>
 </div>
 <input type="file" id="RECEIPT_FILE_INPUT" accept="image/*" style="display:none" onchange="handleReceiptFileChange(this)">
+<input type="file" id="ORDER_RECEIPT_FILE_INPUT" accept="image/*" style="display:none" onchange="handleOrderReceiptFileChange(this)">
 <div class="jcal-overlay" id="DUPOV" style="z-index:9997" onclick="resolveDupChoice('cancel')"></div>
 <div id="DUPMODAL" style="display:none;position:fixed;z-index:9998;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:340px;background:#fff;border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,0.35)">
   <div style="font-weight:900;font-size:0.9rem;color:#3d2b1f;margin-bottom:8px">⚠️ این کد قبلاً ثبت شده</div>
@@ -1375,7 +1376,7 @@ function renderOrdersList(list){
       (o.invoiceWanted?('<div style="color:#3d2b1f;font-size:0.7rem;margin-top:4px;background:#eef7ee;border-radius:6px;padding:6px 8px">📨 درخواست پیش‌فاکتور از طریق '+({telegram:'تلگرام',whatsapp:'واتساپ',bale:'بله'}[o.invoiceApp]||o.invoiceApp)+' به '+(o.invoiceContact||o.customerPhone)+(o.preInvoiceSentAt?' — <b style="color:#2a9d5c">✅ ارسال شد</b>':'')+'</div>'):'')+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       (o.note?'<div style="color:#9a6e3a;font-size:0.72rem;margin-top:4px">یادداشت: '+o.note+'</div>':'')+
-      (function(){var mc=findCustomerByPhoneForSummary(o.customerPhone);return mc?purchaseSummaryLineHTML(mc,_priceStats):'';})()+
+      (function(){var mc=findCustomerByPhoneForSummary(o.customerPhone);return mc?(purchaseSummaryLineHTML(mc,_priceStats)+'<button type="button" onclick="closeOrdersPanel();openAdmDrawer();showTab(\'pcust\',document.querySelector(\'#ADMDR .tab[onclick*=pcust]\'));renderCustomerDetail(\''+mc.id+'\');" style="width:100%;background:#eee2d0;color:#3d2b1f;border:none;border-radius:8px;padding:7px;font-size:0.68rem;cursor:pointer;margin-bottom:6px">🧾 مشاهده‌ی تاریخچه‌ی کامل خرید این مشتری</button>'):'';})()+
       '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
         '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
         '<button onclick="toggleEditOrder(\''+o._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✏️ ویرایش</button>'+
@@ -1398,8 +1399,12 @@ function renderOrdersList(list){
         '<button onclick="saveOrderEdit(\''+o._id+'\')" style="width:100%;background:#4a9dff;color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.72rem;cursor:pointer;font-weight:700;margin-top:8px">💾 ذخیره تغییرات سفارش</button>'+
       '</div>'+
       '<div id="ORDCONF_'+o._id+'" style="display:none;margin-top:8px;padding:9px;background:#fbf6ee;border-radius:8px;border:1.5px dashed #d4a87a">'+
-        '<div style="font-size:0.7rem;color:#9a6e3a;margin-bottom:6px">شماره پیگیری/رسید واریزی رو وارد کن — تا این رو پر نکنی، سفارش نهایی نمی‌شه و توی گزارش فروش و باشگاه مشتریان حساب نمی‌شه.</div>'+
+        '<div style="font-size:0.7rem;color:#9a6e3a;margin-bottom:6px">شماره پیگیری/رسید واریزی رو وارد کن و عکس فیش واریزی رو هم بذار — تا هر دوی این‌ها رو پر نکنی، سفارش نهایی نمی‌شه و توی گزارش فروش و باشگاه مشتریان حساب نمی‌شه.</div>'+
         '<input class="fi" type="text" id="ORDRCPT_'+o._id+'" placeholder="مثلاً شماره پیگیری بانک یا توضیح رسید" style="margin-bottom:6px">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+          '<button type="button" id="ORDRCPTBTN_'+o._id+'" onclick="pickOrderReceiptPhoto(\''+o._id+'\')" style="flex:1;background:#eee2d0;color:#3d2b1f;border:none;border-radius:8px;padding:8px;font-size:0.7rem;cursor:pointer">📎 افزودن عکس فیش واریزی (اجباری)</button>'+
+          '<div id="ORDRCPTIMG_'+o._id+'" style="display:none;width:40px;height:40px;border-radius:8px;overflow:hidden;background:#eee;flex-shrink:0"></div>'+
+        '</div>'+
         '<button onclick="confirmOrderFinal(\''+o._id+'\')" style="width:100%;background:#2a9d5c;color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.72rem;cursor:pointer;font-weight:700">✅ ثبت نهایی سفارش</button>'+
       '</div>'+
     '</div>';
@@ -1697,10 +1702,35 @@ function createGalleryInviteLink(cb){
   xhr.ontimeout=function(){cb(null);};
   xhr.send(JSON.stringify({chat_id:galleryCid,member_limit:1,name:'مشتری-'+new Date().toISOString().slice(0,10)}));
 }
+var ORDER_RECEIPT_PHOTOS={};
+var ORDER_RECEIPT_TARGET=null;
+function pickOrderReceiptPhoto(id){
+  ORDER_RECEIPT_TARGET=id;
+  document.getElementById('ORDER_RECEIPT_FILE_INPUT').click();
+}
+function handleOrderReceiptFileChange(inputEl){
+  var f=inputEl.files[0];
+  if(!f||!ORDER_RECEIPT_TARGET){inputEl.value='';return;}
+  var id=ORDER_RECEIPT_TARGET;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    resizeDataUrl(e.target.result,800,0.7,function(compressed){
+      ORDER_RECEIPT_PHOTOS[id]=compressed;
+      var thumb=document.getElementById('ORDRCPTIMG_'+id);
+      if(thumb){thumb.style.display='block';thumb.innerHTML='<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover">';}
+      var btn=document.getElementById('ORDRCPTBTN_'+id);
+      if(btn){btn.textContent='✅ عکس فیش ثبت شد — برای تعویض بزن';btn.style.background='#dff2e4';btn.style.color='#2a7d4f';}
+    });
+  };
+  reader.readAsDataURL(f);
+  inputEl.value='';
+  ORDER_RECEIPT_TARGET=null;
+}
 function confirmOrderFinal(id){
   var rcptEl=document.getElementById('ORDRCPT_'+id);
   var rcpt=rcptEl?rcptEl.value.trim():'';
   if(!rcpt){alert('لطفاً شماره پیگیری یا توضیح رسید واریزی رو وارد کن');return;}
+  if(!ORDER_RECEIPT_PHOTOS[id]){alert('عکس فیش واریزی رو هم باید بذاری — بدون عکس فیش، سفارش ثبت نهایی نمی‌شه');return;}
   if(!fbDb)return;
   fbDb.collection('orders').doc(id).get().then(function(doc){
     if(!doc.exists)return;
@@ -1713,8 +1743,16 @@ function confirmOrderFinal(id){
     }
     var itemsSummary=(o.items||[]).map(function(it){return it.title+' ×'+it.qty;}).join('، ');
     var cartForInvoice=(o.items||[]).map(function(it){return {title:it.title,code:it.code||'--',qty:it.qty,price:it.price,minO:'1',colors:it.color||''};});
-    fbDb.collection('orders').doc(id).update({status:'confirmed',receiptRef:rcpt,confirmedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    var receiptPhoto=ORDER_RECEIPT_PHOTOS[id]||null;
+    var orderUpdatePayload={status:'confirmed',receiptRef:rcpt,confirmedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    if(receiptPhoto)orderUpdatePayload.receiptImage=receiptPhoto;
+    fbDb.collection('orders').doc(id).update(orderUpdatePayload).then(function(){
       logInvoice(o.customerName,o.customerPhone,itemsSummary,o.total,o.orderNo,cartForInvoice,forceNew);
+      if(receiptPhoto){
+        var loc=findPurchaseLocation(o.orderNo);
+        if(loc){loc.customer.purchases[loc.index].receiptImage=receiptPhoto;saveCustomers();}
+        delete ORDER_RECEIPT_PHOTOS[id];
+      }
       addNotif('✅ سفارش «'+o.orderNo+'» تایید و به فاکتور و باشگاه مشتریان اضافه شد');
       if(o.customerUid){
         createGalleryInviteLink(function(link){
@@ -5336,7 +5374,7 @@ function buildManualInvoiceHTML(cName,cPhone,invNum,cartOverride){
   return h;
 }
 function logInvoice(cName,cPhone,items,total,invoiceNumber,cart,forceNewCustomer){
-  invoiceNumber=invoiceNumber||nextInvoiceNumber();
+  invoiceNumber=invoiceNumber||nextInvoiceNumberFallbackUnique();
   var entry={date:Date.now(),customerName:cName,customerPhone:cPhone,items:items,total:total,invoiceNumber:invoiceNumber,cart:cart||null};
   var existingIdx=-1;
   for(var i=0;i<INVOICE_LOG.length;i++){if(INVOICE_LOG[i].invoiceNumber===invoiceNumber){existingIdx=i;break;}}
@@ -5670,13 +5708,34 @@ function applyLocationFromText(){
 }
 function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function nextInvoiceNumber(){
-  var key='rv_invoice_counter';
-  var n=0;
-  try{n=parseInt(localStorage.getItem(key)||'0',10)||0;}catch(e){}
-  n+=1;
-  try{localStorage.setItem(key,String(n));}catch(e){}
-  return 'RV'+String(n).padStart(6,'0');
+function nextInvoiceNumber(cb){
+  function localFallback(){
+    var n=0;
+    try{n=parseInt(localStorage.getItem('rv_invoice_counter')||'0',10)||0;}catch(e){}
+    n+=1;
+    try{localStorage.setItem('rv_invoice_counter',String(n));}catch(e){}
+    cb('RV'+String(n).padStart(6,'0'));
+  }
+  if(!initFirebase()){localFallback();return;}
+  var ref=fbDb.collection('settings').doc('invoiceCounter');
+  fbDb.runTransaction(function(t){
+    return t.get(ref).then(function(doc){
+      var n=(doc.exists&&typeof doc.data().n==='number')?doc.data().n:0;
+      n+=1;
+      t.set(ref,{n:n},{merge:true});
+      return n;
+    });
+  }).then(function(n){
+    try{localStorage.setItem('rv_invoice_counter',String(n));}catch(e){}
+    cb('RV'+String(n).padStart(6,'0'));
+  }).catch(function(e){
+    console.error('nextInvoiceNumber transaction failed, falling back to local counter',e);
+    localFallback();
+  });
+}
+function nextInvoiceNumberFallbackUnique(){
+  // برای مسیرهای نادری که یه شماره فاکتور رد نشده و صبر برای تراکنش سرور ممکن نیست؛ منحصربه‌فرد بین دستگاه‌هاست چون بر پایه‌ی زمانه، نه شمارنده‌ی محلی
+  return 'RVX'+Date.now().toString(36).toUpperCase();
 }
 var IRAN_PROVINCES=['آذربایجان شرقی','آذربایجان غربی','اردبیل','اصفهان','البرز','ایلام','بوشهر','تهران','چهارمحال و بختیاری','خراسان جنوبی','خراسان رضوی','خراسان شمالی','خوزستان','زنجان','سمنان','سیستان و بلوچستان','فارس','قزوین','قم','کردستان','کرمان','کرمانشاه','کهگیلویه و بویراحمد','گلستان','گیلان','لرستان','مازندران','مرکزی','هرمزگان','همدان','یزد'];
 function provinceOptionsHtml(selected){
@@ -5704,7 +5763,7 @@ function findPurchaseLocation(invoiceNumber){
   return null;
 }
 function upsertCustomerFromInvoice(cName,cPhone,itemsSummary,total,invoiceNumber,cart,forceNew){
-  invoiceNumber=invoiceNumber||nextInvoiceNumber();
+  invoiceNumber=invoiceNumber||nextInvoiceNumberFallbackUnique();
   var today=new Date().toISOString().slice(0,10);
   var existingLoc=findPurchaseLocation(invoiceNumber);
   var existingPurchase=null;
@@ -5952,8 +6011,11 @@ function renderCustomerDetail(id){
       h+='<div style="display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap">';
       h+='<button class="cap-btn cap-edit" style="padding:5px 10px;font-size:0.64rem;flex:none" onclick="viewFullInvoice(\''+c.id+'\',\''+p.id+'\')">📄 مشاهده فاکتور کامل</button>';
       h+='<button class="cap-btn" style="padding:5px 10px;font-size:0.64rem;flex:none;background:#3d2b1f;color:#f9f0e8" onclick="shareCustomerPurchase(\''+c.id+'\',\''+p.id+'\')">📤 اشتراک فاکتور</button>';
-      h+='<button class="cap-btn" style="padding:5px 10px;font-size:0.64rem;flex:none" onclick="pickReceiptPhoto(\''+c.id+'\',\''+p.id+'\')">📎 '+(p.receiptImageId?'تعویض عکس فیش':'افزودن عکس فیش واریزی')+'</button>';
-      if(p.receiptImageId){
+      h+='<button class="cap-btn" style="padding:5px 10px;font-size:0.64rem;flex:none" onclick="pickReceiptPhoto(\''+c.id+'\',\''+p.id+'\')">📎 '+((p.receiptImageId||p.receiptImage)?'تعویض عکس فیش':'افزودن عکس فیش واریزی')+'</button>';
+      if(p.receiptImage){
+        h+='<div id="RCT_'+p.id+'" onclick="viewReceiptPhotoInline(\''+c.id+'\',\''+p.id+'\')" style="width:38px;height:38px;border-radius:8px;overflow:hidden;background:#eee;cursor:pointer;flex-shrink:0"><img src="'+p.receiptImage+'" style="width:100%;height:100%;object-fit:cover"></div>';
+        h+='<button class="ddel" style="width:24px;height:24px;flex-shrink:0" onclick="removeReceiptPhoto(\''+c.id+'\',\''+p.id+'\')">✕</button>';
+      }else if(p.receiptImageId){
         h+='<div id="RCT_'+p.id+'" onclick="viewReceiptPhoto(\''+p.receiptImageId+'\')" style="width:38px;height:38px;border-radius:8px;overflow:hidden;background:#eee;cursor:pointer;flex-shrink:0"></div>';
         h+='<button class="ddel" style="width:24px;height:24px;flex-shrink:0" onclick="removeReceiptPhoto(\''+c.id+'\',\''+p.id+'\')">✕</button>';
       }
@@ -6136,11 +6198,26 @@ function viewReceiptPhoto(receiptId){
     }
   });
 }
+function viewReceiptPhotoInline(custId,purId){
+  var c=CUSTOMERS.find(function(x){return x.id===custId;});
+  var p=c&&(c.purchases||[]).find(function(x){return x.id===purId;});
+  var dataUrl=p&&p.receiptImage;
+  if(!dataUrl){alert('عکس رسید پیدا نشد');return;}
+  var w=window.open('');
+  if(w){
+    w.document.title='رسید واریزی';
+    w.document.body.style.cssText='margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh';
+    var img=w.document.createElement('img');
+    img.src=dataUrl;img.style.cssText='max-width:100%;max-height:100vh';
+    w.document.body.appendChild(img);
+  }
+}
 function removeReceiptPhoto(custId,purId){
   if(!confirm('عکس فیش واریزی حذف بشه؟'))return;
   var c=CUSTOMERS.find(function(x){return x.id===custId;});if(!c)return;
   var p=(c.purchases||[]).find(function(x){return x.id===purId;});if(!p)return;
   p.receiptImageId=null;
+  p.receiptImage=null;
   saveCustomers();
   renderCustomerDetail(custId);
   autoSyncCustomerChannel();
@@ -6206,7 +6283,7 @@ function openPurchaseForm(custId){
   var h='';
   h+='<div class="ctitle">🧾 ثبت خرید دستی برای '+escHtml(c.name||'مشتری')+'</div>';
   h+='<div class="g2">';
-  h+='<div><span class="lbl">شماره فاکتور</span><input class="fi" type="text" id="PF_INV" value="'+nextInvoiceNumber()+'"></div>';
+  h+='<div><span class="lbl">شماره فاکتور</span><input class="fi" type="text" id="PF_INV" value="در حال دریافت شماره..." disabled></div>';
   h+='<div><span class="lbl">تاریخ خرید</span><input class="fi" type="date" id="PF_DATE" value="'+today+'"></div>';
   h+='</div>';
   h+='<div class="g1"><span class="lbl">شرح اقلام خریداری‌شده</span><textarea class="fi" id="PF_ITEMS" rows="2" placeholder="مثال: سوتین کد 1234 x1 | شورت کد 5566 x2"></textarea></div>';
@@ -6221,6 +6298,10 @@ function openPurchaseForm(custId){
   h+='<button class="sbig stg2" onclick="savePurchaseForm(\''+custId+'\')">💾 ثبت خرید</button>';
   h+='<button class="sbig" style="background:#eddfc9;color:#9a6e3a" onclick="renderCustomerDetail(\''+custId+'\')">انصراف</button>';
   showCustDetailCard(h);
+  nextInvoiceNumber(function(num){
+    var el=document.getElementById('PF_INV');
+    if(el){el.value=num;el.disabled=false;}
+  });
 }
 function savePurchaseForm(custId){
   var c=CUSTOMERS.find(function(x){return x.id===custId;});if(!c)return;
@@ -6230,7 +6311,7 @@ function savePurchaseForm(custId){
   if(!itemsSummary){alert('لطفاً شرح خرید را وارد کنید');return;}
   var categories=Array.prototype.slice.call(document.querySelectorAll('.pf-cat-chk:checked')).map(function(el){return el.value;});
   c.purchases=c.purchases||[];
-  c.purchases.unshift({id:custUid(),date:V('PF_DATE')||new Date().toISOString().slice(0,10),invoiceNumber:V('PF_INV')||nextInvoiceNumber(),itemsSummary:itemsSummary,total:total,categories:categories});
+  c.purchases.unshift({id:custUid(),date:V('PF_DATE')||new Date().toISOString().slice(0,10),invoiceNumber:V('PF_INV')||nextInvoiceNumberFallbackUnique(),itemsSummary:itemsSummary,total:total,categories:categories});
   c.updatedAt=new Date().toISOString().slice(0,10);
   saveCustomers();renderCustomerList();renderCustomerDetail(custId);autoSyncCustomerChannel();
 }
@@ -6660,7 +6741,7 @@ function shareManualInvoice(){
   if(!INV_CART.length){stat.textContent='حداقل یک محصول اضافه کنید';stat.className='stat serr';return;}
   if(invTotal()<=0){if(!confirm('⚠️ جمع کل این فاکتور صفره (یکی از محصولات قیمت نداره). مطمئنی می‌خوای همینطوری ثبت و ارسالش کنی؟')){stat.textContent='لغو شد — قیمت محصول رو چک کن';stat.className='stat serr';return;}}
   stat.textContent='در حال ساخت فاکتور...';stat.className='stat sload';
-  var invNum=CUR_INV_NUMBER||nextInvoiceNumber();
+  function proceedWithInvNum(invNum){
   var html=buildManualInvoiceHTML(cName,cPhone,invNum);
   renderGenericPDF(html,function(err,blob){
     if(err){stat.textContent='خطا: '+err;stat.className='stat serr';return;}
@@ -6693,6 +6774,9 @@ function shareManualInvoice(){
     downloadBlobDirect(blob,fname);
     finish('فاکتور #'+invNum+' ثبت و دانلود شد — از هر اپی (واتساپ، تلگرام شخصی و...) می‌تونی برای مشتری بفرستی');
   });
+  }
+  if(CUR_INV_NUMBER){proceedWithInvNum(CUR_INV_NUMBER);}
+  else{nextInvoiceNumber(proceedWithInvNum);}
 }
 function downloadManualInvoice(){
   var cName=V('INV_CNAME')||'مشتری',cPhone=V('INV_CPHONE');
@@ -6700,7 +6784,7 @@ function downloadManualInvoice(){
   if(!INV_CART.length){stat.textContent='حداقل یک محصول اضافه کنید';stat.className='stat serr';return;}
   if(invTotal()<=0){if(!confirm('⚠️ جمع کل این فاکتور صفره (یکی از محصولات قیمت نداره). مطمئنی می‌خوای همینطوری ثبتش کنی؟')){stat.textContent='لغو شد — قیمت محصول رو چک کن';stat.className='stat serr';return;}}
   stat.textContent='در حال ساخت PDF...';stat.className='stat sload';
-  var invNum=CUR_INV_NUMBER||nextInvoiceNumber();
+  function proceedWithInvNum(invNum){
   var html=buildManualInvoiceHTML(cName,cPhone,invNum);
   renderGenericPDF(html,function(err,blob){
     if(err){stat.textContent='خطا: '+err;stat.className='stat serr';return;}
@@ -6714,6 +6798,9 @@ function downloadManualInvoice(){
     renderReport(CUR_REPORT_PERIOD);
     renderInvNumBadge();
   });
+  }
+  if(CUR_INV_NUMBER){proceedWithInvNum(CUR_INV_NUMBER);}
+  else{nextInvoiceNumber(proceedWithInvNum);}
 }
 function startNewInvoice(){
   INV_CART=[];CUR_INV_NUMBER=null;
@@ -6935,10 +7022,34 @@ function checkWeeklyReportAuto(){
   var last=localStorage.getItem('rv_last_weekly_report');
   if(last){
     var diffDays=(now.getTime()-parseInt(last))/(24*60*60*1000);
-    if(diffDays<6)return; // این هفته قبلا ارسال شده
+    if(diffDays<6)return; // این هفته قبلا ارسال شده (بکاپ محلی، برای وقتی سرور در دسترس نیست)
   }
   var cid=V('REPORTCID'),token=V('TGK');
   if(!token||!cid)return; // تنظیمات کامل نیست
+  if(!initFirebase()){sendWeeklyReportAutoNow(cid,token);return;}
+  var weekKey=isoWeekKey(now);
+  var ref=fbDb.collection('settings').doc('weeklyReportClaim');
+  fbDb.runTransaction(function(t){
+    return t.get(ref).then(function(doc){
+      var claimedWeek=doc.exists?doc.data().weekKey:null;
+      if(claimedWeek===weekKey)return false; // یه دستگاه دیگه همین هفته رو قبلاً برداشته
+      t.set(ref,{weekKey:weekKey,claimedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      return true;
+    });
+  }).then(function(gotClaim){
+    if(!gotClaim){localStorage.setItem('rv_last_weekly_report',String(Date.now()));updateLastReportInfo();return;}
+    sendWeeklyReportAutoNow(cid,token);
+  }).catch(function(e){console.error('weekly report claim error',e);sendWeeklyReportAutoNow(cid,token);});
+}
+function isoWeekKey(d){
+  var t=new Date(d.getTime());
+  t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+3-((t.getDay()+6)%7));
+  var week1=new Date(t.getFullYear(),0,4);
+  var weekNo=1+Math.round(((t.getTime()-week1.getTime())/86400000-3+((week1.getDay()+6)%7))/7);
+  return t.getFullYear()+'-W'+weekNo;
+}
+function sendWeeklyReportAutoNow(cid,token){
   var html=buildWeeklyReportHTML();
   renderGenericPDF(html,function(err,blob){
     if(err)return;
@@ -8832,16 +8943,21 @@ window.RV_TESTS=[
     var r=computeUnitPrice(100002,12); // ~8333.5
     if(typeof r!=='number'||isNaN(r))throw new Error('خروجی عدد نیست: '+r);
   }},
-  {name:'nextInvoiceNumber: فرمت باید RV+۶رقم باشه',fn:function(){
+  {name:'nextInvoiceNumber: فرمت باید RV+۶رقم باشه (مسیر محلی/آفلاین)',fn:async function(){
     var before=localStorage.getItem('rv_invoice_counter');
-    var n=nextInvoiceNumber();
+    var savedDb=fbDb;fbDb=null; // شبیه‌سازیِ نبودِ اتصال، تا فقط مسیر بکاپِ محلی تست بشه و شمارنده‌ی واقعیِ سرور دست‌نخورده بمونه
+    var n=await new Promise(function(res){nextInvoiceNumber(res);});
+    fbDb=savedDb;
     var ok=/^RV\d{6}$/.test(n);
     if(before===null)localStorage.removeItem('rv_invoice_counter');else localStorage.setItem('rv_invoice_counter',before);
     if(!ok)throw new Error('فرمت اشتباه: '+n);
   }},
-  {name:'nextInvoiceNumber: هر بار باید دقیقاً یکی بعدی بیاد (بدون تکرار یا پرش)',fn:function(){
+  {name:'nextInvoiceNumber: هر بار باید دقیقاً یکی بعدی بیاد — مسیر محلی/آفلاین (بدون تکرار یا پرش)',fn:async function(){
     var before=localStorage.getItem('rv_invoice_counter');
-    var a=nextInvoiceNumber(),b=nextInvoiceNumber();
+    var savedDb=fbDb;fbDb=null;
+    var a=await new Promise(function(res){nextInvoiceNumber(res);});
+    var b=await new Promise(function(res){nextInvoiceNumber(res);});
+    fbDb=savedDb;
     var na=parseInt(a.slice(2),10),nb=parseInt(b.slice(2),10);
     if(before===null)localStorage.removeItem('rv_invoice_counter');else localStorage.setItem('rv_invoice_counter',before);
     if(nb!==na+1)throw new Error(a+' → '+b+' درسته نباید اینطوری باشه');

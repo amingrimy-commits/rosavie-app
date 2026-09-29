@@ -1778,6 +1778,35 @@ function loadCartFromServer(){
   }).catch(function(e){console.error('loadCartFromServer error',e);CART_SERVER_SYNCED_FOR='';});
   return CART_LOAD_PROMISE;
 }
+var LISTS_SERVER_SYNCED_FOR='';
+function syncListsToServer(){
+  if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone||typeof db==='undefined'||!db)return;
+  db.collection('customerLists').doc(normPhone(CUR_CUSTOMER.phone)).set({
+    wishlist:WISHLIST,later:LATER_LIST,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){console.error('lists server sync error',e);});
+}
+function loadListsFromServer(){
+  if(!CUR_CUSTOMER||!CUR_CUSTOMER.phone||typeof db==='undefined'||!db)return Promise.resolve();
+  var phoneKey=normPhone(CUR_CUSTOMER.phone);
+  if(LISTS_SERVER_SYNCED_FOR===phoneKey)return Promise.resolve();
+  if(typeof document!=='undefined'&&document.hidden)return Promise.resolve();
+  LISTS_SERVER_SYNCED_FOR=phoneKey;
+  var localWish=WISHLIST.slice(),localLater=LATER_LIST.slice();
+  return db.collection('customerLists').doc(phoneKey).get().then(function(doc){
+    var d=doc.exists?doc.data():{};
+    var serverWish=Array.isArray(d.wishlist)?d.wishlist:[];
+    var serverLater=Array.isArray(d.later)?d.later:[];
+    var mergedWish=serverWish.slice();
+    localWish.forEach(function(w){if(!mergedWish.some(function(m){return m.code===w.code;}))mergedWish.push(w);});
+    var mergedLater=serverLater.slice();
+    localLater.forEach(function(l){if(!mergedLater.some(function(m){return m.code===l.code;}))mergedLater.push(l);});
+    WISHLIST=mergedWish;LATER_LIST=mergedLater;
+    saveWishlistLocal();saveLaterListLocal();
+    syncListsToServer();
+    if(LISTS_MENU_OPEN&&typeof renderListsView==='function')renderListsView(CUR_LISTS_TAB||'wish');
+  }).catch(function(e){console.error('loadListsFromServer error',e);LISTS_SERVER_SYNCED_FOR='';});
+}
 
 // ── آیکون‌های اشتراک‌گذاری / قلب / حذف (خطی، هماهنگ با نمونه‌های ارسالی) ──
 var HEART_OFF_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9bfb3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"/></svg>';
@@ -1794,7 +1823,8 @@ var WISHLIST=[];
 function loadWishlist(){
   try{var raw=localStorage.getItem('rv_shop_wishlist');WISHLIST=raw?JSON.parse(raw):[];}catch(e){WISHLIST=[];}
 }
-function saveWishlist(){try{localStorage.setItem('rv_shop_wishlist',JSON.stringify(WISHLIST));}catch(e){}}
+function saveWishlist(){try{localStorage.setItem('rv_shop_wishlist',JSON.stringify(WISHLIST));}catch(e){} syncListsToServer();}
+function saveWishlistLocal(){try{localStorage.setItem('rv_shop_wishlist',JSON.stringify(WISHLIST));}catch(e){}}
 function isInWishlist(code){return WISHLIST.some(function(w){return w.code===code;});}
 
 // ── سبد خرید بعدی ──
@@ -1802,7 +1832,8 @@ var LATER_LIST=[];
 function loadLaterList(){
   try{var raw=localStorage.getItem('rv_shop_later');LATER_LIST=raw?JSON.parse(raw):[];}catch(e){LATER_LIST=[];}
 }
-function saveLaterList(){try{localStorage.setItem('rv_shop_later',JSON.stringify(LATER_LIST));}catch(e){}}
+function saveLaterList(){try{localStorage.setItem('rv_shop_later',JSON.stringify(LATER_LIST));}catch(e){} syncListsToServer();}
+function saveLaterListLocal(){try{localStorage.setItem('rv_shop_later',JSON.stringify(LATER_LIST));}catch(e){}}
 // ── مودال «ذخیره کالا در» — جایگزین حذف با شمارش معکوس برای «بعدا می‌خرم» ──
 var SAVE_LATER_CART_IDX=null;
 function openSaveLaterModal(i){
@@ -3008,6 +3039,7 @@ function loadCustomerProfile(uid){
       updateAccountNewBadge();
       updateNotifBadge();
       showBdayReminderIfNeeded();
+      loadListsFromServer();
       return loadCartFromServer();
     }
   });
@@ -3833,7 +3865,7 @@ watchAuthState();
 renderRoute();
 if(typeof document!=='undefined'){
   document.addEventListener('visibilitychange',function(){
-    if(!document.hidden)loadCartFromServer();
+    if(!document.hidden){loadCartFromServer();loadListsFromServer();}
   });
 }
 setTimeout(hideInitLoader,15000);
