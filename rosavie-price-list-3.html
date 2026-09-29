@@ -1344,6 +1344,7 @@ function renderOrdersList(list){
   var el=document.getElementById('ORDERS_LIST');
   if(!el)return;
   if(!list.length){el.innerHTML='<div style="color:#9a6e3a">سفارش جدیدی نیست.</div>';return;}
+  var _priceStats=computeCategoryPriceStats();
   el.innerHTML=list.map(function(o){
     if(o.source==='manual'){
       var mItemsTxt=(o.items||[]).map(function(it){
@@ -1374,6 +1375,7 @@ function renderOrdersList(list){
       (o.invoiceWanted?('<div style="color:#3d2b1f;font-size:0.7rem;margin-top:4px;background:#eef7ee;border-radius:6px;padding:6px 8px">📨 درخواست پیش‌فاکتور از طریق '+({telegram:'تلگرام',whatsapp:'واتساپ',bale:'بله'}[o.invoiceApp]||o.invoiceApp)+' به '+(o.invoiceContact||o.customerPhone)+(o.preInvoiceSentAt?' — <b style="color:#2a9d5c">✅ ارسال شد</b>':'')+'</div>'):'')+
       '<div style="color:#3d2b1f;font-size:0.74rem;margin-top:5px">'+itemsTxt+'</div>'+
       (o.note?'<div style="color:#9a6e3a;font-size:0.72rem;margin-top:4px">یادداشت: '+o.note+'</div>':'')+
+      (function(){var mc=findCustomerByPhoneForSummary(o.customerPhone);return mc?purchaseSummaryLineHTML(mc,_priceStats):'';})()+
       '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
         '<a href="tel:'+(o.customerPhone||'')+'" style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;background:#3d2b1f;color:#fff;padding:7px;border-radius:8px;text-decoration:none;font-size:0.68rem">☎️ تماس</a>'+
         '<button onclick="toggleEditOrder(\''+o._id+'\')" style="flex:1;background:#4a9dff;color:#fff;border:none;border-radius:8px;font-size:0.68rem;cursor:pointer;padding:7px">✏️ ویرایش</button>'+
@@ -2578,6 +2580,68 @@ function collectAllProducts(){
     });
   });
   return out;
+}
+// ── خلاصه‌ی خودکار خرید مشتری: میانگین قیمتِ هر دسته + سطح قیمتی و پرتکرارترین دسته‌ی هر مشتری ──
+var TIER_LABELS={cheap:'ارزون',medium:'متوسط',expensive:'گرون'};
+var TIER_BAND_PCT=0.15;
+function computeCategoryPriceStats(){
+  var products=collectAllProducts();
+  var byTab={};
+  products.forEach(function(p){
+    var price=parseInt(String(p.price||'').replace(/[^\d]/g,''),10);
+    if(!price||!p.code)return;
+    byTab[p.tab]=byTab[p.tab]||[];
+    byTab[p.tab].push({code:p.code,price:price});
+  });
+  var stats={};
+  Object.keys(byTab).forEach(function(tab){
+    var items=byTab[tab];
+    var avg=items.reduce(function(s,i){return s+i.price;},0)/items.length;
+    var band=avg*TIER_BAND_PCT;
+    var byCode={};
+    items.forEach(function(i){
+      byCode[i.code]=(i.price>avg+band)?'expensive':(i.price<avg-band)?'cheap':'medium';
+    });
+    stats[tab]={avg:avg,byCode:byCode};
+  });
+  return stats;
+}
+function computeCustomerPurchaseSummary(customer,stats){
+  stats=stats||computeCategoryPriceStats();
+  var catCounts={},tierCounts={cheap:0,medium:0,expensive:0};
+  var matched=0,totalItems=0;
+  (customer.purchases||[]).forEach(function(pur){
+    (pur.cart||[]).forEach(function(item){
+      totalItems+=(item.qty||1);
+      var foundTab=null,tier=null;
+      Object.keys(stats).forEach(function(tab){
+        if(!foundTab&&stats[tab].byCode[item.code]){foundTab=tab;tier=stats[tab].byCode[item.code];}
+      });
+      if(foundTab){
+        matched+=(item.qty||1);
+        catCounts[foundTab]=(catCounts[foundTab]||0)+(item.qty||1);
+        tierCounts[tier]+=(item.qty||1);
+      }
+    });
+  });
+  var topCat=null,topCatCount=0;
+  Object.keys(catCounts).forEach(function(tab){if(catCounts[tab]>topCatCount){topCat=tab;topCatCount=catCounts[tab];}});
+  var topTier=null,topTierCount=0;
+  Object.keys(tierCounts).forEach(function(t){if(tierCounts[t]>topTierCount){topTier=t;topTierCount=tierCounts[t];}});
+  return {hasData:matched>0,topCategory:topCat,topCategoryLabel:topCat?(TABLBL_FA[topCat]||topCat):null,topTier:topTier,matched:matched,totalItems:totalItems};
+}
+function findCustomerByPhoneForSummary(phone){
+  if(!phone)return null;
+  var norm=String(phone).replace(/\D/g,'');
+  return CUSTOMERS.find(function(c){return c.phone&&String(c.phone).replace(/\D/g,'')===norm;})||null;
+}
+function purchaseSummaryLineHTML(customer,stats){
+  var s=computeCustomerPurchaseSummary(customer,stats);
+  if(!s.hasData)return '';
+  var tierColor=s.topTier==='expensive'?'#8a4a5a':(s.topTier==='cheap'?'#2a7d4f':'#9a6e3a');
+  return '<div style="font-size:0.76rem;color:#5a4a3a;background:#eef6f0;border:1px solid #cfe6d6;border-radius:8px;padding:8px 10px;margin-bottom:8px">'+
+    '💰 <b>خلاصه‌ی خرید:</b> بیشتر از دسته‌ی «'+escHtml(s.topCategoryLabel)+'» می‌خره، سطح قیمتیِ معمولش <span style="color:'+tierColor+';font-weight:900">'+TIER_LABELS[s.topTier]+'</span>ه'+
+    ' <span style="color:#aaa">('+s.matched+' از '+s.totalItems+' کالا قابل تشخیص بود)</span></div>';
 }
 function collectSiteData(productImgMap){
   var banners=CATALOG_BANNER_CACHE.map(function(b,i){
@@ -5869,6 +5933,7 @@ function renderCustomerDetail(id){
     h+='<b>🛍️ سلیقه‌ی خرید:</b> '+catRanked.map(function(cat){return (TABLBL_FA[cat]||cat)+' ('+catCounts[cat]+')';}).join('، ');
     h+='</div>';
   }
+  h+=purchaseSummaryLineHTML(c);
   if(c.location&&c.location.lat){
     var gmapUrl='https://www.google.com/maps?q='+c.location.lat+','+c.location.lng;
     h+='<div style="font-size:0.76rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="color:#9a6e3a">📍 موقعیت مکانی:</span><a href="'+gmapUrl+'" target="_blank" rel="noopener" style="color:#3aa0c9;font-weight:700;text-decoration:none">مشاهده روی نقشه</a><span style="direction:ltr;color:#aaa;font-size:0.68rem">'+c.location.lat.toFixed(5)+', '+c.location.lng.toFixed(5)+'</span></div>';
