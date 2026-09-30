@@ -2460,7 +2460,7 @@ function collectSingleProduct(targetRid){
             stock:stk,
             material:row.dataset.material||'',country:row.dataset.country||'',
             desc1:row.dataset.desc1||'',desc2:row.dataset.desc2||'',sleeve:row.dataset.sleeve||'',
-            tgLink:row.dataset.tglink||'',fullDesc:row.dataset.fulldesc||'',
+            tgLink:row.dataset.tglink||'',tgMsgIds:row.dataset.tgmsgids||'[]',fullDesc:row.dataset.fulldesc||'',
             colorList:JSON.parse(row.dataset.colorlist||'[]'),
             mixEnabled:!!row.dataset.mixenabled,
             mixDesc:row.dataset.mixdesc||'',
@@ -8261,6 +8261,7 @@ function saveTgLinkForRow(rid,category,sendResults){
     rowEl.dataset.tglink=link;
   }
   save();
+  autoSyncSingleProduct(rid,true,true);
 }
 function deleteOldChannelPosts(rid,cb){
   var rowEl=document.getElementById('R'+rid);
@@ -8667,6 +8668,7 @@ function hydrateProductsFromFirestore(){
         mixenabled:p.mixEnabled?'1':'',mixdesc:p.mixDesc||'',mixminorder:p.mixMinOrder||'',
         sizepricelist:JSON.stringify(p.sizePriceList||[]),
         fabrictags:JSON.stringify(p.fabricTags||[]),
+        tgmsgids:p.tgMsgIds||'[]',
         siteimg:p.img||null,siteimg2:p.img2||null
       });
     });
