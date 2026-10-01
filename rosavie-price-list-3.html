@@ -910,7 +910,7 @@ input[type=file]{display:none}
       <label class="platform-cb pcb-tg"><input type="checkbox" id="SEND_TG1" checked><span>🔵 تلگرام کانال ۱</span></label>
       <label class="platform-cb pcb-tg"><input type="checkbox" id="SEND_TG2" checked><span>🔵 تلگرام کانال ۲</span></label>
     </div>
-    <button class="sbig stg" onclick="sendToChannels()">🚀 تولید، ارسال و ذخیره در لیست قیمت</button>
+    <button class="sbig stg" id="SEND_BTN" onclick="sendToChannels()">🚀 تولید، ارسال و ذخیره در لیست قیمت</button>
     <button class="sbig" id="SAVE_ONLY_BTN" style="display:none;margin-top:8px;background:#eddfc9;color:#3d2b1f" onclick="saveEditOnly()">💾 فقط ذخیره در سایت و لیست قیمت (بدون ارسال به تلگرام)</button>
     <div class="stat" id="SEND_STAT"></div>
 
@@ -7665,33 +7665,31 @@ function buildCaptionData(){
   };
   if(CG_COUNTRY&&countryMap[CG_COUNTRY])pushInfoLine(countryMap[CG_COUNTRY]);
 
-  if(desc1){lines.push('');lines.push(_es.d1+' '+desc1);}
-  if(desc2){lines.push('');lines.push('');lines.push(_es.d2+' '+desc2);}
+  var descLines=[];
+  if(desc1)descLines.push(escapeHtmlCaption(_es.d1+' '+desc1));
+  if(desc2)descLines.push(escapeHtmlCaption(_es.d2+' '+desc2));
+  var descBlockHtml=descLines.length?('توضیحات محصول 👇\n<blockquote expandable>'+descLines.join('\n\n')+'</blockquote>'):'';
 
   var topSection=lines.join('\n');
 
   var fixedBottom=[
-    '➡️ جهت ثبت سفارش و اطلاع از قیمت محصولات در خدمتتون هستیم 👇😊',
+    'برای ارتباط با رُزاوی👇',
     '👤 ادمین: @amin_beik_mohammady',
     '☎️ تماس: 09190134599',
     '📸 اینستاگرام',
-    '👗 کانال لباس زیر',
-    '🌙 کانال لباس خواب',
     '✅ کانال بله'
   ].join('\n');
-  var fixedBottomHtml=[
-    '➡️ جهت ثبت سفارش و اطلاع از قیمت محصولات در خدمتتون هستیم 👇😊',
-    '👤 ادمین: <a href="https://t.me/amin_beik_mohammady">@amin_beik_mohammady</a>',
-    '☎️ تماس: 09190134599',
-    '<a href="https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA==">📸 اینستاگرام</a>',
-    '<a href="https://t.me/rozavie_underwear">👗 کانال لباس زیر</a>',
-    '<a href="https://t.me/lebasziryammi_sleepware">🌙 کانال لباس خواب</a>',
-    '<a href="https://ble.ir/rozavie_underwear">✅ کانال بله</a>'
-  ].join('\n');
+  var fixedBottomHtml='برای ارتباط با رُزاوی👇'+'\n'+
+    '<blockquote expandable>'+[
+      '👤 ادمین: <a href="https://t.me/amin_beik_mohammady">@amin_beik_mohammady</a>',
+      '☎️ تماس: 09190134599',
+      '<a href="https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA==">📸 اینستاگرام</a>',
+      '<a href="https://ble.ir/rozavie_underwear">✅ کانال بله</a>'
+    ].join('\n')+'</blockquote>';
 
   var fullCaption=topSection+(topSection?'\n':'')+fixedBottom;
 
-  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,fixedBottomHtml:fixedBottomHtml,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
+  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,fixedBottomHtml:fixedBottomHtml,descBlockHtml:descBlockHtml,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
     colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:'',
@@ -8174,7 +8172,7 @@ function escapeHtmlCaption(text){
   return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function tgDisplayLen(html){
-  return String(html).replace(/<a href="[^"]*">/g,'').replace(/<\/a>/g,'').length;
+  return String(html).replace(/<a href="[^"]*">/g,'').replace(/<\/a>/g,'').replace(/<blockquote expandable>/g,'').replace(/<\/blockquote>/g,'').length;
 }
 var TG_CAPTION_LIMIT=1024;
 function sendPlainTextTo(baseUrl,token,chatId,text,cb){
@@ -8334,11 +8332,9 @@ function sendToContentBackupChannel(cleanOrdered,data){
   if(cleanOrdered.length===1)sendSingleMediaTo(base,tgToken,backupCid,cleanOrdered[0],caption,done);
   else sendMediaGroupTo(base,tgToken,backupCid,cleanOrdered,caption,done);
 }
-var _lastSendClickTime=0;
+var _sendInProgress=false;
 function sendToChannels(){
-  var _sendNow=Date.now();
-  if(_sendNow-_lastSendClickTime<3000)return;
-  _lastSendClickTime=_sendNow;
+  if(_sendInProgress)return;
   var stat=document.getElementById('SEND_STAT');
   if(!SEND_MEDIA.length){stat.textContent='لطفاً حداقل یک عکس یا فیلم اضافه کن';stat.className='stat serr';return;}
 
@@ -8349,14 +8345,21 @@ function sendToChannels(){
   var manualText=V('SEND_CAPTION');
   var isManuallyEdited=!!(manualText&&manualText.trim()!==data.text.trim());
   var caption=isManuallyEdited?manualText:data.text;
-  var siteLinkText='🛍️✨ «برای خرید و بازدید در سایت کلیک کن» 🌟🎀';
-  var vpnWarnText='⚠️ برای باز شدن لینک، فیلترشکن‌تون رو روشن کنید';
+  var siteLinkText='خرید و بازدید از سایت';
+  var vpnWarnText='با فیلتر شکن وارد سایت شوید';
   var dateLine='📅 بروزرسانی قیمت: '+new Date().toLocaleDateString('fa-IR');
-  var displayLen=caption.length+(data.code?('\n\n'+vpnWarnText+'\n'+siteLinkText).length:0)+('\n\n'+dateLine).length;
+  var displayLen=caption.length+(data.descBlockHtml&&!isManuallyEdited?tgDisplayLen(data.descBlockHtml)+2:0)+(data.code?('\n\n'+vpnWarnText+'\n'+siteLinkText).length:0)+('\n\n'+dateLine).length;
   if(displayLen>1024){
     stat.textContent='⚠️ کپشن '+displayLen+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(displayLen-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
     stat.className='stat serr';
     return;
+  }
+  _sendInProgress=true;
+  var sendBtn=document.getElementById('SEND_BTN');
+  if(sendBtn){sendBtn.disabled=true;sendBtn.style.opacity='0.55';}
+  function finishSending(){
+    _sendInProgress=false;
+    if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='';}
   }
   advanceCaptionEmojiIdx();
   if(isManuallyEdited){
@@ -8369,9 +8372,9 @@ function sendToChannels(){
   }else if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
     var linkLine=vpnWarnText+'\n<a href="'+siteUrl+'">'+siteLinkText+'</a>';
-    caption=escapeHtmlCaption(data.topSection)+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml+'\n\n'+dateLine;
+    caption=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml+'\n\n'+dateLine;
   }else{
-    caption=escapeHtmlCaption(data.topSection)+(data.topSection?'\n\n':'')+data.fixedBottomHtml+'\n\n'+dateLine;
+    caption=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+(data.topSection||data.descBlockHtml?'\n\n':'')+data.fixedBottomHtml+'\n\n'+dateLine;
   }
 
   var ordered=SEND_MEDIA.slice().sort(function(a,b){return (b.primary?1:0)-(a.primary?1:0);});
@@ -8393,6 +8396,7 @@ function sendToChannels(){
     if(!wantsSend){
       stat.textContent=updated?'محصول به‌روزرسانی شد (بدون ارسال به کانال) ✅':'خطا در به‌روزرسانی محصول';
       stat.className=updated?'stat sok':'stat serr';
+      finishSending();
       return;
     }
     var eidx=0,eErrs=[],eOk=0,eResults=[];var orderedWm=ordered;
@@ -8403,6 +8407,7 @@ function sendToChannels(){
         resetSendMedia();
         if(eOk===targets.length){stat.textContent='محصول به‌روزرسانی و به '+eOk+'/'+targets.length+' کانال ارسال شد ✅';stat.className='stat sok';}
         else{stat.textContent='محصول به‌روزرسانی شد، اما ارسال ناموفق بود ('+eOk+'/'+targets.length+') — '+(eErrs[0]||'خطای نامشخص');stat.className='stat serr';}
+        finishSending();
         return;
       }
       var t=targets[eidx];
@@ -8435,10 +8440,11 @@ function sendToChannels(){
   if(!targets.length){
     stat.textContent='هیچ کانالی تیک نخورده — در حال ذخیره در لیست قیمت بدون ارسال...';stat.className='stat sload';
     saveProductWithDuplicateCheck(data,function(saved,mode){
-      if(mode==='cancel'){stat.textContent='لغو شد — چیزی ذخیره یا ارسال نشد';stat.className='stat';return;}
+      if(mode==='cancel'){stat.textContent='لغو شد — چیزی ذخیره یا ارسال نشد';stat.className='stat';finishSending();return;}
       var saveMsgPart=saved?(mode==='replace'?'محصول قبلی جایگزین شد ✅':'محصول در لیست قیمت ذخیره شد ✅'):'خطا: کد محصول خالی بود، ذخیره نشد';
       stat.textContent=saveMsgPart+' — به هیچ کانالی ارسال نشد (تیک تلگرام رو نزده بودی)';
       stat.className=saved?'stat sok':'stat serr';
+      finishSending();
     });
     return;
   }
@@ -8450,7 +8456,7 @@ function sendToChannels(){
   stat.textContent='در حال بررسی و ذخیره در لیست قیمت...';stat.className='stat sload';
 
   saveProductWithDuplicateCheck(data,function(saved,mode){
-    if(mode==='cancel'){stat.textContent='لغو شد — چیزی ذخیره یا ارسال نشد';stat.className='stat';return;}
+    if(mode==='cancel'){stat.textContent='لغو شد — چیزی ذخیره یا ارسال نشد';stat.className='stat';finishSending();return;}
     var saveMsgPart=saved?(mode==='replace'?'محصول قبلی جایگزین شد ✅':'محصول در لیست قیمت ذخیره شد ✅'):'(کد محصول خالی بود، در لیست قیمت ذخیره نشد)';
 
     var idx=0, errMsgs=[], okCount=0, nResults=[];
@@ -8467,6 +8473,7 @@ function sendToChannels(){
           stat.textContent=saveMsgPart+' — اما ارسال ناموفق بود ('+okCount+'/'+targets.length+' موفق) — '+(errMsgs[0]||'خطای نامشخص');
           stat.className='stat serr';
         }
+        finishSending();
         return;
       }
       var t=targets[idx];
