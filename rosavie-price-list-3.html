@@ -911,6 +911,7 @@ input[type=file]{display:none}
       <label class="platform-cb pcb-tg"><input type="checkbox" id="SEND_TG2" checked><span>🔵 تلگرام کانال ۲</span></label>
     </div>
     <button class="sbig stg" id="SEND_BTN" onclick="sendToChannels()">🚀 تولید، ارسال و ذخیره در لیست قیمت</button>
+    <button class="sbig" style="background:#2a9d5c;color:#fff;margin-top:8px" onclick="copyBaleCaption()">📋 کپی کپشن کانال بله</button>
     <button class="sbig" id="SAVE_ONLY_BTN" style="display:none;margin-top:8px;background:#eddfc9;color:#3d2b1f" onclick="saveEditOnly()">💾 فقط ذخیره در سایت و لیست قیمت (بدون ارسال به تلگرام)</button>
     <div class="stat" id="SEND_STAT"></div>
 
@@ -7700,6 +7701,58 @@ function buildCaptionData(){
     siteImg2:CG_SITE_IMG2||'',
     fullDesc:(document.getElementById('CG_FULLDESC_TO_SITE')&&document.getElementById('CG_FULLDESC_TO_SITE').checked)?fullDesc:''};
 }
+function buildBaleCaptionText(){
+  var data=buildCaptionData();
+  if(!data.text)return '';
+  var desc1=V('CG_DESC1'),desc2=V('CG_DESC2');
+  var _es=CAPTION_EMOJI_SETS[getCaptionEmojiIdx()];
+  var descLines=[];
+  if(desc1)descLines.push(_es.d1+' '+desc1);
+  if(desc2)descLines.push(_es.d2+' '+desc2);
+  var descBlock=descLines.length?('توضیحات محصول 👇\n'+descLines.join('\n\n')):'';
+  var contactBlock=[
+    'برای ارتباط با رُزاوی👇',
+    '👤 ادمین: @amin_beik_mohammady',
+    '☎️ تماس: 09190134599',
+    '📸 اینستاگرام: https://www.instagram.com/rozavie_underwear?stkn=bmhvcDEzdjNoemV3',
+    '👗 کانال لباس زیر: https://t.me/rozavie_underwear',
+    '🌙 کانال لباس خواب: https://t.me/rozavie_sleepwear'
+  ].join('\n');
+  var dateLine='📅 بروزرسانی قیمت: '+new Date().toLocaleDateString('fa-IR');
+  var parts=[data.topSection];
+  if(descBlock)parts.push(descBlock);
+  if(data.code){
+    var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
+    parts.push('با فیلتر شکن وارد سایت شوید\nخرید و بازدید از سایت: '+siteUrl);
+  }
+  parts.push(contactBlock);
+  parts.push(dateLine);
+  return parts.filter(Boolean).join('\n\n');
+}
+function copyBaleCaption(){
+  var text=buildBaleCaptionText();
+  var stat=document.getElementById('SEND_STAT');
+  if(!text){stat.textContent='اول فیلدهای محصول رو پر کن';stat.className='stat serr';return;}
+  function showCopied(){stat.textContent='📋 کپشن کانال بله کپی شد — تو بله پیست کن';stat.className='stat sok';}
+  function showFailed(){stat.textContent='کپی خودکار کار نکرد — خودت متن رو از پیش‌نمایش کپشن کپی کن';stat.className='stat serr';}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(showCopied).catch(function(){
+      if(legacyCopyText(text))showCopied();else showFailed();
+    });
+  }else{
+    if(legacyCopyText(text))showCopied();else showFailed();
+  }
+}
+function legacyCopyText(text){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    var ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){return false;}
+}
 function showCaptionPreview(data){
   document.getElementById('CG_RESULT').value=data.text;
   document.getElementById('CG_RESULT_CARD').style.display='block';
@@ -8362,20 +8415,36 @@ function sendToChannels(){
     if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity='';}
   }
   advanceCaptionEmojiIdx();
+  var cid1Val=V('TGCID'),cid2Val=V('TGCID2');
+  function crossChannelLineFor(targetCid){
+    if(targetCid&&cid2Val&&targetCid===cid1Val)return '🔔 عضو کانال لباس خواب ما هم بشید: <a href="https://t.me/rozavie_sleepwear">https://t.me/rozavie_sleepwear</a>';
+    if(targetCid&&cid1Val&&targetCid===cid2Val)return '🔔 عضو کانال لباس زیر ما هم بشید: <a href="https://t.me/rozavie_underwear">https://t.me/rozavie_underwear</a>';
+    return '';
+  }
+  var captionBefore='',captionAfter='';
   if(isManuallyEdited){
     if(data.code){
       var siteUrlM=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
-      caption=escapeHtmlCaption(manualText)+'\n\n'+vpnWarnText+'\n<a href="'+siteUrlM+'">'+siteLinkText+'</a>'+'\n\n'+dateLine;
+      captionBefore=escapeHtmlCaption(manualText)+'\n\n'+vpnWarnText+'\n<a href="'+siteUrlM+'">'+siteLinkText+'</a>';
+      captionAfter='\n\n'+dateLine;
     }else{
-      caption=escapeHtmlCaption(manualText)+'\n\n'+dateLine;
+      captionBefore=escapeHtmlCaption(manualText);
+      captionAfter='\n\n'+dateLine;
     }
   }else if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
     var linkLine=vpnWarnText+'\n<a href="'+siteUrl+'">'+siteLinkText+'</a>';
-    caption=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml+'\n\n'+dateLine;
+    captionBefore=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml;
+    captionAfter='\n\n'+dateLine;
   }else{
-    caption=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+(data.topSection||data.descBlockHtml?'\n\n':'')+data.fixedBottomHtml+'\n\n'+dateLine;
+    captionBefore=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+(data.topSection||data.descBlockHtml?'\n\n':'')+data.fixedBottomHtml;
+    captionAfter='\n\n'+dateLine;
   }
+  function captionForTarget(targetCid){
+    var crossLine=crossChannelLineFor(targetCid);
+    return captionBefore+(crossLine?'\n\n'+crossLine:'')+captionAfter;
+  }
+  caption=captionForTarget(null);
 
   var ordered=SEND_MEDIA.slice().sort(function(a,b){return (b.primary?1:0)-(a.primary?1:0);});
 
@@ -8411,6 +8480,7 @@ function sendToChannels(){
         return;
       }
       var t=targets[eidx];
+      var tCaption=captionForTarget(t.cid);
       stat.textContent='در حال ارسال به '+t.name+'... 0٪';stat.className='stat sload';
       function done(err,msgId){
         if(!err){eOk++;eResults.push({cid:t.cid,msgId:msgId});trackChannelPost(t.cid);}else{eErrs.push(t.name+': '+err);console.error(t.name+': '+err);}
@@ -8418,8 +8488,8 @@ function sendToChannels(){
         setTimeout(nextEdit,800);
       }
       function onProg(pct){stat.textContent='در حال ارسال به '+t.name+'... '+pct+'٪';}
-      if(orderedWm.length===1)sendSingleMediaTo(t.base,t.token,t.cid,orderedWm[0],caption,done,onProg);
-      else sendMediaGroupTo(t.base,t.token,t.cid,orderedWm,caption,done,onProg);
+      if(orderedWm.length===1)sendSingleMediaTo(t.base,t.token,t.cid,orderedWm[0],tCaption,done,onProg);
+      else sendMediaGroupTo(t.base,t.token,t.cid,orderedWm,tCaption,done,onProg);
     }
     stat.textContent='در حال حذف پست قبلی از کانال‌ها...';stat.className='stat sload';
     deleteOldChannelPosts(EDITING_RID,function(){
@@ -8477,6 +8547,7 @@ function sendToChannels(){
         return;
       }
       var t=targets[idx];
+      var tCaption=captionForTarget(t.cid);
       stat.textContent='در حال ارسال به '+t.name+'... 0٪';stat.className='stat sload';
       function done(err,msgId){
         if(!err){okCount++;nResults.push({cid:t.cid,msgId:msgId});trackChannelPost(t.cid);}
@@ -8486,9 +8557,9 @@ function sendToChannels(){
       }
       function onProg(pct){stat.textContent='در حال ارسال به '+t.name+'... '+pct+'٪';}
       if(orderedWm.length===1){
-        sendSingleMediaTo(t.base,t.token,t.cid,orderedWm[0],caption,done,onProg);
+        sendSingleMediaTo(t.base,t.token,t.cid,orderedWm[0],tCaption,done,onProg);
       } else {
-        sendMediaGroupTo(t.base,t.token,t.cid,orderedWm,caption,done,onProg);
+        sendMediaGroupTo(t.base,t.token,t.cid,orderedWm,tCaption,done,onProg);
       }
     }
     next();
