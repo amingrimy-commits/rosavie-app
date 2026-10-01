@@ -7630,33 +7630,28 @@ function buildCaptionData(){
     if(title)lines.push('');
     lines.push(_es.star+'برند '+brand+_es.star);
   }
-  var infoStarted=false;
-  function pushInfoLine(line){
-    if(!infoStarted){
-      if(brand){lines.push('');lines.push('');}
-      infoStarted=true;
-    }
-    lines.push(line);
+  var priceLine='';
+  if(CG_SALE_SINGLE&&price){
+    priceLine=showPriceInCaption?('💰 قیمت تک‌رنگ: '+Math.round(Number(price)/1000)+'t'):'💰 قیمت تک‌رنگ: استعلام بگیرید';
   }
-  if(code)pushInfoLine('🔖 کد: #'+code);
-  if(color)pushInfoLine('🎨 رنگ: '+color);
+  if(priceLine){if(lines.length)lines.push('');lines.push(priceLine);}
+
+  var specLines=[];
+  if(code)specLines.push('🔖 کد: #'+code);
+  if(color)specLines.push('🎨 رنگ: '+color);
   if(CG_SALE_SINGLE){
-    if(finalSize)pushInfoLine('📏 سایز: '+finalSize);
-    if(price){
-      if(showPriceInCaption)pushInfoLine('💰 قیمت تک‌رنگ: '+Math.round(Number(price)/1000)+'t');
-      else pushInfoLine('💰 قیمت تک‌رنگ: استعلام بگیرید');
-    }
-    if(minOrder)pushInfoLine('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
+    if(finalSize)specLines.push('📏 سایز: '+finalSize);
+    if(minOrder)specLines.push('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
   }
   if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    pushInfoLine('🎁 سایز و قیمت بسته (بسته میکس):');
+    specLines.push('🎁 سایز و قیمت بسته (بسته میکس):');
     CG_SIZEPRICE_LIST.forEach(function(sp){
       var pkgTxt=showPriceInCaption?(fmtP(sp.pkgPrice)+(sp.pkgCount?(' ('+sp.pkgCount+' عددی)'):'')):'استعلام بگیرید';
-      lines.push(sp.size+' → '+pkgTxt);
+      specLines.push(sp.size+' → '+pkgTxt);
     });
   }
-  if(mixEnabled&&mixDesc)pushInfoLine('🎨 '+mixDesc);
-  if(material)pushInfoLine('🌿 پارچه و کش '+material);
+  if(mixEnabled&&mixDesc)specLines.push('🎨 '+mixDesc);
+  if(material)specLines.push('🌿 پارچه و کش '+material);
 
   var countryMap={
     iran:'🇮🇷 تولید ایران',
@@ -7664,33 +7659,36 @@ function buildCaptionData(){
     china:'🇨🇳 تولید چین',
     europe:'🇪🇺 سفارش اروپا'
   };
-  if(CG_COUNTRY&&countryMap[CG_COUNTRY])pushInfoLine(countryMap[CG_COUNTRY]);
+  if(CG_COUNTRY&&countryMap[CG_COUNTRY])specLines.push(countryMap[CG_COUNTRY]);
+
+  var specBlockHtml=specLines.length?('مشخصات محصول🔽\n<blockquote expandable>'+specLines.map(escapeHtmlCaption).join('\n')+'</blockquote>'):'';
 
   var descLines=[];
   if(desc1)descLines.push(escapeHtmlCaption(_es.d1+' '+desc1));
   if(desc2)descLines.push(escapeHtmlCaption(_es.d2+' '+desc2));
-  var descBlockHtml=descLines.length?('توضیحات محصول 👇\n<blockquote expandable>'+descLines.join('\n\n')+'</blockquote>'):'';
+  var descBlockHtml=descLines.length?('توضیحات محصول🔽\n<blockquote expandable>'+descLines.join('\n\n')+'</blockquote>'):'';
 
   var topSection=lines.join('\n');
 
   var fixedBottom=[
-    'برای ارتباط با رُزاوی👇',
+    'برای ارتباط با رُزاوی🔽',
     '👤 ادمین: @amin_beik_mohammady',
     '☎️ تماس: 09190134599',
     '📸 اینستاگرام',
     '✅ کانال بله'
   ].join('\n');
-  var fixedBottomHtml='برای ارتباط با رُزاوی👇'+'\n'+
-    '<blockquote expandable>'+[
-      '👤 ادمین: <a href="https://t.me/amin_beik_mohammady">@amin_beik_mohammady</a>',
-      '☎️ تماس: 09190134599',
-      '<a href="https://www.instagram.com/rozavie_underwear?igsh=MThtbHZiZTc1bWdtMA==">📸 اینستاگرام</a>',
-      '<a href="https://ble.ir/rozavie_underwear">✅ کانال بله</a>'
-    ].join('\n')+'</blockquote>';
+  var contactLinesHtml=[
+    '👤 ادمین: <a href="https://t.me/amin_beik_mohammady">@amin_beik_mohammady</a>',
+    '☎️ تماس: 09190134599',
+    '<a href="https://www.instagram.com/rozavie_underwear?stkn=bmhvcDEzdjNoemV3">📸 اینستاگرام</a>',
+    '<a href="https://ble.ir/rozavie_underwear">✅ کانال بله</a>'
+  ].join('\n');
+  var fixedBottomHtml='برای ارتباط با رُزاوی🔽'+'\n'+
+    '<blockquote expandable>'+contactLinesHtml+'</blockquote>';
 
   var fullCaption=topSection+(topSection?'\n':'')+fixedBottom;
 
-  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,fixedBottomHtml:fixedBottomHtml,descBlockHtml:descBlockHtml,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
+  return {text:fullCaption,topSection:topSection,fixedBottom:fixedBottom,fixedBottomHtml:fixedBottomHtml,descBlockHtml:descBlockHtml,specBlockHtml:specBlockHtml,contactLinesHtml:contactLinesHtml,category:CG_CATEGORY,type:CG_TYPE,code:code,brand:brand,color:color,
     finalSize:finalSize,price:price,minOrder:minOrder,title:title,material:material,
     country:CG_COUNTRY,desc1:desc1,desc2:desc2,manualTgLink:manualTgLink,
     colorList:colorList,mixEnabled:mixEnabled,mixDesc:mixEnabled?mixDesc:'',mixMinOrder:'',
@@ -7701,17 +7699,19 @@ function buildCaptionData(){
     siteImg2:CG_SITE_IMG2||'',
     fullDesc:(document.getElementById('CG_FULLDESC_TO_SITE')&&document.getElementById('CG_FULLDESC_TO_SITE').checked)?fullDesc:''};
 }
+function unescapeHtmlCaption(text){
+  return String(text).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+}
+function stripBlockquoteToPlain(html){
+  return unescapeHtmlCaption(String(html).replace(/<blockquote expandable>/g,'').replace(/<\/blockquote>/g,''));
+}
 function buildBaleCaptionText(){
   var data=buildCaptionData();
   if(!data.text)return '';
-  var desc1=V('CG_DESC1'),desc2=V('CG_DESC2');
-  var _es=CAPTION_EMOJI_SETS[getCaptionEmojiIdx()];
-  var descLines=[];
-  if(desc1)descLines.push(_es.d1+' '+desc1);
-  if(desc2)descLines.push(_es.d2+' '+desc2);
-  var descBlock=descLines.length?('توضیحات محصول 👇\n'+descLines.join('\n\n')):'';
+  var specBlock=data.specBlockHtml?stripBlockquoteToPlain(data.specBlockHtml):'';
+  var descBlock=data.descBlockHtml?stripBlockquoteToPlain(data.descBlockHtml):'';
   var contactBlock=[
-    'برای ارتباط با رُزاوی👇',
+    'برای ارتباط با رُزاوی🔽',
     '👤 ادمین: @amin_beik_mohammady',
     '☎️ تماس: 09190134599',
     '📸 اینستاگرام: https://www.instagram.com/rozavie_underwear?stkn=bmhvcDEzdjNoemV3',
@@ -7720,10 +7720,11 @@ function buildBaleCaptionText(){
   ].join('\n');
   var dateLine='📅 بروزرسانی قیمت: '+new Date().toLocaleDateString('fa-IR');
   var parts=[data.topSection];
+  if(specBlock)parts.push(specBlock);
   if(descBlock)parts.push(descBlock);
   if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
-    parts.push('با فیلتر شکن وارد سایت شوید\nخرید و بازدید از سایت: '+siteUrl);
+    parts.push('⬅️ با فیلتر شکن وارد سایت شوید ➡️\nخرید و بازدید از سایت: '+siteUrl);
   }
   parts.push(contactBlock);
   parts.push(dateLine);
@@ -8225,7 +8226,7 @@ function escapeHtmlCaption(text){
   return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function tgDisplayLen(html){
-  return String(html).replace(/<a href="[^"]*">/g,'').replace(/<\/a>/g,'').replace(/<blockquote expandable>/g,'').replace(/<\/blockquote>/g,'').length;
+  return String(html).replace(/<a href="[^"]*">/g,'').replace(/<\/a>/g,'').replace(/<blockquote expandable>/g,'').replace(/<\/blockquote>/g,'').replace(/<\/?b>/g,'').replace(/<\/?u>/g,'').length;
 }
 var TG_CAPTION_LIMIT=1024;
 function sendPlainTextTo(baseUrl,token,chatId,text,cb){
@@ -8398,10 +8399,10 @@ function sendToChannels(){
   var manualText=V('SEND_CAPTION');
   var isManuallyEdited=!!(manualText&&manualText.trim()!==data.text.trim());
   var caption=isManuallyEdited?manualText:data.text;
-  var siteLinkText='خرید و بازدید از سایت';
-  var vpnWarnText='با فیلتر شکن وارد سایت شوید';
+  var siteLinkText='<b><u>خرید و بازدید از سایت</u></b>';
+  var vpnWarnText='⬅️ با فیلتر شکن وارد سایت شوید ➡️';
   var dateLine='📅 بروزرسانی قیمت: '+new Date().toLocaleDateString('fa-IR');
-  var displayLen=caption.length+(data.descBlockHtml&&!isManuallyEdited?tgDisplayLen(data.descBlockHtml)+2:0)+(data.code?('\n\n'+vpnWarnText+'\n'+siteLinkText).length:0)+('\n\n'+dateLine).length;
+  var displayLen=caption.length+(data.descBlockHtml&&!isManuallyEdited?tgDisplayLen(data.descBlockHtml)+2:0)+(data.specBlockHtml&&!isManuallyEdited?tgDisplayLen(data.specBlockHtml)+2:0)+(data.contactLinesHtml&&!isManuallyEdited?tgDisplayLen(data.contactLinesHtml)+30:0)+(data.code?('\n\n'+vpnWarnText+'\n'+tgDisplayLen(siteLinkText)).length:0)+('\n\n'+dateLine).length;
   if(displayLen>1024){
     stat.textContent='⚠️ کپشن '+displayLen+' کاراکتره ولی تلگرام حداکثر ۱۰۲۴ کاراکتر برای عکس قبول می‌کنه — '+(displayLen-1024)+' کاراکتر کمش کن (مثلاً هشتگ‌ها یا توضیحات رو کوتاه‌تر کن)، بعد دوباره امتحان کن.';
     stat.className='stat serr';
@@ -8417,9 +8418,14 @@ function sendToChannels(){
   advanceCaptionEmojiIdx();
   var cid1Val=V('TGCID'),cid2Val=V('TGCID2');
   function crossChannelLineFor(targetCid){
-    if(targetCid&&cid2Val&&targetCid===cid1Val)return '🔔 عضو کانال لباس خواب ما هم بشید: <a href="https://t.me/rozavie_sleepwear">https://t.me/rozavie_sleepwear</a>';
-    if(targetCid&&cid1Val&&targetCid===cid2Val)return '🔔 عضو کانال لباس زیر ما هم بشید: <a href="https://t.me/rozavie_underwear">https://t.me/rozavie_underwear</a>';
+    if(targetCid&&cid2Val&&targetCid===cid1Val)return '<a href="https://t.me/rozavie_sleepwear">🌙 عضو کانال لباس خواب ما هم بشید</a>';
+    if(targetCid&&cid1Val&&targetCid===cid2Val)return '<a href="https://t.me/rozavie_underwear">👗 عضو کانال لباس زیر ما هم بشید</a>';
     return '';
+  }
+  function contactBlockFor(targetCid){
+    var crossLine=crossChannelLineFor(targetCid);
+    var allLines=crossLine?(data.contactLinesHtml+'\n'+crossLine):data.contactLinesHtml;
+    return 'برای ارتباط با رُزاوی🔽\n<blockquote expandable>'+allLines+'</blockquote>';
   }
   var captionBefore='',captionAfter='';
   if(isManuallyEdited){
@@ -8434,15 +8440,15 @@ function sendToChannels(){
   }else if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
     var linkLine=vpnWarnText+'\n<a href="'+siteUrl+'">'+siteLinkText+'</a>';
-    captionBefore=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+'\n\n'+linkLine+'\n\n'+data.fixedBottomHtml;
+    captionBefore=escapeHtmlCaption(data.topSection)+(data.specBlockHtml?'\n\n'+data.specBlockHtml:'')+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+'\n\n'+linkLine;
     captionAfter='\n\n'+dateLine;
   }else{
-    captionBefore=escapeHtmlCaption(data.topSection)+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'')+(data.topSection||data.descBlockHtml?'\n\n':'')+data.fixedBottomHtml;
+    captionBefore=escapeHtmlCaption(data.topSection)+(data.specBlockHtml?'\n\n'+data.specBlockHtml:'')+(data.descBlockHtml?'\n\n'+data.descBlockHtml:'');
     captionAfter='\n\n'+dateLine;
   }
   function captionForTarget(targetCid){
-    var crossLine=crossChannelLineFor(targetCid);
-    return captionBefore+(crossLine?'\n\n'+crossLine:'')+captionAfter;
+    if(isManuallyEdited)return captionBefore+captionAfter;
+    return captionBefore+'\n\n'+contactBlockFor(targetCid)+captionAfter;
   }
   caption=captionForTarget(null);
 
