@@ -7630,13 +7630,19 @@ function buildCaptionData(){
     if(title)lines.push('');
     lines.push(_es.star+'برند '+brand+_es.star);
   }
-  var priceLine='';
+  var priceLine='',priceLineHtml='';
   if(CG_SALE_SINGLE&&price){
-    priceLine=showPriceInCaption?('💰 قیمت تک‌رنگ: '+Math.round(Number(price)/1000)+'t'):'💰 قیمت تک‌رنگ: استعلام بگیرید';
-  }
-  var priceLineHtml='';
-  if(CG_SALE_SINGLE&&price){
-    priceLineHtml=showPriceInCaption?('💰 قیمت تک‌رنگ: <b>'+Math.round(Number(price)/1000)+'t</b>'):'💰 قیمت تک‌رنگ: <b>استعلام بگیرید</b>';
+    priceLine=showPriceInCaption?('💰 قیمت: '+Math.round(Number(price)/1000)+'t'):'💰 قیمت: استعلام بگیرید';
+    priceLineHtml=showPriceInCaption?('💰 قیمت: <b>'+Math.round(Number(price)/1000)+'t</b>'):'💰 قیمت: <b>استعلام بگیرید</b>';
+  }else if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
+    var pkgPlainLines=['🎁 سایز و قیمت بسته (بسته میکس):'],pkgHtmlLines=['🎁 سایز و قیمت بسته (بسته میکس):'];
+    CG_SIZEPRICE_LIST.forEach(function(sp){
+      var pkgTxt=showPriceInCaption?(fmtP(sp.pkgPrice)+(sp.pkgCount?(' ('+sp.pkgCount+' عددی)'):'')):'استعلام بگیرید';
+      pkgPlainLines.push(sp.size+' → '+pkgTxt);
+      pkgHtmlLines.push(escapeHtmlCaption(sp.size+' → ')+'<b>'+escapeHtmlCaption(pkgTxt)+'</b>');
+    });
+    priceLine=pkgPlainLines.join('\n');
+    priceLineHtml=pkgHtmlLines.join('\n');
   }
 
   var specLines=[];
@@ -7645,13 +7651,6 @@ function buildCaptionData(){
   if(CG_SALE_SINGLE){
     if(finalSize)specLines.push('📏 سایز: '+finalSize);
     if(minOrder)specLines.push('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
-  }
-  if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    specLines.push('🎁 سایز و قیمت بسته (بسته میکس):');
-    CG_SIZEPRICE_LIST.forEach(function(sp){
-      var pkgTxt=showPriceInCaption?(fmtP(sp.pkgPrice)+(sp.pkgCount?(' ('+sp.pkgCount+' عددی)'):'')):'استعلام بگیرید';
-      specLines.push(sp.size+' → '+pkgTxt);
-    });
   }
   if(mixEnabled&&mixDesc)specLines.push('🎨 '+mixDesc);
   if(material)specLines.push('🌿 پارچه و کش '+material);
