@@ -7712,11 +7712,11 @@ function buildBaleCaptionText(){
   var specBlock=data.specBlockHtml?stripBlockquoteToPlain(data.specBlockHtml):'';
   var contactBlock=[
     '⏬️ برای ارتباط با رُزاوی',
-    '👤 ادمین: @amin_beik_mohammady',
+    '👤 ادمین:\n@amin_beik_mohammady',
     '☎️ تماس: 09190134599',
-    '📸 اینستاگرام: https://www.instagram.com/rozavie_underwear?stkn=bmhvcDEzdjNoemV3',
-    '👗 کانال لباس زیر: https://t.me/rozavie_underwear',
-    '🌙 کانال لباس خواب: https://t.me/rozavie_sleepwear'
+    '📸 اینستاگرام:\nhttps://www.instagram.com/rozavie_underwear?stkn=bmhvcDEzdjNoemV3',
+    '👗 کانال لباس زیر:\nhttps://t.me/rozavie_underwear',
+    '🌙 کانال لباس خواب:\nhttps://t.me/rozavie_sleepwear'
   ].join('\n');
   var dateLine='📅 بروزرسانی قیمت: '+new Date().toLocaleDateString('fa-IR');
   var parts=[data.topSection];
@@ -7724,7 +7724,7 @@ function buildBaleCaptionText(){
   if(specBlock)parts.push(specBlock);
   if(data.code){
     var siteUrl=SITE_BASE_URL+'#p~'+encodeURIComponent(data.code);
-    parts.push('⚠️از فیلتر شکن استفاده کنید ⚠️\n\nخرید و بازدید از سایت: '+siteUrl);
+    parts.push('⚠️از قند شکن استفاده کنید ⚠️\n\n🌐خرید و بازدید از سایت:\n'+siteUrl);
   }
   parts.push(contactBlock);
   parts.push(dateLine);
