@@ -497,6 +497,10 @@ input[type=file]{display:none}
     <span id="SUBNAV_ARROW" style="transition:transform 0.2s">▾</span>
   </button>
   <div class="tabs" id="SUBNAV" style="display:none;flex-direction:column;overflow-x:visible;max-height:60vh;overflow-y:auto;background:#fff;border:1.5px solid #d4a87a;border-top:none;border-radius:0 0 10px 10px;margin-top:-1px;padding:6px"></div>
+  <div style="position:relative;margin-top:8px">
+    <input type="text" id="PRODSEARCH_INPUT" class="fi" placeholder="🔍 جستجوی محصول — کد یا اسم رو بنویس..." autocomplete="off" oninput="onProductSearchInput(this.value)" style="margin-bottom:0">
+    <div id="PRODSEARCH_RESULTS" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:#fff;border:1.5px solid #d4a87a;border-radius:0 0 10px 10px;max-height:50vh;overflow-y:auto;box-shadow:0 6px 14px rgba(0,0,0,.15)"></div>
+  </div>
 </div>
 <div class="pg" id="p1"><div class="card"><div class="ctitle">سوتین و ست سوتین</div><button class="addb" onclick="addBrand('p1')">+ افزودن برند</button><div id="BB-p1"></div></div></div>
 <div class="pg" id="p2"><div class="card"><div class="ctitle">نیمتنه و ست نیمتنه</div><button class="addb" onclick="addBrand('p2')">+ افزودن برند</button><div id="BB-p2"></div></div></div>
@@ -743,6 +747,8 @@ input[type=file]{display:none}
         <button type="button" class="chip" onclick="setCgSleepSize('L, XL')">L, XL</button>
         <button type="button" class="chip" onclick="setCgSleepSize('S,M,L,XL')">S,M,L,XL</button>
         <button type="button" class="chip" onclick="setCgSleepSize('S,M')">S,M</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('M,L,XL')">M,L,XL</button>
+        <button type="button" class="chip" onclick="setCgSleepSize('F')">F (فری‌سایز)</button>
       </div>
       <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
         <span style="font-size:0.72rem;color:#9a6e3a">F از</span>
@@ -3833,6 +3839,71 @@ function allProds(){
   var all=[];
   TABS.forEach(function(t){getBrands(t).forEach(function(b){b.rows.forEach(function(r){r.brandName=b.name;r.tab=t;r.bid=b.bid;all.push(r);});});});
   return all;
+}
+
+// ── جستجوی محصول (کد یا اسم) با پیشنهادِ زنده ──
+function normSearchText(s){
+  return String(s||'').toLowerCase().replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\s]+/g,'');
+}
+function onProductSearchInput(q){
+  var box=document.getElementById('PRODSEARCH_RESULTS');
+  var query=normSearchText(q);
+  if(!query){box.style.display='none';box.innerHTML='';return;}
+  var results=searchProducts(query);
+  renderProductSearchResults(results,q);
+}
+function searchProducts(query){
+  var nq=normSearchText(query);
+  var prods=allProds();
+  var scored=[];
+  prods.forEach(function(p){
+    var code=normSearchText(p.code),title=normSearchText(p.title),brand=normSearchText(p.brandName);
+    var score=-1;
+    if(code&&code.indexOf(nq)===0)score=0;
+    else if(code&&code.indexOf(nq)>-1)score=1;
+    else if(title&&title.indexOf(nq)>-1)score=2;
+    else if(brand&&brand.indexOf(nq)>-1)score=3;
+    if(score>-1)scored.push({p:p,score:score});
+  });
+  scored.sort(function(a,b){return a.score-b.score;});
+  return scored.slice(0,10).map(function(x){return x.p;});
+}
+function renderProductSearchResults(results,rawQuery){
+  var box=document.getElementById('PRODSEARCH_RESULTS');
+  if(!results.length){
+    box.style.display='block';
+    box.innerHTML='<div style="padding:14px;color:#9a6e3a;font-size:0.78rem;text-align:center">محصولی با «'+escAttr(rawQuery)+'» پیدا نشد — کدِ دیگه یا بخشی از اسم رو امتحان کن</div>';
+    return;
+  }
+  box.style.display='block';
+  box.innerHTML=results.map(function(p){
+    var thumb=p.imgId?'<span id="SRCH_IMG_'+p.rid+'" style="width:34px;height:34px;border-radius:6px;background:#eee;flex-shrink:0;display:inline-block"></span>':'<span style="width:34px;height:34px;border-radius:6px;background:#eee;flex-shrink:0;display:inline-block"></span>';
+    return '<div onclick="jumpToProduct(\''+p.tab+'\',\''+p.rid+'\')" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #f0e6d8;cursor:pointer">'+
+      thumb+
+      '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:0.8rem;color:#3d2b1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escAttr(p.title||'(بدون عنوان)')+'</div>'+
+      '<div style="font-size:0.68rem;color:#9a6e3a">کد '+escAttr(p.code||'—')+' — '+escAttr(p.brandName||'')+' — '+escAttr(TABLBL_FA[p.tab]||p.tab)+'</div></div>'+
+    '</div>';
+  }).join('');
+  results.forEach(function(p){
+    if(p.imgId)idbGet(p.imgId,function(d){
+      if(d){var el=document.getElementById('SRCH_IMG_'+p.rid);if(el){var im=document.createElement('img');im.src=d;im.style.cssText='width:34px;height:34px;border-radius:6px;object-fit:cover';el.replaceWith(im);}}
+    });
+  });
+}
+function jumpToProduct(tab,rid){
+  document.getElementById('PRODSEARCH_RESULTS').style.display='none';
+  document.getElementById('PRODSEARCH_INPUT').value='';
+  selectSubNavTab(tab,null);
+  var lbl=document.getElementById('SUBNAV_CURRENT_LABEL');if(lbl&&TABLBL_FA[tab])lbl.textContent=TABLBL_FA[tab];
+  setTimeout(function(){
+    var row=document.getElementById('R'+rid);
+    if(!row)return;
+    row.scrollIntoView({behavior:'smooth',block:'center'});
+    var origBg=row.style.background;
+    row.style.transition='background 0.3s';
+    row.style.background='#fff3b0';
+    setTimeout(function(){row.style.background=origBg;},2200);
+  },250);
 }
 
 // ── ARCHIVE ──
@@ -7601,6 +7672,30 @@ function advanceCaptionEmojiIdx(){
   var v=(getCaptionEmojiIdx()+1)%CAPTION_EMOJI_SETS.length;
   try{localStorage.setItem('rv_caption_emoji_idx',String(v));}catch(e){}
 }
+// چون فیلدِ توضیحات یه‌خطیه و نمی‌شه موقعِ تایپ Enter زد، هر ایموجی رو شروعِ یه خطِ جدید در نظر می‌گیریم
+function splitTextByEmoji(text){
+  if(!text)return text;
+  var emojiRe=/\p{Extended_Pictographic}(\u200d\p{Extended_Pictographic})*\ufe0f?/gu;
+  var matches=[],m;
+  while((m=emojiRe.exec(text))!==null)matches.push({start:m.index,end:m.index+m[0].length});
+  if(matches.length<2)return text;
+  // ایموجی‌های چسبیده‌به‌هم (بدون هیچ حرفی بینشون، فقط شاید فاصله) یه خوشه‌ی واحد حساب می‌شن
+  var clusterStarts=[matches[0].start];
+  for(var i=1;i<matches.length;i++){
+    var gap=text.slice(matches[i-1].end,matches[i].start);
+    if(!/^\s*$/.test(gap))clusterStarts.push(matches[i].start);
+  }
+  if(clusterStarts.length<2)return text;
+  var lines=[];
+  var preText=text.slice(0,clusterStarts[0]).trim();
+  if(preText)lines.push(preText);
+  for(var j=0;j<clusterStarts.length;j++){
+    var segEnd=(j+1<clusterStarts.length)?clusterStarts[j+1]:text.length;
+    var seg=text.slice(clusterStarts[j],segEnd).trim();
+    if(seg)lines.push(seg);
+  }
+  return lines.join('\n');
+}
 function buildCaptionData(){
   var _es=CAPTION_EMOJI_SETS[getCaptionEmojiIdx()];
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
@@ -7666,7 +7761,7 @@ function buildCaptionData(){
   var specBlockHtml=specLines.length?('<b>⤵️ مشخصات محصول</b>\n<blockquote expandable>'+specLines.map(escapeHtmlCaption).join('\n')+'</blockquote>'):'';
 
   var descLines=[];
-  if(desc1)descLines.push(escapeHtmlCaption(_es.d1+' '+desc1));
+  if(desc1)descLines.push(escapeHtmlCaption(splitTextByEmoji(_es.d1+' '+desc1)));
   var descBlockHtml=descLines.length?('<b>🔽 توضیحات محصول</b>\n<blockquote expandable>'+descLines.join('\n\n')+'</blockquote>'):'';
 
   var topSection=lines.join('\n');
