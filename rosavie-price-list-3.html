@@ -833,11 +833,17 @@ input[type=file]{display:none}
 
     <div id="CG_MIXPKG_WRAP" style="display:none">
       <div class="g1"><span class="lbl">توضیح ترکیب بسته میکس (اختیاری)</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
-      <p style="font-size:0.68rem;color:#9a6e3a;margin:2px 0 8px">برای هر سایز، قیمت کل بسته و تعداد داخلش رو وارد کن — قیمت هر دونه خودکار حساب می‌شه.</p>
+      <div id="CG_SP_MODE_TABS_WRAP" style="display:none;margin-bottom:8px">
+        <div style="display:flex;gap:6px">
+          <button type="button" id="CG_SP_MODETAB_unit" class="chip on" style="flex:1" onclick="setCgSpMode('unit')">قیمت دونه‌ای</button>
+          <button type="button" id="CG_SP_MODETAB_package" class="chip" style="flex:1" onclick="setCgSpMode('package')">قیمت کل بسته</button>
+        </div>
+      </div>
+      <p style="font-size:0.68rem;color:#9a6e3a;margin:2px 0 8px" id="CG_SP_HINT">برای هر سایز، عنوان، قیمتِ هر دونه و تعدادِ داخلِ بسته رو وارد کن.</p>
       <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-        <input class="fi" type="text" id="CG_SP_SIZE" placeholder="سایز (مثال: L)" style="flex:1;min-width:70px">
-        <input class="fi" type="text" id="CG_SP_PKGPRICE" placeholder="قیمت کل بسته" style="flex:1;min-width:90px">
-        <input class="fi" type="text" id="CG_SP_PKGCOUNT" placeholder="تعداد در بسته" style="flex:1;min-width:90px">
+        <input class="fi" type="text" id="CG_SP_SIZE" placeholder="عنوان/سایز (مثال: L)" style="flex:1;min-width:70px">
+        <input class="fi" type="text" id="CG_SP_PKGPRICE" placeholder="قیمت دونه‌ای" style="flex:1;min-width:90px">
+        <input class="fi" type="text" id="CG_SP_PKGCOUNT" placeholder="تعداد داخل بسته" style="flex:1;min-width:90px">
         <button type="button" class="sbig" style="width:auto;padding:0 16px;background:#3d2b1f;color:#f9f0e8" onclick="addCgSizePrice()">+ افزودن</button>
       </div>
       <div id="CG_SIZEPRICE_LIST"></div>
@@ -7390,7 +7396,7 @@ function clearContentGenForm(){
   CG_FABRIC_TAGS=[];
   CG_PATTERN_TAGS=[];renderCgPatternChips();
   CG_COLORLIST_ITEMS=[];renderCgColorListUI();
-  CG_SIZEPRICE_LIST=[];renderCgSizePriceList();
+  CG_SIZEPRICE_LIST=[];CG_SP_MODE='unit';renderCgSizePriceList();
   removeCgSiteImg();
   removeCgSiteImg2();
   var fileInp=document.getElementById('CG_SITE_IMG_FILE');if(fileInp)fileInp.value='';
@@ -7504,15 +7510,31 @@ function fmtUnitPriceDisplay(u){
   var intPart=Number(parts[0]).toLocaleString('fa-IR');
   return (parts[1]?(intPart+'.'+parts[1]):intPart)+' تومان';
 }
+var CG_SP_MODE='unit';
+function setCgSpMode(mode){
+  CG_SP_MODE=mode;
+  document.getElementById('CG_SP_MODETAB_unit').classList.toggle('on',mode==='unit');
+  document.getElementById('CG_SP_MODETAB_package').classList.toggle('on',mode==='package');
+  document.getElementById('CG_SP_PKGPRICE').placeholder=mode==='unit'?'قیمت دونه‌ای':'قیمت کل بسته';
+  document.getElementById('CG_SP_HINT').textContent=mode==='unit'
+    ?'برای هر سایز، عنوان، قیمتِ هر دونه و تعدادِ داخلِ بسته رو وارد کن.'
+    :'برای هر سایز، عنوان، قیمتِ کلِ بسته و تعدادِ داخلش رو وارد کن — تو کپشن فقط قیمتِ کلِ بسته نشون داده می‌شه.';
+}
 function addCgSizePrice(){
   var sz=(document.getElementById('CG_SP_SIZE').value||'').trim();
-  var pkgPriceRaw=toEnDigits(document.getElementById('CG_SP_PKGPRICE').value||'').trim();
+  var priceRaw=toEnDigits(document.getElementById('CG_SP_PKGPRICE').value||'').trim();
   var pkgCountRaw=toEnDigits(document.getElementById('CG_SP_PKGCOUNT').value||'').trim();
-  if(!sz||!pkgPriceRaw||!pkgCountRaw){alert('سایز، قیمت بسته و تعداد داخل بسته رو پر کن');return;}
-  var pkgPrice=Number(expandPriceShorthand(pkgPriceRaw));
-  var pkgCount=Number(pkgCountRaw.replace(/[^0-9.]/g,''))||1;
-  var unit=computeUnitPrice(pkgPrice,pkgCount);
-  CG_SIZEPRICE_LIST.push({size:sz,price:unit,pkgPrice:pkgPrice,pkgCount:pkgCount,stock:'in'});
+  if(!sz||!priceRaw){alert('عنوان/سایز و قیمت رو پر کن');return;}
+  var enteredPrice=Number(expandPriceShorthand(priceRaw));
+  var pkgCount=pkgCountRaw?(Number(pkgCountRaw.replace(/[^0-9.]/g,''))||1):0;
+  var entry={size:sz,stock:'in',mode:CG_SP_MODE};
+  if(CG_SP_MODE==='package'){
+    if(!pkgCount){alert('برای حالتِ «قیمت کل بسته»، تعدادِ داخلِ بسته هم لازمه');return;}
+    entry.pkgPrice=enteredPrice;entry.pkgCount=pkgCount;entry.price=computeUnitPrice(enteredPrice,pkgCount);
+  }else{
+    entry.price=enteredPrice;entry.pkgCount=pkgCount;entry.pkgPrice=pkgCount?enteredPrice*pkgCount:0;
+  }
+  CG_SIZEPRICE_LIST.push(entry);
   document.getElementById('CG_SP_SIZE').value='';
   document.getElementById('CG_SP_PKGPRICE').value='';
   document.getElementById('CG_SP_PKGCOUNT').value='';
@@ -7531,9 +7553,11 @@ function renderCgSizePriceList(){
   if(!CG_SIZEPRICE_LIST.length){el.innerHTML='<p style="font-size:0.72rem;color:#bbb">هنوز سایزی اضافه نشده</p>';return;}
   el.innerHTML=CG_SIZEPRICE_LIST.map(function(sp,i){
     var isOut=sp.stock==='out';
-    var pkgInfo=(sp.pkgPrice&&sp.pkgCount)?(' — بسته '+fmtP(sp.pkgPrice)+' ('+sp.pkgCount+' تایی)'):'';
+    var modeInfo=sp.mode==='package'
+      ?('حالت: قیمتِ کلِ بسته — '+fmtP(sp.pkgPrice)+(sp.pkgCount?(' ('+sp.pkgCount+' تایی)'):''))
+      :('حالت: قیمتِ دونه‌ای — '+fmtUnitPriceDisplay(sp.price)+(sp.pkgCount?(' × '+sp.pkgCount+' عدد'):''));
     return '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2cdb0;border-radius:8px;padding:8px 10px;margin-bottom:6px'+(isOut?';opacity:0.6':'')+'">'+
-      '<div style="font-weight:900;color:#3d2b1f">'+sp.size+' — واحد: '+fmtUnitPriceDisplay(sp.price)+(isOut?' (ناموجود)':'')+'<div style="font-size:0.66rem;color:#9a6e3a;font-weight:400">'+pkgInfo.replace(/^ — /,'')+'</div></div>'+
+      '<div style="font-weight:900;color:#3d2b1f">'+sp.size+(isOut?' (ناموجود)':'')+'<div style="font-size:0.66rem;color:#9a6e3a;font-weight:400">'+modeInfo+'</div></div>'+
       '<div style="display:flex;gap:6px">'+
       '<button type="button" onclick="toggleCgSizeStock('+i+')" style="background:'+(isOut?'#e8f5ee':'#fde8e8')+';color:'+(isOut?'#1a6a3a':'#c04040')+';border:1px solid '+(isOut?'#a8d8b8':'#f5b8b8')+';border-radius:6px;padding:0 10px;height:26px;cursor:pointer;font-size:0.68rem">'+(isOut?'برگردون موجود':'ناموجود کن')+'</button>'+
       '<button type="button" onclick="delCgSizePrice('+i+')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:6px;width:26px;height:26px;cursor:pointer">✕</button>'+
@@ -7621,6 +7645,11 @@ function setCgCat(cat,btn){
   document.querySelectorAll('#CG_CAT_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
   btn.classList.add('on');
   renderCgTypeChips();
+  var modeTabsWrap=document.getElementById('CG_SP_MODE_TABS_WRAP');
+  if(modeTabsWrap){
+    modeTabsWrap.style.display=(cat==='p3')?'block':'none';
+    setCgSpMode('unit');
+  }
 }
 function toggleCgCup(cup,btn){
   var idx=CG_CUPS.indexOf(cup);
@@ -7732,9 +7761,12 @@ function buildCaptionData(){
   }else if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
     var pkgPlainLines=['🎁 سایز و قیمت بسته (بسته میکس):'],pkgHtmlLines=['🎁 سایز و قیمت بسته (بسته میکس):'];
     CG_SIZEPRICE_LIST.forEach(function(sp){
-      var pkgTxt=showPriceInCaption?(fmtP(sp.pkgPrice)+(sp.pkgCount?(' ('+sp.pkgCount+' عددی)'):'')):'استعلام بگیرید';
-      pkgPlainLines.push(sp.size+' → '+pkgTxt);
-      pkgHtmlLines.push(escapeHtmlCaption(sp.size+' → ')+'<b>'+escapeHtmlCaption(pkgTxt)+'</b>');
+      var valTxt;
+      if(!showPriceInCaption)valTxt='استعلام بگیرید';
+      else if(sp.mode==='package')valTxt=fmtP(sp.pkgPrice);
+      else valTxt=sp.pkgCount?(sp.pkgCount+' × '+fmtP(sp.price)):fmtP(sp.price);
+      pkgPlainLines.push(sp.size+': '+valTxt);
+      pkgHtmlLines.push(escapeHtmlCaption(sp.size+': ')+'<b>'+escapeHtmlCaption(valTxt)+'</b>');
     });
     priceLine=pkgPlainLines.join('\n');
     priceLineHtml=pkgHtmlLines.join('\n');
@@ -7952,7 +7984,7 @@ function loadProductForEdit(el){
   var _hasColorList=!!(p.colorlist&&p.colorlist!=='[]'&&p.colorlist!=='');
   var _hasSingle=!!((p.price&&p.price!=='--')||_hasColorList||!_hasMix);
   CG_SIZEPRICE_LIST=_pSizePrice.map(function(s){
-    return {size:s.size,price:s.price,stock:s.stock||'in',pkgPrice:(s.pkgPrice!=null?s.pkgPrice:s.price),pkgCount:(s.pkgCount!=null?s.pkgCount:1)};
+    return {size:s.size,price:s.price,stock:s.stock||'in',pkgPrice:(s.pkgPrice!=null?s.pkgPrice:s.price),pkgCount:(s.pkgCount!=null?s.pkgCount:1),mode:s.mode||'package'};
   });
   document.getElementById('CG_MIX_DESC').value=p.mixdesc||'';
   setCgSaleType(_hasSingle&&_hasMix?'both':(_hasMix?'mixpkg':'single'));
@@ -8053,7 +8085,7 @@ function cancelEdit(){
   document.getElementById('EDIT_BANNER').style.display='none';
   document.getElementById('SAVE_ONLY_BTN').style.display='none';
   resetSendMedia();
-  CG_SIZEPRICE_LIST=[];renderCgSizePriceList();
+  CG_SIZEPRICE_LIST=[];CG_SP_MODE='unit';renderCgSizePriceList();
   document.getElementById('CG_MIX_DESC').value='';
   setCgSaleType('single');
 }
