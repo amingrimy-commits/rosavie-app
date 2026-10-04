@@ -1196,7 +1196,8 @@ input[type=file]{display:none}
 <div class="pg" id="padmins">
   <div class="card" style="border:2px solid #2a9d5c"><div class="ctitle">📊 بروزرسانیِ گروهیِ قیمت از اکسل</div>
     <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">وقتی یه برند لیست‌قیمتِ جدید (عکس) می‌ده، فایلِ اکسلش رو همین‌جا آپلود کن. برنامه کدها رو با محصولاتِ همون برند تطبیق می‌ده و قبل از اعمال، تغییرات رو نشونت می‌ده تا تأیید کنی.</p>
-    <input type="file" class="fi" id="PRICEXL_FILE" accept=".xlsx,.xls" onchange="handlePriceExcelFile(this)">
+    <button class="sbig stg" onclick="document.getElementById('PRICEXL_FILE').click()">📥 آپلودِ فایلِ اکسل</button>
+    <input type="file" id="PRICEXL_FILE" accept=".xlsx,.xls" style="display:none" onchange="handlePriceExcelFile(this)">
     <div id="PRICEXL_SHEET_PICK" style="display:none;margin-top:8px">
       <div class="g1"><span class="lbl">برگه‌ی اکسل (برند تو فایل)</span><select class="fi" id="PRICEXL_SHEET"></select></div>
       <div class="g1"><span class="lbl">این قیمت‌ها مالِ کدوم برندِ خودته؟</span><select class="fi" id="PRICEXL_BRAND"></select></div>
@@ -1226,13 +1227,6 @@ input[type=file]{display:none}
   <div class="card"><div class="ctitle">📋 وظایف امروز و وضعیت‌شون</div>
     <button class="sbig" style="background:#eee2d0;color:#3d2b1f;margin-bottom:8px" onclick="loadTeamTasksAdmin()">🔄 بروزرسانی</button>
     <div id="TASK_LIST_ADMIN" style="margin-top:6px"></div>
-  </div>
-  <div class="card"><div class="ctitle">🔑 یادداشت رمز اعضا (فقط برای خودت)</div>
-    <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">⚠️ فایربیس هیچ راهی برای نشون‌دادن رمز واقعی یه حساب دیگه نمی‌ده — این یه محدودیت امنیتیه که حتی خودِ فایربیس/گوگل هم دورش نمی‌زنن، نه محدودیت این اپ. برای همین، دیگه علی/مبینا خودشون نمی‌تونن رمزشون رو عوض کنن — فقط تو، از همینجا یا از Firebase Console → Authentication → Users → Reset password، می‌تونی رمزشون رو عوض کنی. یعنی این یادداشت همیشه دقیقاً همون چیزیه که الان هست.</p>
-    <div class="g1"><span class="lbl">آخرین رمزی که برای علی تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_ALI" placeholder="مثلاً 1379" style="direction:ltr;text-align:left"></div>
-    <div class="g1"><span class="lbl">آخرین رمزی که برای مبینا تنظیم کردی</span><input class="fi" type="text" id="ADM_NOTE_MOBINA" placeholder="مثلاً 1387" style="direction:ltr;text-align:left"></div>
-    <button class="sbig stg" onclick="saveAdminPasswordNotes()">💾 ذخیره یادداشت</button>
-    <div class="stat" id="ADM_NOTE_STAT"></div>
   </div>
   <div class="card"><div class="ctitle">📋 فعالیت روزانه‌ی اعضا</div>
     <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">هر بار وارد بشن، هر تبی که باز کنن، و هر کار مهمی (افزودن مشتری، ثبت خرید، ویرایش محصول) که انجام بدن، اینجا با ساعت دقیق ثبت می‌شه.</p>
@@ -9751,27 +9745,6 @@ function logTeamActivity(action,detail){
     }).catch(function(e){console.error('log activity error',e);});
   }catch(e){}
 }
-function saveAdminPasswordNotes(){
-  if(!initFirebase())return;
-  var stat=document.getElementById('ADM_NOTE_STAT');
-  stat.textContent='در حال ذخیره...';stat.className='stat sload';
-  var data={ali:V('ADM_NOTE_ALI'),mobina:V('ADM_NOTE_MOBINA'),updatedAt:new Date().toISOString()};
-  fbDb.collection('settings').doc('teamPasswordNotes').set(data).then(function(){
-    stat.textContent='ذخیره شد ✅';stat.className='stat sok';
-  }).catch(function(e){
-    stat.textContent='خطا: '+(e.message||e.code);stat.className='stat serr';
-  });
-}
-function loadAdminPasswordNotes(){
-  if(!initFirebase())return;
-  fbDb.collection('settings').doc('teamPasswordNotes').get().then(function(doc){
-    if(!doc.exists)return;
-    var d=doc.data();
-    var aliEl=document.getElementById('ADM_NOTE_ALI'),mobinaEl=document.getElementById('ADM_NOTE_MOBINA');
-    if(aliEl&&d.ali)aliEl.value=d.ali;
-    if(mobinaEl&&d.mobina)mobinaEl.value=d.mobina;
-  }).catch(function(e){console.error('load password notes error',e);});
-}
 function loadTeamActivityLog(){
   if(!initFirebase())return;
   var dateStr=V('ADM_LOG_DATE')||new Date().toISOString().slice(0,10);
@@ -10052,7 +10025,6 @@ function initAdminsTab(){
     var dispEl=document.getElementById('ADM_LOG_DATE_DISP');
     if(dispEl)dispEl.value=isoToJalaliDisp(todayIso);
   }
-  loadAdminPasswordNotes();
   loadTeamTasksAdmin();
 }
 function teamPinToPassword(pin){return 'rv'+pin;}
