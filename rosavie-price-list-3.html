@@ -942,7 +942,7 @@ input[type=file]{display:none}
       <label class="platform-cb pcb-tg"><input type="checkbox" id="SEND_TG2" checked><span>🔵 تلگرام کانال ۲</span></label>
     </div>
     <button class="sbig stg" id="SEND_BTN" onclick="sendToChannels()">🚀 تولید، ارسال و ذخیره در لیست قیمت</button>
-    <button class="sbig" style="background:#2a9d5c;color:#fff;margin-top:8px" onclick="copyBaleCaption()">📋 کپی کپشن کانال بله</button>
+    <button class="sbig" style="background:#2a9d5c;color:#fff;margin-top:8px" onclick="copyBaleCaption()">📋 کپی کپشن بله / ایتا</button>
     <button class="sbig" id="SAVE_ONLY_BTN" style="display:none;margin-top:8px;background:#eddfc9;color:#3d2b1f" onclick="saveEditOnly()">💾 فقط ذخیره در سایت و لیست قیمت (بدون ارسال به تلگرام)</button>
     <div class="stat" id="SEND_STAT"></div>
 
@@ -7973,7 +7973,7 @@ function copyBaleCaption(){
   var text=buildBaleCaptionText();
   var stat=document.getElementById('SEND_STAT');
   if(!text){stat.textContent='اول فیلدهای محصول رو پر کن';stat.className='stat serr';return;}
-  function showCopied(){stat.textContent='📋 کپشن کانال بله کپی شد — تو بله پیست کن';stat.className='stat sok';}
+  function showCopied(){stat.textContent='📋 کپشن کپی شد — تو بله یا ایتا پیست کن';stat.className='stat sok';}
   function showFailed(){stat.textContent='کپی خودکار کار نکرد — خودت متن رو از پیش‌نمایش کپشن کپی کن';stat.className='stat serr';}
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(showCopied).catch(function(){
