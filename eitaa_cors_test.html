@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تست اتصال ایتا</title>
+<style>
+  body{font-family:Tahoma,Arial,sans-serif;background:#1a1a1a;color:#f0f0f0;padding:20px;max-width:500px;margin:0 auto}
+  h1{font-size:1.3rem;color:#fff}
+  p{font-size:0.85rem;color:#ccc;line-height:1.8}
+  button{width:100%;padding:16px;font-size:1rem;font-weight:bold;background:#2a9d5c;color:#fff;border:none;border-radius:10px;cursor:pointer;margin:16px 0}
+  button:active{background:#228049}
+  #result{margin-top:16px;padding:14px;border-radius:10px;font-size:0.85rem;white-space:pre-wrap;word-break:break-word;direction:ltr;text-align:left;display:none}
+  .ok{background:#1b3a24;border:1.5px solid #2a9d5c;color:#9ee8b8}
+  .fail{background:#3a1b1b;border:1.5px solid #c0304a;color:#f0a8b4}
+  .loading{background:#2a2a2a;border:1.5px solid #666;color:#ccc}
+  .verdict{font-size:1rem;font-weight:bold;margin-bottom:8px;direction:rtl;text-align:center}
+</style>
+</head>
+<body>
+  <h1>🧪 تست اتصالِ مستقیمِ مرورگر به API ایتا</h1>
+  <p>این فقط یه تستِ محلیه — هیچ‌جا ذخیره نمی‌شه. دکمه رو بزن تا ببینیم مرورگر اجازه می‌ده مستقیم به ایتا وصل بشیم یا نه.</p>
+  <button onclick="runTest()">▶️ اجرای تست</button>
+  <div id="result"></div>
+
+<script>
+var TOKEN = 'bot529921:145ab678-c6ef-4f2b-a4dd-6f3c3cf5bdbd';
+
+async function runTest(){
+  var box = document.getElementById('result');
+  box.style.display = 'block';
+  box.className = 'loading';
+  box.textContent = 'در حال تست...';
+
+  var url = 'https://eitaayar.ir/api/' + TOKEN + '/getMe';
+
+  try {
+    var res = await fetch(url, {method:'GET'});
+    var text = await res.text();
+    box.className = 'ok';
+    box.innerHTML = '<div class="verdict">✅ وصل شد! مستقیم از مرورگر کار می‌کنه</div>HTTP ' + res.status + '\n\n' + text;
+  } catch (err) {
+    box.className = 'fail';
+    var isCors = err.message && (err.message.toLowerCase().indexOf('fetch') > -1 || err.message.toLowerCase().indexOf('cors') > -1 || err.message.toLowerCase().indexOf('network') > -1);
+    box.innerHTML = '<div class="verdict">❌ وصل نشد — احتمالاً مثلِ بله، CORS مسدودش کرده</div>نوعِ خطا: ' + err.name + '\nپیام: ' + err.message + '\n\n(این دقیقاً همون خطاییه که باید تو Console مرورگر هم ببینیش — اگه بخوای مطمئن بشی، رو همین صفحه دکمه‌ی ⋮ یا Developer Tools رو بزن و تبِ Console رو چک کن)';
+  }
+}
+</script>
+</body>
+</html>
