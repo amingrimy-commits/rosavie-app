@@ -344,7 +344,9 @@ input[type=file]{display:none}
 </div>
 <div id="APP_ROOT" style="display:none">
 <div id="PRODLOAD_BAR" style="display:none;position:sticky;top:0;z-index:900;background:#3d2b1f;color:#f9f0e8;padding:6px 12px;font-size:0.72rem;text-align:center">
+  <style>@keyframes prodloadSlide{0%{margin-right:-35%}100%{margin-right:100%}}.prodload-indet{width:35%!important;animation:prodloadSlide 1.1s linear infinite}.prodload-ph{padding:22px 10px;text-align:center;color:#9a6e3a;font-size:0.8rem;border:1.5px dashed #d4a87a;border-radius:10px;margin:10px 0}</style>
   <span id="PRODLOAD_TEXT">در حال بارگذاری محصولات...</span>
+  <button id="PRODLOAD_RETRY" type="button" onclick="retryProductLoad()" style="display:none;margin-right:8px;padding:2px 10px;border:none;border-radius:6px;background:#f9f0e8;color:#3d2b1f;font-weight:900;font-size:0.72rem;cursor:pointer">🔄 تلاش دوباره</button>
   <div style="height:3px;background:rgba(255,255,255,0.25);border-radius:2px;margin-top:4px;overflow:hidden"><div id="PRODLOAD_FILL" style="height:100%;width:0%;background:#2a9d5c;transition:width 0.2s"></div></div>
 </div>
 <div class="hdr">
@@ -8961,6 +8963,51 @@ function hydrateBannersAndVipFromFirestore(){
     }
   }).catch(function(e){console.error('hydrateBannersAndVipFromFirestore error',e);});
 }
+var PRODLOAD_TIMER=null,PRODLOAD_T0=0,PRODLOAD_ATTEMPT=0;
+function startProductFetchIndicator(){
+  PRODLOAD_T0=Date.now();
+  var bar=document.getElementById('PRODLOAD_BAR'),fill=document.getElementById('PRODLOAD_FILL'),retry=document.getElementById('PRODLOAD_RETRY');
+  if(bar){bar.style.display='block';bar.style.background='#3d2b1f';}
+  if(fill){fill.style.width='';fill.classList.add('prodload-indet');}
+  if(retry)retry.style.display='none';
+  TABS.forEach(function(t){
+    var box=document.getElementById('BB-'+t);
+    if(box&&!box.querySelector('.prodload-ph'))box.insertAdjacentHTML('afterbegin','<div class="prodload-ph">⏳ در حال دریافت محصولات این دسته از سرور...</div>');
+  });
+  clearInterval(PRODLOAD_TIMER);
+  PRODLOAD_TIMER=setInterval(tickProductFetchIndicator,1000);
+  tickProductFetchIndicator();
+}
+function tickProductFetchIndicator(){
+  var secs=Math.floor((Date.now()-PRODLOAD_T0)/1000);
+  var txt=document.getElementById('PRODLOAD_TEXT'),retry=document.getElementById('PRODLOAD_RETRY');
+  if(!txt)return;
+  if(secs<12){txt.textContent='⏳ در حال دریافت محصولات از سرور... '+secs+' ثانیه';}
+  else{txt.textContent='🐢 اتصال کنده، هنوز منتظر سرورم... '+secs+' ثانیه';if(retry)retry.style.display='inline-block';}
+}
+function stopProductFetchIndicator(){
+  clearInterval(PRODLOAD_TIMER);PRODLOAD_TIMER=null;
+  var fill=document.getElementById('PRODLOAD_FILL'),retry=document.getElementById('PRODLOAD_RETRY');
+  if(fill){fill.classList.remove('prodload-indet');fill.style.width='0%';}
+  if(retry)retry.style.display='none';
+}
+function clearTabPlaceholder(tab){
+  var box=document.getElementById('BB-'+tab);
+  if(!box)return;
+  box.querySelectorAll('.prodload-ph').forEach(function(el){el.remove();});
+}
+function clearAllPlaceholders(){TABS.forEach(clearTabPlaceholder);}
+function showProductLoadError(){
+  stopProductFetchIndicator();
+  var bar=document.getElementById('PRODLOAD_BAR'),txt=document.getElementById('PRODLOAD_TEXT'),retry=document.getElementById('PRODLOAD_RETRY');
+  if(bar){bar.style.display='block';bar.style.background='#8a1f35';}
+  if(txt)txt.textContent='❌ دریافتِ محصولات ناموفق بود — اینترنت رو چک کن. (فرم‌های خالیِ پایین واقعی نیستن)';
+  if(retry)retry.style.display='inline-block';
+}
+function retryProductLoad(){
+  _loading=true;
+  hydrateProductsFromFirestore();
+}
 function showProductLoadProgress(total){
   if(!total)return;
   var bar=document.getElementById('PRODLOAD_BAR');
@@ -8978,10 +9025,17 @@ function hideProductLoadProgress(){
   if(bar)bar.style.display='none';
 }
 function hydrateProductsFromFirestore(){
-  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;return;}
+  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;showProductLoadError();return;}
+  var attempt=++PRODLOAD_ATTEMPT;
+  startProductFetchIndicator();
   fbDb.collection('products').get().then(function(snap){
+    if(attempt!==PRODLOAD_ATTEMPT)return;
+    stopProductFetchIndicator();
     document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){bl.remove();});
+    document.querySelectorAll('.prodload-ph').forEach(function(el){el.textContent='⏳ در حال چیدنِ محصولات این دسته...';});
     if(snap.empty){
+      clearAllPlaceholders();
+      hideProductLoadProgress();
       TABS.forEach(function(t){addBrand(t);});
       _loading=false;
       setTimeout(function(){preloadAll(function(){});checkArchive();renderVipList();},200);
@@ -9025,6 +9079,7 @@ function hydrateProductsFromFirestore(){
       }
       var tab=tabQueue.shift();
       var brandsForTab=byTabBrand[tab];
+      clearTabPlaceholder(tab);
       if(!brandsForTab){addBrand(tab);setTimeout(processNextTab,0);return;}
       var brandQueue=Object.keys(brandsForTab);
       var totalInTab=brandQueue.reduce(function(sum,bn){return sum+brandsForTab[bn].length;},0);
@@ -9044,10 +9099,13 @@ function hydrateProductsFromFirestore(){
     showProductLoadProgress(totalProductsAcrossAllTabs);
     processNextTab();
   }).catch(function(e){
+    if(attempt!==PRODLOAD_ATTEMPT)return;
     console.error('hydrateProductsFromFirestore error',e);
+    clearAllPlaceholders();
+    document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){bl.remove();});
     TABS.forEach(function(t){addBrand(t);});
     _loading=false;
-    hideProductLoadProgress();
+    showProductLoadError();
     addNotif('⚠️ اتصال به فایربیس برای محصولات برقرار نشد. اگه اینترنت وصله، یه‌بار صفحه رو Refresh کن.');
   });
 }
