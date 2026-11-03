@@ -9028,7 +9028,7 @@ function hydrateProductsFromFirestore(){
   if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;showProductLoadError();return;}
   var attempt=++PRODLOAD_ATTEMPT;
   startProductFetchIndicator();
-  fbDb.collection('products').get().then(function(snap){
+  fbDb.collection('products').get({source:'server'}).then(function(snap){
     if(attempt!==PRODLOAD_ATTEMPT)return;
     stopProductFetchIndicator();
     document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){bl.remove();});

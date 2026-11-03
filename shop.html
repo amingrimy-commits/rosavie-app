@@ -756,7 +756,7 @@ function retryLoadCategory(catKey){
 function loadInitialChunk(catKey,st,afterDoc){
   var q=catQueryBase(catKey).limit(INITIAL_CHUNK_SIZE);
   if(afterDoc)q=q.startAfter(afterDoc);
-  q.get().then(function(snap){
+  q.get({source:'server'}).then(function(snap){
     var gotFull=snap.docs.length===INITIAL_CHUNK_SIZE;
     snap.forEach(function(doc){st.items.push(doc.data());});
     var newLastDoc=snap.docs.length?snap.docs[snap.docs.length-1]:afterDoc;
@@ -774,8 +774,10 @@ function loadInitialChunk(catKey,st,afterDoc){
       renderGrid();
     }
   }).catch(function(err){
+    console.error('loadInitialChunk error',err);
     st.loading=false;
-    document.getElementById('GRID').innerHTML='<div class="nores">خطا در دریافت محصولات: '+(err&&err.message?err.message:err)+'</div>';
+    var grid=document.getElementById('GRID');
+    if(grid)grid.innerHTML='<div class="nores">اتصال به سرور برقرار نشد، پس محصولات نیومدن.<br>اگه فیلترشکن داری مطمئن شو روشنه، بعد دوباره امتحان کن.<br><br><button onclick="retryLoadCategory(\''+catKey+'\')" style="background:#3a2e26;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer">🔄 تلاش دوباره</button></div>';
     hideInitLoader();
   });
 }
@@ -1537,11 +1539,13 @@ function navTo(route){
   location.hash=route;
 }
 function goBack(){history.back();}
+var _lastDirectFetch=null;
+function retryDirectFetch(){if(_lastDirectFetch)fetchProductByCodeDirect(_lastDirectFetch.code,_lastDirectFetch.price);}
 function fetchProductByCodeDirect(code,discountPrice){
   var body=document.getElementById('MODAL_BODY');
   if(body)body.innerHTML='<div style="text-align:center;padding:40px 20px;color:#8a7a6c"><div class="init-spinner" style="margin:0 auto 14px"></div>در حال یافتن محصول...</div>';
   showOverlay('MODAL_OV');
-  db.collection('products').where('code','==',code).get().then(function(snap){
+  db.collection('products').where('code','==',code).get({source:'server'}).then(function(snap){
     if(location.hash.replace(/^#/,'').split('~')[1]!==code)return;
     if(snap.empty){
       if(body)body.innerHTML='<button class="modal-close" onclick="goHome()">✕</button><div style="clear:both"></div><div style="text-align:center;padding:40px 20px;color:#8a7a6c"><div style="font-size:2rem;margin-bottom:10px">😕</div>این محصول دیگه در دسترس نیست یا لینکش قدیمیه.<br><br><button class="addcart-btn" onclick="goHome()" style="max-width:200px;margin:0 auto">برو به صفحه‌ی اصلی</button></div>';
@@ -1557,7 +1561,8 @@ function fetchProductByCodeDirect(code,discountPrice){
     showOverlay('MODAL_OV');
   }).catch(function(err){
     console.error('fetchProductByCodeDirect error',err);
-    if(body)body.innerHTML='<button class="modal-close" onclick="goHome()">✕</button><div style="clear:both"></div><div style="text-align:center;padding:40px 20px;color:#c0304a">خطا در دریافت محصول. اینترنت یا فیلترشکنت رو چک کن و دوباره امتحان کن.</div>';
+    _lastDirectFetch={code:code,price:discountPrice};
+    if(body)body.innerHTML='<button class="modal-close" onclick="goHome()">✕</button><div style="clear:both"></div><div style="text-align:center;padding:40px 20px;color:#c0304a">اتصال به سرور برقرار نشد، پس محصول نیومد (این یعنی محصول حذف نشده).<br>اگه فیلترشکن داری مطمئن شو روشنه.<br><br><button onclick="retryDirectFetch()" style="background:#3a2e26;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer">🔄 تلاش دوباره</button></div>';
   });
 }
 function requireLoginGate(){
