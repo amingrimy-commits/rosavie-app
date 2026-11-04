@@ -1320,7 +1320,7 @@ function addToCartMultiColor(){
     var cartKey=isSize?(p.id+'::'+key):(p.id+'::'+colorNote);
     var existing=CART.find(function(c){return c.key===cartKey;});
     if(existing){existing.qty+=qty;existing.minOrder=lineMinOrder;}
-    else CART.push({key:cartKey,id:p.id,code:p.code,title:productDisplayName(p),price:linePrice,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:lineMinOrder});
+    else CART.push({key:cartKey,id:p.id,code:p.code,brand:p.brand||'',title:productDisplayName(p),price:linePrice,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:lineMinOrder});
   });
   saveCart();updateFab();closeModal();
   showToast(productDisplayName(p)+' به سبد اضافه شد ✅');
@@ -3121,7 +3121,7 @@ function addToCart(){
   var key=p.id+'::'+colorNote;
   var existing=CART.find(function(c){return c.key===key;});
   if(existing){existing.qty+=qty;existing.minOrder=p.minOrder||1;}
-  else CART.push({key:key,id:p.id,code:p.code,title:productDisplayName(p),price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:p.minOrder||1});
+  else CART.push({key:key,id:p.id,code:p.code,brand:p.brand||'',title:productDisplayName(p),price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:p.minOrder||1});
   saveCart();updateFab();closeModal();
   showToast(productDisplayName(p)+' به سبد اضافه شد ✅');
   maybeWarnGuestCart();
@@ -3525,7 +3525,7 @@ function submitOrder(){
   var orderNo=genOrderNo();
   var order={
     orderNo:orderNo,
-    items:CART.map(function(c){return {code:c.code,title:c.title,qty:c.qty,price:c.price,tab:c.tab,color:c.colorNote||'',img:c.img||null};}),
+    items:CART.map(function(c){return {code:c.code,brand:c.brand||'',title:c.title,qty:c.qty,price:c.price,tab:c.tab,color:c.colorNote||'',img:c.img||null};}),
     total:cartTotal(),
     discountCode:null,
     discountType:null,
