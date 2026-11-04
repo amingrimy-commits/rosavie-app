@@ -381,6 +381,7 @@ input[type=file]{display:none}
   <button class="tab" onclick="openProductsGroup();closeAdmDrawer()">🛍️ محصولات</button>
   <button class="tab" onclick="openSiteGroup();closeAdmDrawer()">🌐 سایت <span class="new-badge" id="SITEDOT" style="position:static;display:none;margin-right:6px;vertical-align:middle">NEW</span></button>
   <button class="tab" onclick="hideSubNav();showTab('padmins',this);closeAdmDrawer()">🛡️ ادمین‌ها</button>
+  <button class="tab rv-owner-only" onclick="hideSubNav();showTab('pacc',this);closeAdmDrawer()">📒 حسابداری</button>
 </div>
 <div class="notif-overlay" id="NOTIFOV" onclick="closeNotifPanel()"></div>
 <div class="notif-overlay" id="ORDERSOV" onclick="closeOrdersPanel()"></div>
@@ -1212,6 +1213,14 @@ input[type=file]{display:none}
   <div class="card"><div class="ctitle">🧪 تست خودکار سیستم</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">یه سری چک خودکار روی محاسبات مهم برنامه (شماره فاکتور، قیمت، تاریخ و غیره) می‌زنه تا مطمئن بشی بعد از تغییرات اخیر چیزی خراب نشده. هر وقت خواستی، همینجا بزن.</p>
     <button class="sbig stg" onclick="openTestPanel()">▶️ اجرای تست‌ها</button>
+  </div>
+</div>
+<div class="pg rv-owner-only" id="pacc">
+  <div class="card" style="border:2px solid #3d2b1f">
+    <div class="ctitle">📒 حسابداری <span style="font-size:0.66rem;color:#9a6e3a;font-weight:400">(فقط مدیر)</span></div>
+    <div id="ACC_NAV" style="margin-bottom:8px"></div>
+    <div id="ACC_STAT" class="stat"></div>
+    <div id="ACC_BODY"></div>
   </div>
 </div>
 <div class="pg" id="padmins">
@@ -3312,6 +3321,7 @@ function showTab(id,btn){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   document.getElementById(id).classList.add('on');if(btn)btn.classList.add('on');
   if(id==='ps')doSearch();
+  if(id==='pacc')accOnOpen();
   if(id==='pa'){checkArchive();renderArchive();}
   if(id==='pcat'){initBanners();renderVipList();}
   if(id==='psitecontent'){initBanners();renderVipList();loadDiscountCodesList();}
@@ -3861,6 +3871,776 @@ function getBrands(tab){
   });
   return res;
 }
+// ═══════════════════════════════════════════════════════════════
+// 📒 ماژول حسابداری (فقط مدیر) — انبار، خرید، فروش، طرف‌حساب‌ها، دریافت/پرداخت، گزارش
+// کالکشن‌ها: accItems (کالا/انبار) | accParties (طرف‌حساب) | accInvoices (خرید/فروش/تعدیل) | accPayments | accMeta (شمارنده)
+// قرارداد مانده‌ی طرف‌حساب (balance): مثبت = او به ما بدهکاره (طلبِ ما)، منفی = ما به او بدهکاریم
+// موجودی بر اساس «برند + کد محصول» و میانگینِ متحرکِ قیمتِ خرید
+// ═══════════════════════════════════════════════════════════════
+var ACC={items:{},parties:{},invoices:[],payments:[],loaded:false,loading:false,loadError:null,view:'home',arg:null,draft:null,range:'month',invFilter:'all',itemQuery:'',itemList:[],sugg:{},saving:false};
+var ACC_METHODS={cash:'نقد',card:'کارت',cheque:'چک',transfer:'حواله'};
+
+function accDb(){return initFirebase()?fbDb:null;}
+function accEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function accNum(v){
+  var t=toEnDigits(String(v==null?'':v)).replace(/[,\s\u066C\u060C]/g,'');
+  if(t==='')return 0;
+  var n=Number(t);
+  return isNaN(n)?0:n;
+}
+function accMoney(n){return Math.round(Number(n)||0).toLocaleString('fa-IR')+' تومان';}
+function accFa(n){return Math.round(Number(n)||0).toLocaleString('fa-IR');}
+function accTodayIso(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function accItemKey(brand,code){
+  return sanitizeDocId(toEnDigits(String(brand||'').trim()))+'__'+sanitizeDocId(toEnDigits(String(code||'').trim()));
+}
+function accSetStat(msg,type){
+  var el=document.getElementById('ACC_STAT');if(!el)return;
+  if(!msg){el.className='stat';el.textContent='';return;}
+  el.textContent=msg;el.className='stat '+(type==='err'?'serr':'sok');
+  if(type!=='err'){clearTimeout(accSetStat._t);accSetStat._t=setTimeout(function(){accSetStat('');},5000);}
+}
+function accIsOwner(){return !CURRENT_ROLE;}
+
+// ── باز کردن تب و بارگذاری ──
+function accOnOpen(){
+  if(!accIsOwner())return;
+  accRender();
+  if(!ACC.loaded&&!ACC.loading)accLoad();
+}
+function accLoad(cb){
+  var db=accDb();
+  if(!db){ACC.loadError='اتصال به فایربیس برقرار نیست';accRender();return;}
+  if(ACC.loading)return;
+  ACC.loading=true;ACC.loadError=null;accRender();
+  var names=['accItems','accParties','accInvoices','accPayments'];
+  Promise.all(names.map(function(n){return db.collection(n).get({source:'server'});})).then(function(snaps){
+    ACC.items={};ACC.parties={};ACC.invoices=[];ACC.payments=[];
+    snaps[0].forEach(function(d){ACC.items[d.id]=Object.assign({id:d.id},d.data());});
+    snaps[1].forEach(function(d){ACC.parties[d.id]=Object.assign({id:d.id},d.data());});
+    snaps[2].forEach(function(d){ACC.invoices.push(Object.assign({id:d.id},d.data()));});
+    snaps[3].forEach(function(d){ACC.payments.push(Object.assign({id:d.id},d.data()));});
+    var byNew=function(a,b){var da=String(a.date||''),dbb=String(b.date||'');if(da!==dbb)return da<dbb?1:-1;return (Number(b.ts)||0)-(Number(a.ts)||0);};
+    ACC.invoices.sort(byNew);ACC.payments.sort(byNew);
+    ACC.loaded=true;ACC.loading=false;ACC.loadError=null;
+    accRender();if(cb)cb();
+  }).catch(function(e){
+    console.error('accLoad error',e);
+    var perm=e&&(e.code==='permission-denied'||/permission/i.test(String(e.message||'')));
+    ACC.loading=false;
+    ACC.loadError=perm?'قوانینِ فایربیس (Rules) هنوز دسترسیِ بخشِ حسابداری رو باز نکردن. قوانینِ جدید رو تو کنسولِ فایربیس Publish کن، بعد «تلاش دوباره» بزن.':'دریافت اطلاعات از سرور ناموفق بود. اینترنت/فیلترشکن رو چک کن.';
+    accRender();
+  });
+}
+function accReload(msg){
+  accLoad(function(){if(msg)accSetStat(msg,'ok');});
+}
+function accGo(view,arg){
+  ACC.view=view;ACC.arg=(arg===undefined?null:arg);
+  accRender();
+  var pg=document.getElementById('pacc');if(pg&&pg.scrollIntoView)pg.scrollIntoView();
+}
+
+// ── محاسبات ──
+function accRangeStart(range){
+  var t=new Date();
+  if(range==='today')return accTodayIso();
+  if(range==='week'){var d=new Date(t.getTime()-6*86400000);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+  if(range==='month'){var j=g2j(t.getFullYear(),t.getMonth()+1,t.getDate());var g=j2g(j[0],j[1],1);return g[0]+'-'+pad2(g[1])+'-'+pad2(g[2]);}
+  return null;
+}
+var ACC_RANGE_LABELS={today:'امروز',week:'۷ روز اخیر',month:'این ماهِ شمسی',all:'همه'};
+function accReport(range){
+  var from=accRangeStart(range);
+  var r={sales:0,cost:0,profit:0,count:0,purchases:0,pcount:0,unknown:false,top:[]};
+  var top={};
+  ACC.invoices.forEach(function(v){
+    if(v.status==='cancelled')return;
+    if(from&&String(v.date||'')<from)return;
+    if(v.type==='sale'){
+      r.count++;r.sales+=Number(v.total)||0;r.cost+=Number(v.costTotal)||0;r.profit+=Number(v.profit)||0;
+      if(v.costUnknown)r.unknown=true;
+      (v.lines||[]).forEach(function(l){
+        var k=l.key;
+        if(!top[k])top[k]={key:k,code:l.code,name:l.name,brand:l.brand,qty:0,sales:0};
+        top[k].qty+=Number(l.qty)||0;top[k].sales+=(Number(l.qty)||0)*(Number(l.price)||0);
+      });
+    }else if(v.type==='purchase'){r.pcount++;r.purchases+=Number(v.total)||0;}
+  });
+  r.top=Object.keys(top).map(function(k){return top[k];}).sort(function(a,b){return b.qty-a.qty;}).slice(0,10);
+  return r;
+}
+function accStockSummary(){
+  var s={value:0,neg:0,zero:0,count:0};
+  Object.keys(ACC.items).forEach(function(k){
+    var it=ACC.items[k],q=Number(it.qty)||0;s.count++;
+    if(q>0)s.value+=q*(Number(it.avgCost)||0);else if(q<0)s.neg++;else s.zero++;
+  });
+  return s;
+}
+function accBalances(){
+  var recv=0,owe=0;
+  Object.keys(ACC.parties).forEach(function(k){var b=Number(ACC.parties[k].balance)||0;if(b>0)recv+=b;else owe+=-b;});
+  return {recv:recv,owe:owe};
+}
+function accBalanceHtml(b){
+  b=Number(b)||0;
+  if(b>0)return '<span style="color:#1a6a3a;font-weight:900">طلبِ ما: '+accMoney(b)+'</span>';
+  if(b<0)return '<span style="color:#c0304a;font-weight:900">بدهیِ ما: '+accMoney(-b)+'</span>';
+  return '<span style="color:#9a6e3a">تسویه</span>';
+}
+function accPartyName(id){var p=ACC.parties[id];return p?p.name:'—';}
+function accDateDisp(iso){return isoToJalaliDisp(iso);}
+
+// ── رندر اصلی ──
+function accRender(){
+  var body=document.getElementById('ACC_BODY'),nav=document.getElementById('ACC_NAV');
+  if(!body||!nav)return;
+  var tabs=[['home','🏠 خلاصه'],['inv','🧾 فاکتورها'],['items','📦 انبار'],['parties','👥 طرف‌حساب‌ها'],['report','📊 گزارش']];
+  var cur=ACC.view;
+  var navKey={invNew:'inv',invView:'inv',itemView:'items',partyView:'parties',partyEdit:'parties',payNew:'parties'}[cur]||cur;
+  nav.innerHTML=tabs.map(function(t){return '<button type="button" class="chip'+(t[0]===navKey?' on':'')+'" onclick="accGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
+  if(ACC.loading&&!ACC.loaded){body.innerHTML='<div class="nores">⏳ در حال دریافت اطلاعات حسابداری از سرور...</div>';return;}
+  if(ACC.loadError&&!ACC.loaded){body.innerHTML='<div class="nores" style="color:#c0304a">'+accEsc(ACC.loadError)+'<br><br><button class="sbig stg" style="width:auto;padding:9px 18px" onclick="accLoad()">🔄 تلاش دوباره</button></div>';return;}
+  var fn={home:accRenderHome,inv:accRenderInvoices,invNew:accRenderInvForm,invView:accRenderInvView,items:accRenderItems,itemView:accRenderItemView,parties:accRenderParties,partyView:accRenderPartyView,partyEdit:accRenderPartyEdit,payNew:accRenderPayForm,report:accRenderReport}[cur];
+  body.innerHTML=fn?fn():'';
+  if(cur==='invNew')accRenderLines();
+}
+function accCard(title,inner,extra){
+  return '<div class="card" style="margin-bottom:10px;'+(extra||'')+'">'+(title?'<div class="ctitle" style="font-size:0.85rem">'+title+'</div>':'')+inner+'</div>';
+}
+function accStatBox(label,val,color){
+  return '<div style="flex:1;min-width:46%;background:rgba(212,168,122,0.12);border-radius:10px;padding:9px 10px"><div style="font-size:0.66rem;color:#9a6e3a">'+label+'</div><div style="font-size:0.9rem;font-weight:900;color:'+(color||'inherit')+'">'+val+'</div></div>';
+}
+
+// ── خلاصه ──
+function accRenderHome(){
+  var st=accStockSummary(),bl=accBalances(),rep=accReport(ACC.range);
+  var h='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="sbig" style="background:#2a9d5c;color:#fff;margin:0" onclick="accNewInvoice(\'sale\')">➕ فاکتور فروش</button><button class="sbig" style="background:#c0702a;color:#fff;margin:0" onclick="accNewInvoice(\'purchase\')">➕ فاکتور خرید</button></div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="sbig stg" style="margin:0" onclick="accGo(\'payNew\',{})">💰 دریافت / پرداخت</button></div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
+  h+=accStatBox('ارزشِ انبار (به قیمتِ خرید)',accMoney(st.value));
+  h+=accStatBox('تعداد کالا در انبار',accFa(st.count)+(st.neg?' <span style="color:#c0304a;font-size:0.68rem">('+accFa(st.neg)+' منفی)</span>':''));
+  h+=accStatBox('طلبِ ما از مشتری‌ها',accMoney(bl.recv),'#1a6a3a');
+  h+=accStatBox('بدهیِ ما به تأمین‌کننده‌ها',accMoney(bl.owe),'#c0304a');
+  h+='</div>';
+  var chips=Object.keys(ACC_RANGE_LABELS).map(function(k){return '<button type="button" class="chip'+(ACC.range===k?' on':'')+'" onclick="ACC.range=\''+k+'\';accRender()">'+ACC_RANGE_LABELS[k]+'</button>';}).join('');
+  var rb='<div style="margin-bottom:8px">'+chips+'</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+  rb+=accStatBox('فروش ('+accFa(rep.count)+' فاکتور)',accMoney(rep.sales));
+  rb+=accStatBox('سودِ ناخالص'+(rep.unknown?' ⚠️':''),accMoney(rep.profit),rep.profit>=0?'#1a6a3a':'#c0304a');
+  rb+=accStatBox('خرید ('+accFa(rep.pcount)+' فاکتور)',accMoney(rep.purchases));
+  rb+=accStatBox('هزینه‌ی کالای فروخته‌شده',accMoney(rep.cost));
+  rb+='</div>';
+  if(rep.unknown)rb+='<div style="font-size:0.68rem;color:#c0702a;margin-top:6px">⚠️ بعضی کالاها قیمتِ خریدِ ثبت‌شده نداشتن؛ سودشون دقیق نیست. اول فاکتورِ خرید یا «تعدیل موجودی» با قیمتِ خرید ثبت کن.</div>';
+  h+=accCard('📈 عملکرد',rb);
+  if(!st.count)h+=accCard('شروع','<div style="font-size:0.78rem;color:#9a6e3a;line-height:1.9">۱) از «📦 انبار» دکمه‌ی «افزودنِ محصولاتِ پنل به انبار» رو بزن.<br>۲) برای هر تأمین‌کننده و مشتری یه «طرف‌حساب» بساز (می‌تونی مانده‌ی قبلی رو هم وارد کنی).<br>۳) فاکتورِ خرید ثبت کن تا موجودی و قیمتِ خرید بیاد، بعد فروش.</div>');
+  return h;
+}
+
+// ── طرف‌حساب‌ها ──
+function accPartyList(){return Object.keys(ACC.parties).map(function(k){return ACC.parties[k];}).sort(function(a,b){return String(a.name).localeCompare(String(b.name),'fa');});}
+function accRenderParties(){
+  var list=accPartyList();
+  var h='<button class="addb" onclick="accGo(\'partyEdit\',\'\')">+ طرف‌حسابِ جدید</button><div style="height:8px"></div>';
+  if(!list.length)return h+'<div class="nores">هنوز طرف‌حسابی ثبت نشده</div>';
+  h+=list.map(function(p){
+    var ty=p.type==='supplier'?'🏭 تأمین‌کننده':'🛍️ مشتری';
+    return '<div class="card" style="margin-bottom:8px;padding:10px;cursor:pointer" onclick="accGo(\'partyView\',\''+accEsc(p.id)+'\')"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:900;font-size:0.85rem">'+accEsc(p.name)+'</div><div style="font-size:0.68rem;color:#9a6e3a">'+ty+(p.phone?' — '+accEsc(p.phone):'')+'</div></div><div style="font-size:0.74rem;text-align:left">'+accBalanceHtml(p.balance)+'</div></div></div>';
+  }).join('');
+  return h;
+}
+function accRenderPartyEdit(){
+  var id=ACC.arg||'',p=id?ACC.parties[id]:null;
+  var ty=p?p.type:'customer';
+  var h='<div class="g1"><span class="lbl">نام</span><input class="fi" id="ACC_P_NAME" value="'+accEsc(p?p.name:'')+'" placeholder="مثلاً EMA یا اسمِ مشتری"></div>';
+  h+='<div class="g1"><span class="lbl">شماره تماس (اختیاری)</span><input class="fi" id="ACC_P_PHONE" inputmode="tel" value="'+accEsc(p?p.phone||'':'')+'"></div>';
+  h+='<div class="g1"><span class="lbl">نوع</span><div><button type="button" class="chip'+(ty==='customer'?' on':'')+'" id="ACC_P_TY_C" onclick="accPickPartyType(\'customer\')">🛍️ مشتری</button><button type="button" class="chip'+(ty==='supplier'?' on':'')+'" id="ACC_P_TY_S" onclick="accPickPartyType(\'supplier\')">🏭 تأمین‌کننده</button></div></div>';
+  if(!p){
+    h+='<div class="g1"><span class="lbl">مانده‌ی قبلی (اختیاری)</span><input class="fi" id="ACC_P_OPEN" inputmode="numeric" placeholder="۰" oninput="accHint(this)"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div>';
+    h+='<select class="fi" id="ACC_P_OPEN_DIR"><option value="1">او به ما بدهکاره (طلبِ ما)</option><option value="-1">ما به او بدهکاریم (بدهیِ ما)</option></select></div>';
+  }
+  h+='<div class="g1"><span class="lbl">یادداشت (اختیاری)</span><input class="fi" id="ACC_P_NOTE" value="'+accEsc(p?p.note||'':'')+'"></div>';
+  h+='<input type="hidden" id="ACC_P_TYPE" value="'+ty+'">';
+  h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveParty(\''+accEsc(id)+'\')">💾 ذخیره</button>';
+  h+='<button class="sbig" style="background:#999;color:#fff" onclick="accGo(\''+(id?'partyView':'parties')+'\',\''+accEsc(id)+'\')">انصراف</button>';
+  return accCard(id?'ویرایش طرف‌حساب':'طرف‌حسابِ جدید',h);
+}
+function accPickPartyType(t){
+  document.getElementById('ACC_P_TYPE').value=t;
+  document.getElementById('ACC_P_TY_C').classList.toggle('on',t==='customer');
+  document.getElementById('ACC_P_TY_S').classList.toggle('on',t==='supplier');
+}
+function accSaveParty(id){
+  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  var name=document.getElementById('ACC_P_NAME').value.trim();
+  if(!name){accSetStat('نامِ طرف‌حساب رو بنویس','err');return;}
+  var data={name:name,phone:document.getElementById('ACC_P_PHONE').value.trim(),type:document.getElementById('ACC_P_TYPE').value,note:document.getElementById('ACC_P_NOTE').value.trim()};
+  var dup=Object.keys(ACC.parties).some(function(k){return k!==id&&String(ACC.parties[k].name).trim()===name;});
+  if(dup&&!confirm('یه طرف‌حساب با همین نام هست. بازم ذخیره کنم؟'))return;
+  var p;
+  if(id){p=db.collection('accParties').doc(id).update(Object.assign({},data,{ts2:Date.now()}));}
+  else{
+    var open=accNum((document.getElementById('ACC_P_OPEN')||{}).value)*Number((document.getElementById('ACC_P_OPEN_DIR')||{value:1}).value);if(!open)open=0;
+    data.balance=open;data.openingBalance=open;data.ts=Date.now();
+    p=db.collection('accParties').add(data);
+  }
+  p.then(function(ref){
+    var newId=id||(ref&&ref.id);
+    ACC.view=newId?'partyView':'parties';ACC.arg=newId||null;
+    accReload('طرف‌حساب ذخیره شد ✅');
+  }).catch(function(e){console.error(e);accSetStat('ذخیره ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accHint(inp){
+  var box=inp.parentNode.querySelector('.acc-hint');if(!box)return;
+  var n=accNum(inp.value);box.textContent=n?accMoney(n):'';
+}
+
+// ── کارت حساب طرف‌حساب ──
+function accPartyLedger(pid){
+  var rows=[];
+  ACC.invoices.forEach(function(v){
+    if(v.partyId!==pid||v.type==='adjust')return;
+    var eff=v.type==='sale'?Number(v.total)||0:-(Number(v.total)||0);
+    rows.push({date:v.date,ts:Number(v.ts)||0,text:(v.type==='sale'?'فاکتور فروش ':'فاکتور خرید ')+accFa(v.number),eff:eff,cancelled:v.status==='cancelled',ref:['invView',v.id]});
+  });
+  ACC.payments.forEach(function(m){
+    if(m.partyId!==pid)return;
+    var eff=m.direction==='in'?-(Number(m.amount)||0):(Number(m.amount)||0);
+    rows.push({date:m.date,ts:Number(m.ts)||0,text:(m.direction==='in'?'دریافت ':'پرداخت ')+(ACC_METHODS[m.method]||''),eff:eff,cancelled:m.status==='cancelled',pay:m});
+  });
+  rows.sort(function(a,b){var da=String(a.date),db2=String(b.date);if(da!==db2)return da<db2?-1:1;return a.ts-b.ts;});
+  return rows;
+}
+function accRenderPartyView(){
+  var p=ACC.parties[ACC.arg];if(!p)return '<div class="nores">طرف‌حساب پیدا نشد</div>';
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-weight:900;font-size:0.95rem">'+accEsc(p.name)+'</div><div style="font-size:0.7rem;color:#9a6e3a">'+(p.type==='supplier'?'🏭 تأمین‌کننده':'🛍️ مشتری')+(p.phone?' — '+accEsc(p.phone):'')+'</div></div><div style="font-size:0.78rem">'+accBalanceHtml(p.balance)+'</div></div>';
+  if(p.note)h+='<div style="font-size:0.72rem;color:#9a6e3a;margin-bottom:8px">'+accEsc(p.note)+'</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+  h+='<button class="chip" onclick="accNewInvoice(\'sale\',\''+accEsc(p.id)+'\')">➕ فروش</button><button class="chip" onclick="accNewInvoice(\'purchase\',\''+accEsc(p.id)+'\')">➕ خرید</button>';
+  h+='<button class="chip" onclick="accGo(\'payNew\',{partyId:\''+accEsc(p.id)+'\',direction:\'in\'})">💰 دریافت</button><button class="chip" onclick="accGo(\'payNew\',{partyId:\''+accEsc(p.id)+'\',direction:\'out\'})">💸 پرداخت</button>';
+  h+='<button class="chip" onclick="accGo(\'partyEdit\',\''+accEsc(p.id)+'\')">✏️ ویرایش</button></div>';
+  var rows=accPartyLedger(p.id),run=Number(p.openingBalance)||0;
+  var tr='';
+  if(Number(p.openingBalance))tr+='<tr><td>—</td><td>مانده‌ی قبلی</td><td>'+accFa(p.openingBalance)+'</td><td>'+accFa(run)+'</td></tr>';
+  rows.forEach(function(r){
+    if(!r.cancelled)run+=r.eff;
+    var click=r.ref?' style="cursor:pointer;'+(r.cancelled?'text-decoration:line-through;opacity:.55':'')+'" onclick="accGo(\'invView\',\''+accEsc(r.ref[1])+'\')"':(r.cancelled?' style="text-decoration:line-through;opacity:.55"':'');
+    var payBtn=(r.pay&&!r.cancelled)?' <a href="javascript:void(0)" style="color:#c0304a;font-size:0.66rem" onclick="event.stopPropagation();accCancelPayment(\''+accEsc(r.pay.id)+'\')">ابطال</a>':'';
+    tr+='<tr'+click+'><td>'+accDateDisp(r.date)+'</td><td>'+r.text+payBtn+'</td><td style="color:'+(r.eff>=0?'#1a6a3a':'#c0304a')+'">'+(r.eff>=0?'+':'−')+accFa(Math.abs(r.eff))+'</td><td>'+(r.cancelled?'—':accFa(run))+'</td></tr>';
+  });
+  h+='<div style="font-size:0.72rem;font-weight:900;margin-bottom:4px">کارت حساب (مثبت = طلبِ ما)</div>';
+  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.7rem;text-align:center"><thead><tr style="color:#9a6e3a"><th>تاریخ</th><th>شرح</th><th>تغییر</th><th>مانده</th></tr></thead><tbody>'+(tr||'<tr><td colspan="4" style="padding:14px;color:#9a6e3a">هنوز گردشی نیست</td></tr>')+'</tbody></table></div>';
+  return accCard('',h);
+}
+
+// ── پرداخت / دریافت ──
+function accRenderPayForm(){
+  var a=ACC.arg||{};
+  var pid=a.partyId||'',dir=a.direction||'in';
+  var opts='<option value="">— انتخاب کن —</option>'+accPartyList().map(function(p){return '<option value="'+accEsc(p.id)+'"'+(p.id===pid?' selected':'')+'>'+accEsc(p.name)+'</option>';}).join('');
+  var h='<div class="g1"><span class="lbl">نوع</span><div><button type="button" class="chip'+(dir==='in'?' on':'')+'" id="ACC_PAY_IN" onclick="accPickPayDir(\'in\')">💰 دریافت از طرف‌حساب</button><button type="button" class="chip'+(dir==='out'?' on':'')+'" id="ACC_PAY_OUT" onclick="accPickPayDir(\'out\')">💸 پرداخت به طرف‌حساب</button></div></div><input type="hidden" id="ACC_PAY_DIR" value="'+dir+'">';
+  h+='<div class="g1"><span class="lbl">طرف‌حساب</span><select class="fi" id="ACC_PAY_PARTY">'+opts+'</select></div>';
+  h+='<div class="g2"><div><span class="lbl">مبلغ (تومان)</span><input class="fi" id="ACC_PAY_AMT" inputmode="numeric" oninput="accHint(this)"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+  h+='<div><span class="lbl">روش</span><select class="fi" id="ACC_PAY_METHOD">'+Object.keys(ACC_METHODS).map(function(k){return '<option value="'+k+'">'+ACC_METHODS[k]+'</option>';}).join('')+'</select></div></div>';
+  h+='<div class="g1"><span class="lbl">تاریخ (شمسی)</span><input class="fi" type="text" id="ACC_PAY_DATE_DISP" readonly style="cursor:pointer;background:#fff;color:#3d2b1f" value="'+isoToJalaliDisp(accTodayIso())+'" onclick="openJalaliCal(\'ACC_PAY_DATE_DISP\',\'ACC_PAY_DATE\',this)"><input type="hidden" id="ACC_PAY_DATE" value="'+accTodayIso()+'"></div>';
+  h+='<div class="g1"><span class="lbl">توضیح (اختیاری)</span><input class="fi" id="ACC_PAY_NOTE" placeholder="مثلاً شماره‌ی چک"></div>';
+  h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSavePayment()">💾 ثبت</button><button class="sbig" style="background:#999;color:#fff" onclick="accGo(\''+(pid?'partyView':'home')+'\',\''+accEsc(pid)+'\')">انصراف</button>';
+  return accCard('💰 دریافت / پرداخت',h);
+}
+function accPickPayDir(d){
+  document.getElementById('ACC_PAY_DIR').value=d;
+  document.getElementById('ACC_PAY_IN').classList.toggle('on',d==='in');
+  document.getElementById('ACC_PAY_OUT').classList.toggle('on',d==='out');
+}
+function accSavePayment(){
+  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  if(ACC.saving)return;
+  var pid=document.getElementById('ACC_PAY_PARTY').value,dir=document.getElementById('ACC_PAY_DIR').value;
+  var amount=accNum(document.getElementById('ACC_PAY_AMT').value);
+  if(!pid){accSetStat('طرف‌حساب رو انتخاب کن','err');return;}
+  if(!(amount>0)){accSetStat('مبلغ رو درست وارد کن','err');return;}
+  var pay={date:document.getElementById('ACC_PAY_DATE').value||accTodayIso(),partyId:pid,partyName:accPartyName(pid),direction:dir,method:document.getElementById('ACC_PAY_METHOD').value,amount:amount,note:document.getElementById('ACC_PAY_NOTE').value.trim(),invoiceId:null,status:'active',ts:Date.now()};
+  ACC.saving=true;
+  var pRef=db.collection('accParties').doc(pid),payRef=db.collection('accPayments').doc();
+  db.runTransaction(function(tx){
+    return tx.get(pRef).then(function(ps){
+      if(!ps.exists)throw new Error('طرف‌حساب پیدا نشد');
+      var b=Number(ps.data().balance)||0;
+      tx.update(pRef,{balance:b+(dir==='in'?-amount:amount)});
+      tx.set(payRef,pay);
+    });
+  }).then(function(){ACC.saving=false;ACC.view='partyView';ACC.arg=pid;accReload('ثبت شد ✅');}).catch(function(e){ACC.saving=false;console.error(e);accSetStat('ثبت ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accCancelPayment(id){
+  var db=accDb();if(!db)return;
+  var m=ACC.payments.filter(function(x){return x.id===id;})[0];if(!m||m.status==='cancelled')return;
+  if(!confirm('این '+(m.direction==='in'?'دریافت':'پرداخت')+' ابطال بشه؟ مانده‌ی طرف‌حساب برمی‌گرده.'))return;
+  var pRef=db.collection('accParties').doc(m.partyId),mRef=db.collection('accPayments').doc(id);
+  db.runTransaction(function(tx){
+    return Promise.all([tx.get(pRef),tx.get(mRef)]).then(function(s){
+      if(!s[1].exists||s[1].data().status==='cancelled')throw new Error('قبلاً ابطال شده');
+      var amt=Number(s[1].data().amount)||0,dir=s[1].data().direction;
+      if(s[0].exists)tx.update(pRef,{balance:(Number(s[0].data().balance)||0)+(dir==='in'?amt:-amt)});
+      tx.update(mRef,{status:'cancelled'});
+    });
+  }).then(function(){accReload('ابطال شد ✅');}).catch(function(e){console.error(e);accSetStat('ابطال ناموفق بود: '+(e&&e.message||e),'err');});
+}
+
+// ── کالاها / انبار ──
+function accRenderItems(){
+  var q=normSearchText(ACC.itemQuery);
+  var all=Object.keys(ACC.items).map(function(k){return ACC.items[k];});
+  var list=all.filter(function(it){
+    if(!q)return true;
+    return normSearchText(it.code).indexOf(q)>-1||normSearchText(it.name).indexOf(q)>-1||normSearchText(it.brand).indexOf(q)>-1;
+  }).sort(function(a,b){return String(a.brand).localeCompare(String(b.brand),'fa')||String(a.code).localeCompare(String(b.code),undefined,{numeric:true});});
+  ACC.itemList=list;
+  var missing=accProductsNotInStock().length;
+  var h='<div style="display:flex;gap:6px;margin-bottom:8px"><button class="chip" onclick="accGo(\'itemView\',\'\')">➕ کالای جدید</button>'+(missing?'<button class="chip" onclick="accImportProducts()">📥 افزودنِ محصولاتِ پنل ('+accFa(missing)+')</button>':'')+'</div>';
+  h+='<input class="fi" id="ACC_ITEM_Q" placeholder="🔍 کد، نام یا برند" value="'+accEsc(ACC.itemQuery)+'" oninput="accItemSearch(this.value)" style="margin-bottom:8px">';
+  h+='<div id="ACC_ITEM_LIST">'+accItemRowsHtml()+'</div>';
+  return h;
+}
+function accItemRowsHtml(){
+  var list=ACC.itemList,max=80;
+  if(!list.length)return '<div class="nores">کالایی نیست</div>';
+  var h=list.slice(0,max).map(function(it,i){
+    var q=Number(it.qty)||0;
+    var qc=q<0?'#c0304a':(q===0?'#9a6e3a':'#1a6a3a');
+    return '<div class="card" style="margin-bottom:6px;padding:9px 10px;cursor:pointer" onclick="accOpenItem('+i+')"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="min-width:0"><div style="font-weight:900;font-size:0.8rem">کد '+accEsc(it.code)+(it.name?' — '+accEsc(it.name):'')+'</div><div style="font-size:0.66rem;color:#9a6e3a">'+accEsc(it.brand)+' | میانگین خرید: '+(Number(it.avgCost)?accFa(it.avgCost):'—')+' | فروش: '+(Number(it.sellPrice)?accFa(it.sellPrice):'—')+'</div></div><div style="font-weight:900;font-size:0.95rem;color:'+qc+'">'+accFa(q)+'</div></div></div>';
+  }).join('');
+  if(list.length>max)h+='<div style="text-align:center;font-size:0.7rem;color:#9a6e3a;padding:6px">'+accFa(list.length-max)+' کالای دیگه هست؛ جستجو کن</div>';
+  return h;
+}
+function accItemSearch(v){
+  ACC.itemQuery=v;
+  var q=normSearchText(v);
+  ACC.itemList=Object.keys(ACC.items).map(function(k){return ACC.items[k];}).filter(function(it){
+    if(!q)return true;
+    return normSearchText(it.code).indexOf(q)>-1||normSearchText(it.name).indexOf(q)>-1||normSearchText(it.brand).indexOf(q)>-1;
+  }).sort(function(a,b){return String(a.brand).localeCompare(String(b.brand),'fa')||String(a.code).localeCompare(String(b.code),undefined,{numeric:true});});
+  var box=document.getElementById('ACC_ITEM_LIST');if(box)box.innerHTML=accItemRowsHtml();
+}
+function accOpenItem(i){var it=ACC.itemList[i];if(it)accGo('itemView',it.id);}
+function accProductsNotInStock(){
+  var out=[],seen={};
+  allProds().forEach(function(p){
+    var code=String(p.code||'').trim(),brand=String(p.brandName||'').trim();
+    if(!code||code==='--'||!brand)return;
+    var key=accItemKey(brand,code);
+    if(ACC.items[key]||seen[key])return;
+    seen[key]=1;out.push({key:key,brand:brand,code:code,name:(p.title||'').trim(),price:accNum(p.price)});
+  });
+  return out;
+}
+function accImportProducts(){
+  var db=accDb();if(!db)return;
+  var list=accProductsNotInStock();if(!list.length)return;
+  if(!confirm(accFa(list.length)+' محصول با موجودیِ ۰ به انبار اضافه بشه؟'))return;
+  var chunks=[];for(var i=0;i<list.length;i+=400)chunks.push(list.slice(i,i+400));
+  var chain=Promise.resolve();
+  chunks.forEach(function(ch){
+    chain=chain.then(function(){
+      var b=db.batch();
+      ch.forEach(function(x){b.set(db.collection('accItems').doc(x.key),{brand:x.brand,code:x.code,name:x.name,sellPrice:x.price||0,qty:0,avgCost:0,lastBuy:0,ts:Date.now()});});
+      return b.commit();
+    });
+  });
+  chain.then(function(){accReload(accFa(list.length)+' کالا به انبار اضافه شد ✅');}).catch(function(e){console.error(e);accSetStat('افزودن ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accRenderItemView(){
+  var id=ACC.arg||'',it=id?ACC.items[id]:null;
+  var h='';
+  if(!it){
+    h+='<div class="g2"><div><span class="lbl">برند</span><input class="fi" id="ACC_I_BRAND" placeholder="مثلاً EMA"></div><div><span class="lbl">کد</span><input class="fi" id="ACC_I_CODE" placeholder="مثلاً 110"></div></div>';
+  }else{
+    h+='<div style="font-weight:900;font-size:0.9rem;margin-bottom:6px">کد '+accEsc(it.code)+' — '+accEsc(it.brand)+'</div>';
+  }
+  h+='<div class="g1"><span class="lbl">نام / توضیح</span><input class="fi" id="ACC_I_NAME" value="'+accEsc(it?it.name||'':'')+'"></div>';
+  h+='<div class="g1"><span class="lbl">قیمت فروشِ پیش‌فرض (تومان)</span><input class="fi" id="ACC_I_SELL" inputmode="numeric" value="'+(it&&it.sellPrice?accEsc(String(it.sellPrice)):'')+'" oninput="accHint(this)"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+  h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveItem(\''+accEsc(id)+'\')">💾 ذخیره</button>';
+  if(it){
+    var q=Number(it.qty)||0;
+    var adj='<div style="font-size:0.72rem;color:#9a6e3a;margin-bottom:6px">موجودیِ فعلی: <b style="color:'+(q<0?'#c0304a':'inherit')+'">'+accFa(q)+'</b> — میانگینِ قیمتِ خرید: <b>'+(Number(it.avgCost)?accMoney(it.avgCost):'—')+'</b> — آخرین خرید: '+(Number(it.lastBuy)?accMoney(it.lastBuy):'—')+'</div>';
+    adj+='<div class="g2"><div><span class="lbl">موجودیِ درست</span><input class="fi" id="ACC_I_NEWQTY" inputmode="numeric" placeholder="'+accFa(q)+'"></div><div><span class="lbl">میانگین خرید (اختیاری)</span><input class="fi" id="ACC_I_NEWAVG" inputmode="numeric" placeholder="'+(Number(it.avgCost)?accFa(it.avgCost):'')+'"></div></div>';
+    adj+='<button class="sbig" style="background:#c0702a;color:#fff" onclick="accAdjustStock(\''+accEsc(id)+'\')">⚖️ ثبتِ تعدیل موجودی</button><div style="font-size:0.66rem;color:#9a6e3a">برای موجودیِ اولیه یا اصلاحِ شمارشِ انبار. در تاریخچه ثبت می‌شه.</div>';
+    h+=accCard('⚖️ تعدیل موجودی',adj,'margin-top:10px');
+    var hist=ACC.invoices.filter(function(v){return (v.lines||[]).some(function(l){return l.key===id;});}).slice(0,15).map(function(v){
+      var l=v.lines.filter(function(x){return x.key===id;})[0];
+      var lbl=v.type==='sale'?'فروش':(v.type==='purchase'?'خرید':'تعدیل');
+      return '<tr'+(v.status==='cancelled'?' style="text-decoration:line-through;opacity:.55"':'')+' onclick="accGo(\'invView\',\''+accEsc(v.id)+'\')" style="cursor:pointer"><td>'+accDateDisp(v.date)+'</td><td>'+lbl+'</td><td>'+accFa(l.qty)+'</td><td>'+accFa(l.price)+'</td></tr>';
+    }).join('');
+    h+=accCard('تاریخچه',hist?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.7rem;text-align:center"><thead><tr style="color:#9a6e3a"><th>تاریخ</th><th>نوع</th><th>تعداد</th><th>قیمت</th></tr></thead><tbody>'+hist+'</tbody></table></div>':'<div style="font-size:0.72rem;color:#9a6e3a">هنوز گردشی نیست</div>');
+  }
+  h+='<button class="sbig" style="background:#999;color:#fff" onclick="accGo(\'items\')">برگشت</button>';
+  return accCard(it?'':'➕ کالای جدید',h);
+}
+function accSaveItem(id){
+  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  var name=document.getElementById('ACC_I_NAME').value.trim(),sell=accNum(document.getElementById('ACC_I_SELL').value);
+  var p;
+  if(id){p=db.collection('accItems').doc(id).update({name:name,sellPrice:sell});}
+  else{
+    var brand=document.getElementById('ACC_I_BRAND').value.trim(),code=toEnDigits(document.getElementById('ACC_I_CODE').value.trim());
+    if(!brand||!code){accSetStat('برند و کد رو بنویس','err');return;}
+    var key=accItemKey(brand,code);
+    if(ACC.items[key]){accSetStat('این کالا قبلاً ثبت شده','err');return;}
+    id=key;
+    p=db.collection('accItems').doc(key).set({brand:brand,code:code,name:name,sellPrice:sell,qty:0,avgCost:0,lastBuy:0,ts:Date.now()});
+  }
+  p.then(function(){ACC.view='itemView';ACC.arg=id;accReload('کالا ذخیره شد ✅');}).catch(function(e){console.error(e);accSetStat('ذخیره ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accAdjustStock(id){
+  var db=accDb();if(!db)return;
+  var qEl=document.getElementById('ACC_I_NEWQTY'),aEl=document.getElementById('ACC_I_NEWAVG');
+  if(!qEl||String(qEl.value).trim()===''){accSetStat('موجودیِ درست رو وارد کن','err');return;}
+  var newQty=accNum(qEl.value),newAvg=String(aEl.value).trim()===''?null:accNum(aEl.value);
+  var iRef=db.collection('accItems').doc(id),vRef=db.collection('accInvoices').doc(),cRef=db.collection('accMeta').doc('counters');
+  db.runTransaction(function(tx){
+    return Promise.all([tx.get(iRef),tx.get(cRef)]).then(function(s){
+      if(!s[0].exists)throw new Error('کالا پیدا نشد');
+      var it=s[0].data(),oldQty=Number(it.qty)||0,delta=newQty-oldQty;
+      var avg=newAvg===null?(Number(it.avgCost)||0):newAvg;
+      var cnt=s[1].exists?(s[1].data()||{}):{};var num=(Number(cnt.adjust)||0)+1;
+      tx.update(iRef,{qty:newQty,avgCost:avg,lastBuy:Number(it.lastBuy)||0});
+      tx.set(cRef,Object.assign({},cnt,{adjust:num}));
+      tx.set(vRef,{type:'adjust',number:num,date:accTodayIso(),partyId:'',partyName:'',lines:[{key:id,brand:it.brand,code:it.code,name:it.name||'',qty:delta,price:avg}],subtotal:0,discount:0,total:0,note:'تعدیل موجودی: '+accFa(oldQty)+' ← '+accFa(newQty),status:'active',ts:Date.now()});
+    });
+  }).then(function(){ACC.view='itemView';ACC.arg=id;accReload('تعدیل ثبت شد ✅');}).catch(function(e){console.error(e);accSetStat('تعدیل ناموفق بود: '+(e&&e.message||e),'err');});
+}
+
+// ── فاکتورها: فهرست ──
+function accRenderInvoices(){
+  var f=ACC.invFilter;
+  var chips=[['all','همه'],['sale','فروش'],['purchase','خرید'],['adjust','تعدیل']].map(function(c){return '<button type="button" class="chip'+(f===c[0]?' on':'')+'" onclick="ACC.invFilter=\''+c[0]+'\';accRender()">'+c[1]+'</button>';}).join('');
+  var h='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="sbig" style="background:#2a9d5c;color:#fff;margin:0" onclick="accNewInvoice(\'sale\')">➕ فروش</button><button class="sbig" style="background:#c0702a;color:#fff;margin:0" onclick="accNewInvoice(\'purchase\')">➕ خرید</button></div><div style="margin-bottom:8px">'+chips+'</div>';
+  var list=ACC.invoices.filter(function(v){return f==='all'||v.type===f;});
+  if(!list.length)return h+'<div class="nores">فاکتوری ثبت نشده</div>';
+  h+=list.slice(0,60).map(function(v){
+    var lbl=v.type==='sale'?'<span style="color:#1a6a3a">فروش</span>':(v.type==='purchase'?'<span style="color:#c0702a">خرید</span>':'<span style="color:#666">تعدیل</span>');
+    var cx=v.status==='cancelled';
+    return '<div class="card" style="margin-bottom:6px;padding:9px 10px;cursor:pointer;'+(cx?'opacity:.55;':'')+'" onclick="accGo(\'invView\',\''+accEsc(v.id)+'\')"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:900;font-size:0.8rem;'+(cx?'text-decoration:line-through':'')+'">'+lbl+' '+accFa(v.number)+(v.partyName?' — '+accEsc(v.partyName):'')+(cx?' (ابطال‌شده)':'')+'</div><div style="font-size:0.66rem;color:#9a6e3a">'+accDateDisp(v.date)+' | '+accFa((v.lines||[]).length)+' ردیف</div></div><div style="font-weight:900;font-size:0.82rem">'+(v.type==='adjust'?'':accMoney(v.total))+'</div></div></div>';
+  }).join('');
+  if(list.length>60)h+='<div style="text-align:center;font-size:0.7rem;color:#9a6e3a;padding:6px">فقط ۶۰ فاکتورِ آخر نشون داده می‌شه</div>';
+  return h;
+}
+
+// ── فاکتور جدید ──
+function accNewInvoice(type,partyId){
+  ACC.draft={type:type,date:accTodayIso(),partyId:partyId||'',lines:[{key:'',brand:'',code:'',name:'',qty:'',price:'',text:''}],discount:'',payAmt:'',payMethod:'cash',note:''};
+  accGo('invNew');
+}
+function accRenderInvForm(){
+  var d=ACC.draft;if(!d)return '';
+  var isSale=d.type==='sale';
+  var plist=accPartyList().filter(function(p){return p.id===d.partyId||(isSale?p.type!=='supplier':p.type==='supplier');});
+  var opts='<option value="">— انتخاب کن —</option>'+plist.map(function(p){return '<option value="'+accEsc(p.id)+'"'+(p.id===d.partyId?' selected':'')+'>'+accEsc(p.name)+'</option>';}).join('');
+  var h='<div class="g2"><div><span class="lbl">تاریخ (شمسی)</span><input class="fi" type="text" id="ACC_F_DATE_DISP" readonly style="cursor:pointer;background:#fff;color:#3d2b1f" value="'+isoToJalaliDisp(d.date)+'" onclick="openJalaliCal(\'ACC_F_DATE_DISP\',\'ACC_F_DATE\',this)"><input type="hidden" id="ACC_F_DATE" value="'+d.date+'"></div>';
+  h+='<div><span class="lbl">'+(isSale?'مشتری':'تأمین‌کننده')+'</span><select class="fi" id="ACC_F_PARTY">'+opts+'</select></div></div>';
+  h+='<div style="margin-bottom:8px"><a href="javascript:void(0)" style="font-size:0.72rem;color:#229ed9" onclick="accQuickParty(\''+(isSale?'customer':'supplier')+'\')">➕ '+(isSale?'مشتریِ':'تأمین‌کننده‌ی')+' جدید</a></div>';
+  h+='<div style="font-weight:900;font-size:0.78rem;margin:6px 0">کالاها</div><div id="ACC_LINES"></div>';
+  h+='<button class="addb" onclick="accAddLine()">+ ردیفِ جدید</button>';
+  h+='<div class="g2" style="margin-top:10px"><div><span class="lbl">تخفیف کل (تومان)</span><input class="fi" id="ACC_F_DISC" inputmode="numeric" value="'+accEsc(d.discount)+'" oninput="accSyncDraft();accHint(this)"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+  h+='<div><span class="lbl">'+(isSale?'دریافتِ همزمان':'پرداختِ همزمان')+'</span><input class="fi" id="ACC_F_PAY" inputmode="numeric" value="'+accEsc(d.payAmt)+'" oninput="accSyncDraft();accHint(this)"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div></div>';
+  h+='<div class="g2"><div><span class="lbl">روشِ پرداخت</span><select class="fi" id="ACC_F_METHOD" onchange="accSyncDraft()">'+Object.keys(ACC_METHODS).map(function(k){return '<option value="'+k+'"'+(d.payMethod===k?' selected':'')+'>'+ACC_METHODS[k]+'</option>';}).join('')+'</select></div><div><span class="lbl">توضیح (اختیاری)</span><input class="fi" id="ACC_F_NOTE" value="'+accEsc(d.note)+'" oninput="accSyncDraft()"></div></div>';
+  h+='<div id="ACC_F_TOTALS" style="background:rgba(212,168,122,0.15);border-radius:10px;padding:10px;margin:8px 0;font-size:0.78rem;line-height:2"></div>';
+  h+='<button class="sbig" id="ACC_F_SAVE" style="background:'+(isSale?'#2a9d5c':'#c0702a')+';color:#fff" onclick="accSaveInvoice()">💾 ثبتِ فاکتورِ '+(isSale?'فروش':'خرید')+'</button><button class="sbig" style="background:#999;color:#fff" onclick="ACC.draft=null;accGo(\'inv\')">انصراف</button>';
+  setTimeout(accUpdateTotals,0);
+  return accCard('🧾 فاکتورِ '+(isSale?'فروش':'خرید'),h);
+}
+function accQuickParty(type){
+  accSyncDraft();
+  var name=prompt('نامِ '+(type==='customer'?'مشتری':'تأمین‌کننده')+':');
+  if(!name||!name.trim())return;
+  var db=accDb();if(!db)return;
+  db.collection('accParties').add({name:name.trim(),phone:'',type:type,note:'',balance:0,openingBalance:0,ts:Date.now()}).then(function(ref){
+    ACC.draft.partyId=ref.id;
+    accLoad(function(){accGo('invNew');});
+  }).catch(function(e){accSetStat('ساخت ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accSyncDraft(){
+  var d=ACC.draft;if(!d)return;
+  var g=function(id){var el=document.getElementById(id);return el?el.value:null;};
+  var v=g('ACC_F_DATE');if(v)d.date=v;
+  v=g('ACC_F_PARTY');if(v!==null)d.partyId=v;
+  v=g('ACC_F_DISC');if(v!==null)d.discount=v;
+  v=g('ACC_F_PAY');if(v!==null)d.payAmt=v;
+  v=g('ACC_F_METHOD');if(v!==null)d.payMethod=v;
+  v=g('ACC_F_NOTE');if(v!==null)d.note=v;
+  accUpdateTotals();
+}
+function accAddLine(){
+  accSyncDraft();
+  ACC.draft.lines.push({key:'',brand:'',code:'',name:'',qty:'',price:'',text:''});
+  accRenderLines();
+  var last=ACC.draft.lines.length-1,el=document.getElementById('ACC_L_Q_'+last);
+  var s=document.getElementById('ACC_L_S_'+last);if(s)s.focus();
+}
+function accRemoveLine(i){
+  var d=ACC.draft;if(d.lines.length<=1){d.lines=[{key:'',brand:'',code:'',name:'',qty:'',price:'',text:''}];}else d.lines.splice(i,1);
+  accRenderLines();accUpdateTotals();
+}
+function accRenderLines(){
+  var box=document.getElementById('ACC_LINES');if(!box||!ACC.draft)return;
+  box.innerHTML=ACC.draft.lines.map(function(l,i){
+    return '<div class="card" style="padding:9px;margin-bottom:8px">'+
+      '<div style="display:flex;gap:6px;align-items:center"><input class="fi" id="ACC_L_S_'+i+'" style="margin:0;flex:1" placeholder="🔍 کد یا نامِ کالا" value="'+accEsc(l.text)+'" oninput="accLineSearch('+i+',this.value)" autocomplete="off"><button type="button" style="border:none;background:none;color:#c0304a;font-size:1.1rem;cursor:pointer" onclick="accRemoveLine('+i+')">✕</button></div>'+
+      '<div id="ACC_L_G_'+i+'" style="max-height:34vh;overflow-y:auto"></div>'+
+      '<div class="g2" style="margin:8px 0 0"><div><span class="lbl">تعداد</span><input class="fi" id="ACC_L_Q_'+i+'" inputmode="numeric" value="'+accEsc(l.qty)+'" oninput="accLineChange('+i+',\'qty\',this.value)"></div><div><span class="lbl">قیمتِ واحد (تومان)</span><input class="fi" id="ACC_L_P_'+i+'" inputmode="numeric" value="'+accEsc(l.price)+'" oninput="accLineChange('+i+',\'price\',this.value)"></div></div>'+
+      '<div id="ACC_L_T_'+i+'" style="font-size:0.7rem;color:#9a6e3a;min-height:15px"></div></div>';
+  }).join('');
+  ACC.draft.lines.forEach(function(l,i){accLineInfo(i);});
+}
+function accLineChange(i,f,v){
+  var l=ACC.draft.lines[i];if(!l)return;
+  l[f]=v;accLineInfo(i);accUpdateTotals();
+}
+function accLineInfo(i){
+  var l=ACC.draft.lines[i],el=document.getElementById('ACC_L_T_'+i);if(!el||!l)return;
+  var q=accNum(l.qty),p=accNum(l.price),parts=[];
+  if(l.key){var it=ACC.items[l.key];parts.push('موجودی: '+accFa(it?it.qty:0));if(it&&Number(it.avgCost)&&ACC.draft.type==='sale')parts.push('میانگین خرید: '+accFa(it.avgCost));}
+  if(q&&p)parts.push('جمعِ ردیف: '+accMoney(q*p));
+  el.textContent=parts.join(' | ');
+}
+function accLineSearch(i,val){
+  var l=ACC.draft.lines[i];l.text=val;l.key='';l.brand='';l.code='';l.name='';
+  var box=document.getElementById('ACC_L_G_'+i);
+  var q=normSearchText(val);
+  if(!q){box.innerHTML='';return;}
+  var seen={},res=[];
+  Object.keys(ACC.items).forEach(function(k){
+    var it=ACC.items[k];
+    if(normSearchText(it.code).indexOf(q)>-1||normSearchText(it.name).indexOf(q)>-1||normSearchText(it.brand).indexOf(q)>-1){seen[k]=1;res.push({key:k,brand:it.brand,code:it.code,name:it.name||'',qty:Number(it.qty)||0,item:it});}
+  });
+  accProductsNotInStock().forEach(function(x){
+    if(seen[x.key])return;
+    if(normSearchText(x.code).indexOf(q)>-1||normSearchText(x.name).indexOf(q)>-1||normSearchText(x.brand).indexOf(q)>-1)res.push({key:x.key,brand:x.brand,code:x.code,name:x.name,qty:0,price:x.price,fresh:true});
+  });
+  res.sort(function(a,b){var ac=normSearchText(a.code)===q?0:1,bc=normSearchText(b.code)===q?0:1;return ac-bc;});
+  res=res.slice(0,8);
+  ACC.sugg[i]=res;
+  if(!res.length){box.innerHTML='<div style="font-size:0.7rem;color:#c0702a;padding:6px">کالایی پیدا نشد — از «📦 انبار» اضافه‌اش کن.</div>';return;}
+  box.innerHTML=res.map(function(r,j){
+    return '<div style="padding:8px;border-bottom:1px solid rgba(212,168,122,0.3);cursor:pointer;font-size:0.74rem" onclick="accPickLine('+i+','+j+')"><b>کد '+accEsc(r.code)+'</b>'+(r.name?' — '+accEsc(r.name):'')+' <span style="color:#9a6e3a">('+accEsc(r.brand)+')</span> <span style="float:left;color:'+(r.qty<0?'#c0304a':'#1a6a3a')+'">'+accFa(r.qty)+(r.fresh?' •جدید':'')+'</span></div>';
+  }).join('');
+}
+function accPickLine(i,j){
+  var r=(ACC.sugg[i]||[])[j];if(!r)return;
+  var l=ACC.draft.lines[i],d=ACC.draft;
+  l.key=r.key;l.brand=r.brand;l.code=r.code;l.name=r.name;
+  l.text=r.code+(r.name?' — '+r.name:'')+' ('+r.brand+')';
+  var it=ACC.items[r.key];
+  if(!accNum(l.price)){
+    var def=d.type==='sale'?((it&&Number(it.sellPrice))||r.price||0):((it&&Number(it.lastBuy))||0);
+    l.price=def?String(def):'';
+  }
+  if(!accNum(l.qty))l.qty='1';
+  accSyncDraft();accRenderLines();
+  var q=document.getElementById('ACC_L_Q_'+i);if(q){q.focus();q.select&&q.select();}
+}
+function accDraftTotals(){
+  var d=ACC.draft,sub=0;
+  d.lines.forEach(function(l){sub+=accNum(l.qty)*accNum(l.price);});
+  var disc=Math.min(accNum(d.discount),sub),total=sub-disc,pay=accNum(d.payAmt);
+  return {sub:sub,disc:disc,total:total,pay:pay,rest:total-pay};
+}
+function accUpdateTotals(){
+  var d=ACC.draft,el=document.getElementById('ACC_F_TOTALS');if(!d||!el)return;
+  var t=accDraftTotals(),sale=d.type==='sale';
+  var h='جمعِ ردیف‌ها: <b>'+accMoney(t.sub)+'</b>';
+  if(t.disc)h+='<br>تخفیف: <b>'+accMoney(t.disc)+'</b>';
+  h+='<br>مبلغِ نهایی: <b style="font-size:0.9rem">'+accMoney(t.total)+'</b>';
+  if(t.pay)h+='<br>'+(sale?'دریافتی':'پرداختی')+': <b>'+accMoney(t.pay)+'</b> — مانده: <b>'+accMoney(t.rest)+'</b>';
+  if(sale){
+    var cost=0,unknown=false;
+    d.lines.forEach(function(l){var it=l.key?ACC.items[l.key]:null,q=accNum(l.qty);if(!it||!q)return;var c=Number(it.avgCost)||Number(it.lastBuy)||0;if(!c)unknown=true;cost+=c*q;});
+    if(cost||unknown)h+='<br><span style="color:'+((t.total-cost)>=0?'#1a6a3a':'#c0304a')+'">سودِ تقریبی: <b>'+accMoney(t.total-cost)+'</b>'+(unknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخصه)':'')+'</span>';
+  }
+  el.innerHTML=h;
+}
+
+// ── ثبت فاکتور (تراکنش) ──
+function accSaveInvoice(){
+  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  if(ACC.saving)return;
+  accSyncDraft();
+  var d=ACC.draft,sale=d.type==='sale';
+  if(!d.partyId){accSetStat('طرف‌حساب رو انتخاب کن','err');return;}
+  var lines=[],stockNeed={};
+  for(var i=0;i<d.lines.length;i++){
+    var l=d.lines[i],q=accNum(l.qty),p=accNum(l.price);
+    if(!l.key&&!q&&!p&&!l.text)continue;
+    if(!l.key){accSetStat('ردیفِ '+accFa(i+1)+': کالا رو از پیشنهادها انتخاب کن','err');return;}
+    if(!(q>0)){accSetStat('ردیفِ '+accFa(i+1)+': تعداد رو وارد کن','err');return;}
+    if(!(p>0)){accSetStat('ردیفِ '+accFa(i+1)+': قیمتِ واحد رو وارد کن','err');return;}
+    lines.push({key:l.key,brand:l.brand,code:l.code,name:l.name,qty:q,price:p});
+    stockNeed[l.key]=(stockNeed[l.key]||0)+q;
+  }
+  if(!lines.length){accSetStat('حداقل یه کالا اضافه کن','err');return;}
+  var t=accDraftTotals();
+  if(t.pay>t.total){accSetStat('مبلغِ '+(sale?'دریافتی':'پرداختی')+' بیشتر از مبلغِ فاکتوره','err');return;}
+  if(sale){
+    var short=[];
+    Object.keys(stockNeed).forEach(function(k){var it=ACC.items[k],have=it?Number(it.qty)||0:0;if(have<stockNeed[k])short.push('کد '+(it?it.code:k)+' (موجودی '+accFa(have)+'، لازم '+accFa(stockNeed[k])+')');});
+    if(short.length&&!confirm('موجودیِ این کالاها کمتر از فاکتوره:\n'+short.join('\n')+'\nبازم ثبت کنم؟ (موجودی منفی می‌شه)'))return;
+  }
+  ACC.saving=true;
+  var btn=document.getElementById('ACC_F_SAVE');if(btn){btn.disabled=true;btn.textContent='⏳ در حال ثبت...';}
+  var cRef=db.collection('accMeta').doc('counters'),pRef=db.collection('accParties').doc(d.partyId),vRef=db.collection('accInvoices').doc();
+  var payRef=t.pay>0?db.collection('accPayments').doc():null;
+  var keys=Object.keys(stockNeed),iRefs=keys.map(function(k){return db.collection('accItems').doc(k);});
+  db.runTransaction(function(tx){
+    var reads=[tx.get(cRef),tx.get(pRef)].concat(iRefs.map(function(r){return tx.get(r);}));
+    return Promise.all(reads).then(function(snaps){
+      var cnt=snaps[0].exists?(snaps[0].data()||{}):{};
+      var field=sale?'sale':'purchase';
+      var num=(Number(cnt[field])||(sale?1000:0))+1;
+      if(!snaps[1].exists)throw new Error('طرف‌حساب پیدا نشد');
+      var party=snaps[1].data(),st={};
+      keys.forEach(function(k,ix){
+        var s=snaps[2+ix];
+        var base=s.exists?s.data():{brand:'',code:'',name:'',sellPrice:0,qty:0,avgCost:0,lastBuy:0};
+        st[k]={data:Object.assign({},base),exists:s.exists};
+      });
+      lines.forEach(function(l){
+        var it=st[l.key].data;
+        if(!st[l.key].exists){it.brand=l.brand;it.code=l.code;it.name=l.name||'';it.ts=Date.now();}
+      });
+      var costTotal=0,unknown=false,finalLines=[];
+      lines.forEach(function(l){
+        var it=st[l.key].data,qty=Number(it.qty)||0,avg=Number(it.avgCost)||0;
+        if(sale){
+          var cost=avg>0?avg:(Number(it.lastBuy)||0);
+          if(!(cost>0))unknown=true;
+          costTotal+=cost*l.qty;
+          it.qty=qty-l.qty;
+          finalLines.push({key:l.key,brand:l.brand,code:l.code,name:l.name,qty:l.qty,price:l.price,cost:cost});
+        }else{
+          var newAvg=qty>0?Math.round((qty*avg+l.qty*l.price)/(qty+l.qty)):l.price;
+          it.avgCost=newAvg;it.lastBuy=l.price;it.qty=qty+l.qty;
+          finalLines.push({key:l.key,brand:l.brand,code:l.code,name:l.name,qty:l.qty,price:l.price});
+        }
+      });
+      var inv={type:d.type,number:num,date:d.date,partyId:d.partyId,partyName:party.name,lines:finalLines,subtotal:t.sub,discount:t.disc,total:t.total,paid:t.pay,payMethod:t.pay>0?d.payMethod:'',note:d.note.trim(),status:'active',ts:Date.now()};
+      if(sale){inv.costTotal=costTotal;inv.profit=t.total-costTotal;inv.costUnknown=unknown;}
+      var bal=Number(party.balance)||0;
+      bal+=sale?(t.total-t.pay):-(t.total-t.pay);
+      keys.forEach(function(k){tx.set(db.collection('accItems').doc(k),st[k].data);});
+      tx.update(pRef,{balance:bal});
+      var c2=Object.assign({},cnt);c2[field]=num;tx.set(cRef,c2);
+      tx.set(vRef,inv);
+      if(payRef)tx.set(payRef,{date:d.date,partyId:d.partyId,partyName:party.name,direction:sale?'in':'out',method:d.payMethod,amount:t.pay,note:'همزمان با فاکتور '+num,invoiceId:vRef.id,status:'active',ts:Date.now()});
+    });
+  }).then(function(){
+    ACC.saving=false;var id=vRef.id;ACC.draft=null;ACC.view='invView';ACC.arg=id;
+    accReload('فاکتور ثبت شد ✅');
+  }).catch(function(e){
+    ACC.saving=false;console.error('accSaveInvoice',e);
+    var b=document.getElementById('ACC_F_SAVE');if(b){b.disabled=false;b.textContent='💾 ثبتِ فاکتور';}
+    accSetStat('ثبت ناموفق بود: '+(e&&e.message||e),'err');
+  });
+}
+
+// ── نمایش و ابطالِ فاکتور ──
+function accRenderInvView(){
+  var v=ACC.invoices.filter(function(x){return x.id===ACC.arg;})[0];
+  if(!v)return '<div class="nores">فاکتور پیدا نشد</div>';
+  var sale=v.type==='sale',adj=v.type==='adjust',cx=v.status==='cancelled';
+  var title=(adj?'تعدیل موجودی ':(sale?'فاکتور فروش ':'فاکتور خرید '))+accFa(v.number);
+  var h=(cx?'<div style="background:#fde8e8;color:#8b2020;border-radius:8px;padding:6px 10px;font-size:0.74rem;margin-bottom:8px">❌ این فاکتور ابطال شده</div>':'');
+  h+='<div style="font-size:0.74rem;line-height:2">تاریخ: <b>'+accDateDisp(v.date)+'</b>'+(v.partyName?' | '+(sale?'مشتری':'تأمین‌کننده')+': <b>'+accEsc(v.partyName)+'</b>':'')+'</div>';
+  var rows=(v.lines||[]).map(function(l){
+    return '<tr><td style="text-align:right">'+accEsc(l.code)+(l.name?' — '+accEsc(l.name):'')+'</td><td>'+accFa(l.qty)+'</td>'+(adj?'':'<td>'+accFa(l.price)+'</td><td>'+accFa((Number(l.qty)||0)*(Number(l.price)||0))+'</td>')+'</tr>';
+  }).join('');
+  h+='<div style="overflow-x:auto;margin:6px 0"><table style="width:100%;border-collapse:collapse;font-size:0.72rem;text-align:center"><thead><tr style="color:#9a6e3a"><th style="text-align:right">کالا</th><th>'+(adj?'تغییر':'تعداد')+'</th>'+(adj?'':'<th>قیمت</th><th>جمع</th>')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  if(!adj){
+    h+='<div style="font-size:0.78rem;line-height:2;background:rgba(212,168,122,0.15);border-radius:10px;padding:10px">جمعِ ردیف‌ها: <b>'+accMoney(v.subtotal)+'</b>'+(Number(v.discount)?'<br>تخفیف: <b>'+accMoney(v.discount)+'</b>':'')+'<br>مبلغِ نهایی: <b>'+accMoney(v.total)+'</b>'+(Number(v.paid)?'<br>'+(sale?'دریافتِ همزمان':'پرداختِ همزمان')+': <b>'+accMoney(v.paid)+'</b> ('+(ACC_METHODS[v.payMethod]||'')+')':'');
+    if(sale&&!cx)h+='<br><span style="color:'+(v.profit>=0?'#1a6a3a':'#c0304a')+'">سودِ این فاکتور: <b>'+accMoney(v.profit)+'</b>'+(v.costUnknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخص بود)':'')+'</span>';
+    h+='</div>';
+  }
+  if(v.note)h+='<div style="font-size:0.72rem;color:#9a6e3a;margin-top:6px">'+accEsc(v.note)+'</div>';
+  h+='<div style="margin-top:10px">';
+  if(v.partyId)h+='<button class="chip" onclick="accGo(\'partyView\',\''+accEsc(v.partyId)+'\')">👤 کارت حساب</button>';
+  if(!cx&&!adj)h+='<button class="chip" style="color:#c0304a" onclick="accCancelInvoice(\''+accEsc(v.id)+'\')">❌ ابطالِ فاکتور</button>';
+  h+='<button class="chip" onclick="accGo(\'inv\')">برگشت</button></div>';
+  if(!cx&&!adj)h+='<div style="font-size:0.66rem;color:#9a6e3a;margin-top:8px">ابطال، موجودی و مانده‌ی طرف‌حساب رو برمی‌گردونه. دریافت/پرداخت‌های ثبت‌شده جدا هستن و باید جداگانه ابطال بشن.</div>';
+  return accCard(title,h);
+}
+function accCancelInvoice(id){
+  var db=accDb();if(!db||ACC.saving)return;
+  var v=ACC.invoices.filter(function(x){return x.id===id;})[0];if(!v||v.status==='cancelled')return;
+  if(!confirm('فاکتور '+accFa(v.number)+' ابطال بشه؟'))return;
+  ACC.saving=true;
+  var vRef=db.collection('accInvoices').doc(id),pRef=db.collection('accParties').doc(v.partyId);
+  var keys=[];(v.lines||[]).forEach(function(l){if(keys.indexOf(l.key)<0)keys.push(l.key);});
+  var iRefs=keys.map(function(k){return db.collection('accItems').doc(k);});
+  db.runTransaction(function(tx){
+    return Promise.all([tx.get(vRef),tx.get(pRef)].concat(iRefs.map(function(r){return tx.get(r);}))).then(function(s){
+      if(!s[0].exists||s[0].data().status==='cancelled')throw new Error('قبلاً ابطال شده');
+      var inv=s[0].data(),sale=inv.type==='sale',st={};
+      keys.forEach(function(k,ix){var sn=s[2+ix];if(sn.exists)st[k]=Object.assign({},sn.data());});
+      (inv.lines||[]).forEach(function(l){
+        var it=st[l.key];if(!it)return;
+        it.qty=(Number(it.qty)||0)+(sale?Number(l.qty):-Number(l.qty));
+      });
+      keys.forEach(function(k){if(st[k])tx.set(db.collection('accItems').doc(k),st[k]);});
+      if(s[1].exists)tx.update(pRef,{balance:(Number(s[1].data().balance)||0)+(sale?-(Number(inv.total)||0):(Number(inv.total)||0))});
+      tx.update(vRef,{status:'cancelled',cancelledAt:Date.now()});
+    });
+  }).then(function(){ACC.saving=false;accReload('فاکتور ابطال شد ✅');}).catch(function(e){ACC.saving=false;console.error(e);accSetStat('ابطال ناموفق بود: '+(e&&e.message||e),'err');});
+}
+
+// ── گزارش و خروجی ──
+function accRenderReport(){
+  var rep=accReport(ACC.range),st=accStockSummary(),bl=accBalances();
+  var chips=Object.keys(ACC_RANGE_LABELS).map(function(k){return '<button type="button" class="chip'+(ACC.range===k?' on':'')+'" onclick="ACC.range=\''+k+'\';accRender()">'+ACC_RANGE_LABELS[k]+'</button>';}).join('');
+  var h='<div style="margin-bottom:8px">'+chips+'</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
+  h+=accStatBox('فروش',accMoney(rep.sales));
+  h+=accStatBox('هزینه‌ی کالای فروخته‌شده',accMoney(rep.cost));
+  h+=accStatBox('سودِ ناخالص'+(rep.unknown?' ⚠️':''),accMoney(rep.profit),rep.profit>=0?'#1a6a3a':'#c0304a');
+  h+=accStatBox('حاشیه‌ی سود',rep.sales?(Math.round(rep.profit/rep.sales*1000)/10).toLocaleString('fa-IR')+'٪':'—');
+  h+=accStatBox('خرید',accMoney(rep.purchases));
+  h+=accStatBox('ارزشِ انبار',accMoney(st.value));
+  h+='</div>';
+  var top=rep.top.map(function(t,i){return '<tr><td>'+accFa(i+1)+'</td><td style="text-align:right">'+accEsc(t.code)+(t.name?' — '+accEsc(t.name):'')+'</td><td>'+accFa(t.qty)+'</td><td>'+accFa(t.sales)+'</td></tr>';}).join('');
+  h+=accCard('🏆 پرفروش‌ها ('+ACC_RANGE_LABELS[ACC.range]+')',top?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.72rem;text-align:center"><thead><tr style="color:#9a6e3a"><th>#</th><th style="text-align:right">کالا</th><th>تعداد</th><th>فروش</th></tr></thead><tbody>'+top+'</tbody></table></div>':'<div style="font-size:0.72rem;color:#9a6e3a">فروشی ثبت نشده</div>');
+  var debt=accPartyList().filter(function(p){return Number(p.balance)!==0;}).sort(function(a,b){return Math.abs(b.balance)-Math.abs(a.balance);}).map(function(p){return '<tr style="cursor:pointer" onclick="accGo(\'partyView\',\''+accEsc(p.id)+'\')"><td style="text-align:right">'+accEsc(p.name)+'</td><td>'+accBalanceHtml(p.balance)+'</td></tr>';}).join('');
+  h+=accCard('💳 بدهی و طلب',(debt?'<table style="width:100%;border-collapse:collapse;font-size:0.74rem;text-align:center"><tbody>'+debt+'</tbody></table>':'<div style="font-size:0.72rem;color:#9a6e3a">همه تسویه‌ان</div>'));
+  var neg=Object.keys(ACC.items).map(function(k){return ACC.items[k];}).filter(function(it){return (Number(it.qty)||0)<0;});
+  if(neg.length)h+=accCard('⚠️ موجودیِ منفی',neg.map(function(it){return '<div style="font-size:0.74rem">کد '+accEsc(it.code)+' ('+accEsc(it.brand)+'): <b style="color:#c0304a">'+accFa(it.qty)+'</b></div>';}).join('')+'<div style="font-size:0.66rem;color:#9a6e3a;margin-top:4px">یعنی فروخته‌ی ولی هنوز خریدش رو ثبت نکردی.</div>');
+  h+=accCard('📤 خروجی (برای حسابدار) — فایل CSV که تو اکسل باز می‌شه','<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="chip" onclick="accExportCsv(\'invoices\')">فاکتورها</button><button class="chip" onclick="accExportCsv(\'items\')">انبار</button><button class="chip" onclick="accExportCsv(\'parties\')">طرف‌حساب‌ها</button><button class="chip" onclick="accExportCsv(\'payments\')">دریافت/پرداخت</button></div>');
+  return h;
+}
+function accCsvCell(v){var s=String(v==null?'':v).replace(/"/g,'""');return '"'+s+'"';}
+function accCsvFor(kind){
+  var rows=[];
+  if(kind==='items'){
+    rows.push(['برند','کد','نام','موجودی','میانگین قیمت خرید','آخرین قیمت خرید','قیمت فروش','ارزش موجودی']);
+    Object.keys(ACC.items).forEach(function(k){var it=ACC.items[k],q=Number(it.qty)||0;rows.push([it.brand,it.code,it.name||'',q,Number(it.avgCost)||0,Number(it.lastBuy)||0,Number(it.sellPrice)||0,q>0?q*(Number(it.avgCost)||0):0]);});
+  }else if(kind==='parties'){
+    rows.push(['نام','نوع','تلفن','مانده (مثبت=طلب ما)']);
+    accPartyList().forEach(function(p){rows.push([p.name,p.type==='supplier'?'تأمین‌کننده':'مشتری',p.phone||'',Number(p.balance)||0]);});
+  }else if(kind==='payments'){
+    rows.push(['تاریخ','طرف‌حساب','نوع','روش','مبلغ','وضعیت','توضیح']);
+    ACC.payments.forEach(function(m){rows.push([accDateDisp(m.date),m.partyName,m.direction==='in'?'دریافت':'پرداخت',ACC_METHODS[m.method]||'',Number(m.amount)||0,m.status==='cancelled'?'ابطال':'فعال',m.note||'']);});
+  }else{
+    rows.push(['شماره','نوع','تاریخ','طرف‌حساب','کد کالا','برند','تعداد','قیمت واحد','قیمت خرید (فروش)','جمع ردیف','تخفیف کل','مبلغ نهایی','سود فاکتور','وضعیت']);
+    ACC.invoices.forEach(function(v){
+      var tl=v.type==='sale'?'فروش':(v.type==='purchase'?'خرید':'تعدیل');
+      (v.lines||[]).forEach(function(l,i){rows.push([v.number,tl,accDateDisp(v.date),v.partyName||'',l.code,l.brand,l.qty,l.price,l.cost||'',(Number(l.qty)||0)*(Number(l.price)||0),i===0?(Number(v.discount)||0):'',i===0?(Number(v.total)||0):'',i===0&&v.type==='sale'?(Number(v.profit)||0):'',v.status==='cancelled'?'ابطال':'فعال']);});
+    });
+  }
+  return rows.map(function(r){return r.map(accCsvCell).join(',');}).join('\r\n');
+}
+function accExportCsv(kind){
+  var csv='\uFEFF'+accCsvFor(kind);
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='rozavie-'+kind+'-'+accTodayIso()+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+
 function allProds(){
   var all=[];
   TABS.forEach(function(t){getBrands(t).forEach(function(b){b.rows.forEach(function(r){r.brandName=b.name;r.tab=t;r.bid=b.bid;all.push(r);});});});
