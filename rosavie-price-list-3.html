@@ -347,6 +347,7 @@ input[type=file]{display:none}
   <style>@keyframes prodloadSlide{0%{margin-right:-35%}100%{margin-right:100%}}.prodload-indet{width:35%!important;animation:prodloadSlide 1.1s linear infinite}.prodload-ph{padding:22px 10px;text-align:center;color:#9a6e3a;font-size:0.8rem;border:1.5px dashed #d4a87a;border-radius:10px;margin:10px 0}</style>
   <span id="PRODLOAD_TEXT">در حال بارگذاری محصولات...</span>
   <button id="PRODLOAD_RETRY" type="button" onclick="retryProductLoad()" style="display:none;margin-right:8px;padding:2px 10px;border:none;border-radius:6px;background:#f9f0e8;color:#3d2b1f;font-weight:900;font-size:0.72rem;cursor:pointer">🔄 تلاش دوباره</button>
+  <button id="PRODLOAD_COMPAT" type="button" onclick="toggleFbCompatMode()" style="display:none;margin-right:6px;padding:2px 10px;border:none;border-radius:6px;background:#c0702a;color:#fff;font-weight:900;font-size:0.72rem;cursor:pointer">🔧 حالتِ سازگار</button>
   <div style="height:3px;background:rgba(255,255,255,0.25);border-radius:2px;margin-top:4px;overflow:hidden"><div id="PRODLOAD_FILL" style="height:100%;width:0%;background:#2a9d5c;transition:width 0.2s"></div></div>
 </div>
 <div class="hdr">
@@ -1119,10 +1120,13 @@ input[type=file]{display:none}
   </div>
 </div>
 <div class="pg" id="psettings">
-  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-08-09 06:00 — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
+  <div style="text-align:center;font-size:0.68rem;color:#c99a5e;background:#3d2b1f;padding:6px;border-radius:8px;margin-bottom:10px;font-weight:700">🏷️ نسخه فایل: 2026-11-04 (حسابداری + اصلاح اتصال) — اگه این تاریخ رو نمی‌بینی، فایلت قدیمیه، دوباره آپلود کن</div>  <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔥 اتصال به فروشگاه آنلاین (Firebase) — مرحله آزمایشی</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">داریم سایت زنده‌ی مشتریان رو با Firebase می‌سازیم. اول این دکمه رو بزن تا مطمئن بشیم اپ مدیریت درست به سرور وصل می‌شه؛ بعدش سراغ سینک کردن محصولات می‌ریم.</p>
     <button class="sbig stg" onclick="testFirebaseConnection()">🔌 تست اتصال به سرور</button>
     <div class="stat" id="FBSTAT"></div>
+    <div id="FB_COMPAT_LABEL" style="font-size:0.74rem;color:#9a6e3a;margin:8px 0 4px">حالتِ اتصال: عادی (خودکار)</div>
+    <button class="sbig" id="FB_COMPAT_BTN" style="background:#c0702a;color:#fff;margin-top:0" onclick="toggleFbCompatMode()">🔧 روشن‌کردنِ حالتِ سازگار</button>
+    <div style="font-size:0.68rem;color:#9a6e3a;line-height:1.7">اگه نوارِ بالای صفحه می‌گه «اتصال کنده» یا تستِ اتصال گیر می‌کنه، این حالت رو روشن کن. اتصال رو برای فیلترشکن‌های ضعیف مقاوم‌تر می‌کنه.</div>
   </div>
   <div class="card" style="border:2px solid #4a9dff"><div class="ctitle">🔄 همگام‌سازی محصولات با سایت آنلاین</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:9px">✅ از الان به بعد، هر محصولی که اضافه/ویرایش/حذف کنی (تو هر پنلی، خودت یا تیم)، خودکار و فوری با سرور همگام می‌شه — همیشه، بدون نیاز به هیچ تنظیمی. این دکمه فقط برای یه همگام‌سازیِ کامل و دستیِ کل لیست قیمته (مثلاً بعد از یه مشکل شبکه‌ای که چندتا محصول جا مونده باشن).</p>
@@ -1303,32 +1307,95 @@ function initFirebase(){
     if(typeof firebase==='undefined')return false;
     fbApp=firebase.apps&&firebase.apps.length?firebase.apps[0]:firebase.initializeApp(firebaseConfig);
     fbDb=firebase.firestore();
+    try{fbDb.settings(fbCompatOn()?{experimentalForceLongPolling:true}:{experimentalAutoDetectLongPolling:true});}
+    catch(se){console.warn('firestore settings skipped',se);}
     return true;
   }catch(e){console.error('firebase init error',e);return false;}
 }
+// ── حالتِ اتصالِ «سازگار» (long-polling): برای اینترنت/فیلترشکن‌هایی که اتصالِ زنده‌ی فایربیس رو گیر می‌ندازن ──
+var FB_COMPAT_KEY='rv_fb_compat';
+var FB_TEST_MS={google:8000,read:20000,write:15000};
+function fbCompatOn(){try{return localStorage.getItem(FB_COMPAT_KEY)==='1';}catch(e){return false;}}
+function setFbCompatMode(on,noReload){
+  try{localStorage.setItem(FB_COMPAT_KEY,on?'1':'0');}catch(e){}
+  if(!noReload)location.reload();
+}
+function toggleFbCompatMode(){
+  var on=!fbCompatOn();
+  if(!confirm(on?'حالتِ سازگار روشن بشه؟ صفحه یه بار دوباره باز می‌شه. (برای اینترنت یا فیلترشکنِ ضعیف)':'برگردیم به حالتِ عادی؟ صفحه یه بار دوباره باز می‌شه.'))return;
+  setFbCompatMode(on);
+}
+function refreshFbCompatLabel(){
+  var el=document.getElementById('FB_COMPAT_LABEL');
+  if(el)el.textContent=fbCompatOn()?'حالتِ اتصال: سازگار ✅ (long-polling)':'حالتِ اتصال: عادی (خودکار)';
+  var b=document.getElementById('FB_COMPAT_BTN');
+  if(b)b.textContent=fbCompatOn()?'↩️ برگشت به حالتِ عادی':'🔧 روشن‌کردنِ حالتِ سازگار';
+}
+function withTimeout(p,ms,label){
+  return new Promise(function(res,rej){
+    var t=setTimeout(function(){rej(new Error('timeout:'+label));},ms);
+    p.then(function(v){clearTimeout(t);res(v);},function(e){clearTimeout(t);rej(e);});
+  });
+}
+function fbReachGoogle(){
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  var p;
+  try{p=fetch('https://firestore.googleapis.com/?_='+Date.now(),{mode:'no-cors',cache:'no-store',signal:ctrl?ctrl.signal:undefined});}
+  catch(e){return Promise.resolve(false);}
+  return withTimeout(p,FB_TEST_MS.google,'google').then(function(){return true;}).catch(function(){if(ctrl){try{ctrl.abort();}catch(e){}}return false;});
+}
 function testFirebaseConnection(){
   var stat=document.getElementById('FBSTAT');
-  stat.textContent='در حال اتصال به سرور...';stat.className='stat sload';
+  var lines=[];
+  function show(extra,cls){stat.innerHTML=lines.join('<br>')+(extra?'<br>'+extra:'');stat.className='stat '+(cls||'sload');}
+  var compatBtn='<br><button class="sbig" style="margin-top:6px;background:#c0702a;color:#fff" onclick="toggleFbCompatMode()">'+(fbCompatOn()?'↩️ برگشت به حالتِ عادی':'🔧 روشن‌کردنِ حالتِ سازگار')+'</button>';
+  refreshFbCompatLabel();
+  show('⏳ در حال بررسی...');
   if(!initFirebase()){
-    stat.textContent='خطا: کتابخانه Firebase بارگذاری نشد (اینترنت رو چک کن و دوباره امتحان کن)';
-    stat.className='stat serr';
-    return;
+    lines.push('❌ کتابخانه‌ی Firebase بارگذاری نشد (اینترنت یا فیلترشکن رو چک کن و صفحه رو دوباره باز کن)');
+    show('','serr');return;
   }
-  fbDb.collection('test').doc('ping').set({message:'سلام از اپ مدیریت رزاوی',time:new Date().toISOString()})
-    .then(function(){return fbDb.collection('test').doc('ping').get();})
-    .then(function(doc){
-      if(doc.exists){
-        stat.textContent='اتصال به سرور موفق بود ✅ (نوشتن و خواندن تست شد)';
-        stat.className='stat sok';
-      }else{
-        stat.textContent='نوشتن انجام شد ولی خواندن دوباره جواب نداد';
-        stat.className='stat serr';
-      }
-    })
-    .catch(function(err){
-      stat.textContent='خطا در اتصال: '+(err&&err.message?err.message:err);
-      stat.className='stat serr';
+  if(navigator.onLine===false){
+    lines.push('📵 اینترنتِ گوشی قطعه');
+    show('اینترنت رو وصل کن و دوباره امتحان کن.','serr');return;
+  }
+  lines.push('✅ اینترنتِ گوشی وصله');
+  show('⏳ بررسیِ دسترسی به گوگل...');
+  var googleOk=false;
+  fbReachGoogle().then(function(ok){
+    googleOk=ok;
+    lines.push(ok?'✅ به سرورهای گوگل می‌رسه':'❌ به سرورهای گوگل نمی‌رسه');
+    show('⏳ تستِ خواندن از فایربیس...');
+    var t0=Date.now();
+    return withTimeout(fbDb.collection('products').limit(1).get({source:'server'}),FB_TEST_MS.read,'read').then(function(){
+      lines.push('✅ فایربیس جواب داد ('+(Math.round((Date.now()-t0)/100)/10)+' ثانیه)');
     });
+  }).then(function(){
+    if(CURRENT_ROLE)return null;
+    show('⏳ تستِ نوشتن...');
+    var ref=fbDb.collection('test').doc('ping');
+    return withTimeout(ref.set({message:'سلام از اپ مدیریت رزاوی',time:new Date().toISOString()}),FB_TEST_MS.write,'write')
+      .then(function(){return withTimeout(ref.get(),FB_TEST_MS.write,'write-read');})
+      .then(function(doc){
+        if(doc.exists)lines.push('✅ نوشتن و خواندن موفق بود');
+        else lines.push('⚠️ نوشتن انجام شد ولی خواندنِ دوباره جواب نداد');
+      });
+  }).then(function(){
+    show('🎉 اتصال سالمه.','sok');
+  }).catch(function(err){
+    var msg=String(err&&err.message||err);
+    var timedOut=/^timeout:/.test(msg);
+    if(!googleOk){
+      lines.push(timedOut?'❌ فایربیس جواب نداد':'❌ فایربیس وصل نشد');
+      show('👉 این اینترنت یا فیلترشکن به گوگل نمی‌رسه. فیلترشکن رو روشن کن، یا یه فیلترشکنِ دیگه (یا پروتکلِ دیگه) امتحان کن.','serr');
+    }else if(timedOut){
+      lines.push('❌ فایربیس جواب نداد (گیر کرد)');
+      show('👉 گوگل در دسترسه ولی اتصالِ زنده‌ی فایربیس گیر می‌کنه. معمولاً با «حالتِ سازگار» درست می‌شه:'+compatBtn,'serr');
+    }else{
+      lines.push('❌ خطا: '+msg);
+      show((/permission/i.test(msg)?'👉 قوانینِ فایربیس (Rules) این بخش رو اجازه نمی‌ده.':'')+(googleOk?compatBtn:''),'serr');
+    }
+  });
 }
 
 // ── بررسی خودکار و دوره‌ای اتصال به سرور (آیکون زنجیر + دایره سبز/قرمز شناور) ──
@@ -9764,12 +9831,15 @@ function tickProductFetchIndicator(){
   if(!txt)return;
   if(secs<12){txt.textContent='⏳ در حال دریافت محصولات از سرور... '+secs+' ثانیه';}
   else{txt.textContent='🐢 اتصال کنده، هنوز منتظر سرورم... '+secs+' ثانیه';if(retry)retry.style.display='inline-block';}
+  var cb=document.getElementById('PRODLOAD_COMPAT');
+  if(cb){cb.style.display=(secs>=20)?'inline-block':'none';cb.textContent=fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار';}
 }
 function stopProductFetchIndicator(){
   clearInterval(PRODLOAD_TIMER);PRODLOAD_TIMER=null;
-  var fill=document.getElementById('PRODLOAD_FILL'),retry=document.getElementById('PRODLOAD_RETRY');
+  var fill=document.getElementById('PRODLOAD_FILL'),retry=document.getElementById('PRODLOAD_RETRY'),cb2=document.getElementById('PRODLOAD_COMPAT');
   if(fill){fill.classList.remove('prodload-indet');fill.style.width='0%';}
   if(retry)retry.style.display='none';
+  if(cb2)cb2.style.display='none';
 }
 function clearTabPlaceholder(tab){
   var box=document.getElementById('BB-'+tab);
@@ -9783,6 +9853,7 @@ function showProductLoadError(){
   if(bar){bar.style.display='block';bar.style.background='#8a1f35';}
   if(txt)txt.textContent='❌ دریافتِ محصولات ناموفق بود — اینترنت رو چک کن. (فرم‌های خالیِ پایین واقعی نیستن)';
   if(retry)retry.style.display='inline-block';
+  var cb3=document.getElementById('PRODLOAD_COMPAT');if(cb3){cb3.style.display='inline-block';cb3.textContent=fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار';}
 }
 function retryProductLoad(){
   _loading=true;

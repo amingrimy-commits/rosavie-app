@@ -550,6 +550,10 @@ function openInRealBrowser(){
 var firebaseConfig={apiKey:"AIzaSyCNFSPZFDSCrhVloy-3yv0rUGcKIzSz50A",authDomain:"rosavie-app.firebaseapp.com",projectId:"rosavie-app",storageBucket:"rosavie-app.firebasestorage.app",messagingSenderId:"559569944295",appId:"1:559569944295:web:ffee7e8bd00ae61ed12c42"};
 firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore();
+try{
+  var _fbCompat=false;try{_fbCompat=localStorage.getItem('rv_fb_compat')==='1';}catch(e){}
+  db.settings(_fbCompat?{experimentalForceLongPolling:true}:{experimentalAutoDetectLongPolling:true});
+}catch(_se){console.warn('firestore settings skipped',_se);}
 
 var CATS=[
   {v:'all',l:'همه',tab:null,type:null},
