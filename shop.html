@@ -332,6 +332,14 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .vip-discount-badge{position:absolute;top:7px;left:7px;background:#e0304f;color:#fff;font-size:0.6rem;font-weight:900;padding:2px 7px;border-radius:7px;z-index:2}
 .vip-pct-badge{position:absolute;top:7px;left:7px;background:#ff1744;color:#fff;font-size:0.66rem;font-weight:900;padding:3px 8px;border-radius:8px;z-index:2;box-shadow:0 2px 6px rgba(255,23,68,0.4)}
 .vip-countdown{margin-top:6px;font-size:0.66rem;font-weight:800;color:#fff;background:#e0304f;padding:3px 7px;border-radius:7px;display:inline-block;direction:ltr}
+.pdp-boxes{margin:8px 0 2px}
+.pdp-offer{display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg,#ffe3e8,#fff1f3);border-top:3px solid #ef3b57;border-radius:12px;padding:10px 12px;margin-bottom:8px;color:#c4143a;font-weight:900;font-size:0.82rem}
+.pdp-offer-cd{font-size:0.9rem;direction:ltr;white-space:nowrap}
+.pdp-offer-link{cursor:pointer}
+.pdp-stock{display:flex;align-items:center;gap:6px;background:#fff4e0;border:1.5px solid #f0a64a;border-radius:12px;padding:9px 12px;margin-bottom:8px;color:#a35a00;font-weight:900;font-size:0.8rem}
+.pdp-price-offer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pdp-old{color:#9aa0a6;text-decoration:line-through;font-size:0.8rem;font-weight:700}
+.pdp-badge{background:#ef3b57;color:#fff;border-radius:12px;padding:2px 8px;font-size:0.74rem;font-weight:900}
 </style>
 </head>
 <body>
@@ -554,6 +562,23 @@ try{
   var _fbCompat=false;try{_fbCompat=localStorage.getItem('rv_fb_compat')==='1';}catch(e){}
   db.settings(_fbCompat?{experimentalForceLongPolling:true}:{experimentalAutoDetectLongPolling:true});
 }catch(_se){console.warn('firestore settings skipped',_se);}
+var STOCK_LEFT={};
+function shopStockKey(p){
+  function san(x){var o=String(x).trim().replace(/[\/\s]+/g,'-').replace(/[^\w\-.\u0600-\u06FF]/g,'');return o.slice(0,120)||'x';}
+  function en(x){return String(x==null?'':x).replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d);}).replace(/[٠-٩]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'.indexOf(d);});}
+  return san(en(String(p.brand||'').trim()))+'__'+san(en(String(p.code||'').trim()));
+}
+function loadStockLeft(){
+  try{
+    db.collection('stockPublic').get({source:'server'}).then(function(snap){
+      var m={};
+      snap.forEach(function(d){var l=Number(d.data().left);if(l>0&&l<12)m[d.id]=l;});
+      STOCK_LEFT=m;
+      try{refreshPdpBoxes();}catch(e){}
+    }).catch(function(e){console.warn('stockPublic',e);});
+  }catch(e){console.warn('stockPublic',e);}
+}
+loadStockLeft();
 
 var CATS=[
   {v:'all',l:'همه',tab:null,type:null},
@@ -1177,6 +1202,46 @@ function switchVariant(idx){
   window._CURVARIANT=idx;
   renderModalContent();
 }
+function faNum(n){return String(n).replace(/[0-9]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});}
+function pdpNum(v){return parseInt(String(v==null?'':v).replace(/[^\d]/g,''),10)||0;}
+function pdpOfferInfo(p){
+  var now=Date.now(),vip=null;
+  (LAST_VIP_DATA||[]).forEach(function(v){if(!vip&&v&&v.code===p.code&&(!v.expiresAt||v.expiresAt>now))vip=v;});
+  var orig=pdpNum(p.origPrice),cur=pdpNum(p.price);
+  if(p.isOffer&&orig>cur&&cur>0)return {mode:'active',orig:orig,cur:cur,pct:Math.round((1-cur/orig)*100),exp:(vip&&vip.expiresAt)||0};
+  if(vip){
+    var d=pdpNum(vip.discountPrice),pr=pdpNum(vip.price);
+    if(d>0&&pr>d)return {mode:'hint',orig:pr,cur:d,pct:Math.round((1-d/pr)*100),exp:vip.expiresAt||0,disc:String(vip.discountPrice)};
+  }
+  return null;
+}
+function pdpBoxesHTML(p){
+  var h='',o=pdpOfferInfo(p);
+  if(o){
+    var cd=o.exp?('<span class="pdp-offer-cd" data-exp="'+o.exp+'">⏱ '+fmtCountdown(o.exp-Date.now())+'</span>'):'';
+    if(o.mode==='active')h+='<div class="pdp-offer"><span>⚡ پیشنهاد شگفت‌انگیز · '+faNum(o.pct)+'٪ تخفیف</span>'+cd+'</div>';
+    else h+='<div class="pdp-offer pdp-offer-link" onclick="navTo(\'p~\'+encodeURIComponent(\''+String(p.code).replace(/'/g,"\\'")+'\')+\'~\'+encodeURIComponent(\''+String(o.disc).replace(/'/g,"\\'")+'\'))"><span>⚡ پیشنهاد شگفت‌انگیز · '+faNum(o.pct)+'٪ تخفیف — مشاهده با قیمتِ ویژه ›</span>'+cd+'</div>';
+  }
+  var left=STOCK_LEFT[shopStockKey(p)];
+  if(left>0&&left<12)h+='<div class="pdp-stock">🔥 تنها '+faNum(left)+' عدد در انبار باقی مانده</div>';
+  return h;
+}
+function pdpPriceHTML(p){
+  var o=pdpOfferInfo(p);
+  if(o&&o.mode==='active')return '<div class="modal-price pdp-price-offer"><span class="pdp-old">'+fmtP(o.orig)+'</span><span class="pdp-badge">'+faNum(o.pct)+'٪</span><span>'+fmtP(o.cur)+'</span></div>';
+  return '<div class="modal-price">'+fmtP(p.price)+'</div>';
+}
+function refreshPdpBoxes(){
+  var b=document.getElementById('PDP_BOXES');
+  if(b&&window._CURP)b.innerHTML=pdpBoxesHTML(window._CURP);
+}
+setInterval(function(){
+  document.querySelectorAll('.pdp-offer-cd').forEach(function(el){
+    var rem=Number(el.getAttribute('data-exp'))-Date.now();
+    el.textContent='⏱ '+fmtCountdown(rem);
+    if(rem<=0)refreshPdpBoxes();
+  });
+},1000);
 function renderModalContent(){
   var group=window._CURGROUP;
   var p=group[window._CURVARIANT];
@@ -1271,11 +1336,12 @@ function renderModalContent(){
         '<div class="modal-img-dots"><span class="modal-img-dot on" onclick="setModalImgIdx(0)"></span><span class="modal-img-dot" onclick="setModalImgIdx(1)"></span></div>'
       ):'')+
       '</div>'):'')+
+    '<div id="PDP_BOXES" class="pdp-boxes">'+pdpBoxesHTML(p)+'</div>'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div class="modal-name" style="flex:1">'+nm+'</div>'+
       '<button onclick="toggleWishlist(\''+p.code+'\',this)" style="background:none;border:none;padding:4px;cursor:pointer;flex-shrink:0" id="WISH_BTN_'+p.code+'">'+(isInWishlist(p.code)?HEART_ON_ICON:HEART_OFF_ICON)+'</button></div>'+
     '<div onclick="shareProductByCode(\''+p.code+'\')" style="display:flex;align-items:center;gap:6px;color:#8a7a6c;font-size:0.76rem;cursor:pointer;margin:4px 0 8px">'+SHARE_ICON+'<span>اشتراک‌گذاری این محصول</span></div>'+
     (p.brand?'<div class="modal-brand" style="cursor:pointer;text-decoration:underline" onclick="navTo(\'list~brand~\'+encodeURIComponent(\''+p.brand.replace(/'/g,"\\'")+'\')+\'~_\')">'+p.brand+'</div>':'')+
-    '<div class="modal-price">'+fmtP(p.price)+'</div>'+
+    pdpPriceHTML(p)+
     variantHTML+
     orderSectionHTML+
     '<div class="modal-actions">'+
@@ -1559,7 +1625,7 @@ function fetchProductByCodeDirect(code,discountPrice){
     snap.forEach(function(doc){group.push(doc.data());});
     mergeIntoGlobalProducts(group);
     if(discountPrice){
-      group=group.map(function(pp){var c=Object.assign({},pp);c.price=discountPrice;return c;});
+      group=group.map(function(pp){var c=Object.assign({},pp);c.origPrice=pp.price;c.isOffer=true;c.price=discountPrice;return c;});
     }
     openModalForGroupInternal(group);
     showOverlay('MODAL_OV');
@@ -1609,7 +1675,7 @@ function renderRoute(){
     }
     if(parts[2]){
       var disc=parts[2];
-      group=group.map(function(pp){var c=Object.assign({},pp);c.price=disc;return c;});
+      group=group.map(function(pp){var c=Object.assign({},pp);c.origPrice=pp.price;c.isOffer=true;c.price=disc;return c;});
     }
     openModalForGroupInternal(group);
     showOverlay('MODAL_OV');
@@ -3746,6 +3812,7 @@ function fmtCountdown(ms){
 }
 function renderVip(vip){
   LAST_VIP_DATA=vip||[];
+  setTimeout(function(){try{refreshPdpBoxes();}catch(e){}},0);
   var sec=document.getElementById('VIP_SECTION');
   var now=Date.now();
   var valid=LAST_VIP_DATA.filter(function(v){return v&&v.code&&(!v.expiresAt||v.expiresAt>now);});
