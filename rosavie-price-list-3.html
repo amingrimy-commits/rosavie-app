@@ -1570,6 +1570,7 @@ function rvEnsureUI(){
   var ban=document.createElement('div');ban.id='RVNET_BANNER';ban.style.display='none';document.body.appendChild(ban);
   var pill=document.createElement('div');pill.id='RVNET_PILL';pill.innerHTML='<span class="rv-dot"></span><span id="RVNET_PILL_T"></span>';pill.onclick=rvTogglePanel;document.body.appendChild(pill);
   var pan=document.createElement('div');pan.id='RVNET_PANEL';pan.style.display='none';document.body.appendChild(pan);
+  var nl=document.getElementById('NOTIF_LIST');if(nl)nl.setAttribute('data-rv-noload','1');
 }
 function rvRender(){
   if(!RVNET.ui)return;
@@ -1637,6 +1638,8 @@ var RV_SPIN_SET=new Set(),RV_SCAN_Q=new Set(),RV_SCAN_T=null;
 function rvOwnText(el){var s='';for(var n=el.firstChild;n;n=n.nextSibling){if(n.nodeType===3)s+=n.data;}return s;}
 function rvCheckEl(el){
   if(!el||el.nodeType!==1)return;
+  // متن‌هایی که فقط «درباره‌ی» لودن (اعلانِ به‌روزرسانی، تاریخچه‌ی اعلان‌ها) چرخنده نمی‌گیرن
+  if(el.closest&&el.closest('[data-rv-noload]')){if(el.classList.contains('rv-loading')){el.classList.remove('rv-loading');RV_SPIN_SET.delete(el);}return;}
   var tag=el.tagName;if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT'||tag==='OPTION')return;
   if(el.id==='RVNET_PANEL'||el.id==='RVNET_BANNER'||el.id==='RVNET_PILL'||el.id==='RV_TOPBAR')return;
   var own=rvOwnText(el);
@@ -1659,6 +1662,7 @@ function rvCheckEl(el){
 }
 function rvScan(root,depth){
   if(!root)return;
+  if(root.nodeType===1&&root.closest&&root.closest('[data-rv-noload]'))return;
   if(root.nodeType===3){if(root.parentNode&&root.parentNode.nodeType===1)rvCheckEl(root.parentNode);return;}
   if(root.nodeType!==1)return;
   var tag=root.tagName;if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT')return;
@@ -1713,6 +1717,101 @@ function rvNetStart(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 whenAdminReady(rvNetStart);
+
+
+// ══════════ اعلانِ «پنل به‌روز شد»: بعد از هر به‌روزرسانی یک‌بار وسطِ صفحه + بعدش تو تاریخچه‌ی اعلان‌ها ══════════
+// هر نسخه‌ی جدید که آپلود می‌شه، یه ردیف به ابتدای PANEL_RELEASES اضافه می‌شه (id باید از قبلی بزرگ‌تر باشه).
+var PANEL_RELEASES=[
+  {id:'2026-11-11',date:'2026-11-11',title:'به‌روزرسانیِ بزرگِ پنل و سایت',
+   news:[
+    'انتخاب از انبار تو «تولید محتوا»: کالا رو با کد، برند یا اسم پیدا کن؛ برند، کد، عنوان و عکس خودکار پر می‌شن.',
+    'یادآوریِ «این محصول قبلاً تولید محتوا شده» با دو گزینه‌ی «🔁 ارسال دوباره» و «✏️ ویرایش».',
+    'لودِ سبکِ محصولات برای گوشی‌های ضعیف: فقط اطلاعات و عکسِ کوچک میاد و عکسِ بزرگ موقعِ نیاز. (مدیر: «🌐 سایت ← 🪶 سبک‌سازیِ عکس محصولات»)',
+    'نگینِ وضعیتِ اتصال (پایینِ صفحه): هر ۲ ثانیه اتصال چک می‌شه، لودِ ناموفق خودش دوباره تلاش می‌کنه و علتِ دقیقِ خطا با دکمه‌ی «📋 کپیِ گزارش» دیده می‌شه.',
+    'چرخنده‌ی متحرک برای هر «در حال …» (جستجو، آپلود، ارسال...) و یه نوارِ باریک بالای صفحه تا بفهمی داره لود می‌شه.',
+    'لیستِ رنگ‌ها ۱۱۵ رنگ تو ۱۱ دسته با نقطه‌ی رنگ (از جمله کاراملی، نود، بژ، شتری، خردلی و...).',
+    'بنرها: دکمه‌ی «🔄 همگام‌سازی بنرها با سایت»، پیامِ دقیقِ موفقیت/خطا، و کوچک‌سازیِ خودکارِ عکسِ بنر.',
+    'کپشن بسته‌ی میکس: عنوان/ترکیبِ بسته بالای «سایز: تعداد × قیمت» میاد و رنگِ مشخصات فقط یک بار نوشته می‌شه.',
+    'سایتِ مشتری: مسیرِ دسته‌بندی بالای محصول، «تنها N عدد مونده»، پیشنهادِ شگفت‌انگیز با شمارنده و سقفِ سفارش به اندازه‌ی موجودی.',
+    'همین اعلانِ به‌روزرسانی: هر نسخه‌ی تازه یک‌بار نشون داده می‌شه و بعدش تو «اعلان‌ها» (🔔) می‌مونه.'
+   ],
+   fixes:[
+    'جستجوی انبار: کدِ کامل (مثلاً ۹۰۸۳) هم پیدا می‌شه؛ قبلاً فقط بخشی از کد جواب می‌داد.',
+    'بنرِ جدید که گاهی به سایت نمی‌رسید (حجمِ زیاد) و اعلانِ بنر که بی‌صدا ارسال نمی‌شد.',
+    'کپشن: رنگ‌ها دو بار نوشته می‌شدن و قیمتِ بسته‌ی میکس (تعداد × قیمت) تو کپشن نمی‌اومد.',
+    '«همگام‌سازیِ کامل» وقتی محصولات از سرور نیومده بودن می‌تونست محصولاتِ سرور رو پاک کنه؛ الان قفل می‌شه.',
+    'تنظیماتِ تلگرام، وظایف و مشتری‌ها (اتصالِ زنده‌ی فایربیس) با یه خطا برای همیشه از کار نمی‌افتن.',
+    'پنل موقعِ باز شدن محصولات رو دو بار کامل می‌خوند و گوشی رو سنگین می‌کرد؛ حذف شد.',
+    'نقطه‌ی رنگِ بنفش، یاسی، گلبه‌ای و سبز نعنایی تو سایت نمی‌اومد.'
+   ]}
+];
+function rvRelDate(r){try{return new Date(r.date+'T12:00:00').toLocaleDateString('fa-IR');}catch(e){return r.date;}}
+function rvSortedReleases(){return PANEL_RELEASES.slice().sort(function(x,y){return x.id<y.id?1:(x.id>y.id?-1:0);});}
+function rvUserKey(){
+  var e='';try{var u=firebase.auth().currentUser;e=(u&&u.email)||'';}catch(x){}
+  return 'rv_seen_rel:'+String(e||window.CURRENT_ROLE||'x').toLowerCase();
+}
+var RV_UPD_CSS="#RV_UPD_OV{position:fixed;left:0;top:0;right:0;bottom:0;z-index:100002;background:rgba(30,20,15,.62);display:flex;align-items:center;justify-content:center;padding:16px;direction:rtl}"+
+".rv-upd-box{background:#fffaf2;border:2px solid #d4a87a;border-radius:18px;width:min(94vw,430px);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden;font-family:inherit}"+
+".rv-upd-head{background:linear-gradient(135deg,#b0517a,#d4799b);color:#fff;padding:14px 16px;text-align:center}.rv-upd-head h2{margin:0;font-size:1.05rem}.rv-upd-head p{margin:4px 0 0;font-size:.74rem;opacity:.92}"+
+".rv-upd-body{padding:10px 16px 4px;overflow:auto;font-size:.8rem;line-height:1.95;color:#3d2b1f}.rv-upd-body h3{margin:10px 0 2px;font-size:.84rem;color:#b0517a}.rv-upd-body h4{margin:8px 0 3px;font-size:.84rem}"+
+".rv-upd-body ul{margin:0;padding:0;list-style:none}.rv-upd-body li{position:relative;padding:3px 22px 3px 0;border-bottom:1px dashed #eadcc5}.rv-upd-body li:last-child{border-bottom:none}.rv-upd-body .rv-new li:before{content:'✨';position:absolute;right:0;top:3px}.rv-upd-body .rv-fix li:before{content:'🛠️';position:absolute;right:0;top:3px}"+
+".rv-upd-foot{padding:10px 16px 14px;text-align:center;border-top:1px solid #eadcc5}.rv-upd-foot button{background:#3d2b1f;color:#fff;border:none;border-radius:12px;padding:10px 26px;font:900 .86rem inherit;font-family:inherit;cursor:pointer}.rv-upd-foot small{display:block;margin-top:7px;color:#9a6e3a;font-size:.68rem}";
+function rvCloseUpdateModal(){var o=document.getElementById('RV_UPD_OV');if(o)o.remove();}
+function rvRenderUpdateModal(list,fromHistory){
+  rvCloseUpdateModal();
+  if(!document.getElementById('RV_UPD_CSS')){var st=document.createElement('style');st.id='RV_UPD_CSS';st.textContent=RV_UPD_CSS;document.head.appendChild(st);}
+  var ov=document.createElement('div');ov.id='RV_UPD_OV';ov.setAttribute('data-rv-noload','1');ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
+  var box=document.createElement('div');box.className='rv-upd-box';ov.appendChild(box);
+  var head=document.createElement('div');head.className='rv-upd-head';
+  var h2=document.createElement('h2');h2.textContent=fromHistory?'🆕 فهرستِ به‌روزرسانی':'🆕 پنل رُزاوی به‌روز شد';
+  var sub=document.createElement('p');
+  sub.textContent=list.length===1?('نسخه‌ی '+rvRelDate(list[0])+' — '+list[0].title):(list.length+' به‌روزرسانی از آخرین باری که پنل رو دیدی');
+  head.appendChild(h2);head.appendChild(sub);box.appendChild(head);
+  var body=document.createElement('div');body.className='rv-upd-body';box.appendChild(body);
+  function block(title,items,cls){
+    if(!items||!items.length)return;
+    var h=document.createElement('h4');h.textContent=title+' ('+items.length+')';body.appendChild(h);
+    var ul=document.createElement('ul');ul.className=cls;
+    items.forEach(function(t){var li=document.createElement('li');li.textContent=t;ul.appendChild(li);});
+    body.appendChild(ul);
+  }
+  list.forEach(function(r){
+    if(list.length>1){var h3=document.createElement('h3');h3.textContent='نسخه‌ی '+rvRelDate(r)+' — '+r.title;body.appendChild(h3);}
+    block('✨ امکانات جدید',r.news,'rv-new');
+    block('🛠️ مشکلات رفع‌شده',r.fixes,'rv-fix');
+  });
+  var foot=document.createElement('div');foot.className='rv-upd-foot';
+  var btn=document.createElement('button');btn.type='button';btn.id='RV_UPD_OK';btn.textContent='متوجه شدم ✅';btn.onclick=rvCloseUpdateModal;
+  var sm=document.createElement('small');sm.textContent=fromHistory?'این فهرست همیشه تو «اعلان‌ها» (🔔) می‌مونه.':'این پیام فقط یک‌بار نشون داده می‌شه؛ بعداً تو «اعلان‌ها» (🔔) هم می‌تونی ببینیش.';
+  foot.appendChild(btn);foot.appendChild(sm);box.appendChild(foot);
+  document.body.appendChild(ov);
+  try{btn.focus();}catch(e){}
+}
+function rvOpenRelease(id){
+  var r=PANEL_RELEASES.filter(function(x){return x.id===id;})[0];
+  if(r)rvRenderUpdateModal([r],true);
+}
+function rvNotifAct(act){
+  act=String(act||'');
+  if(act.indexOf('upd:')===0){try{closeNotifPanel();}catch(e){}rvOpenRelease(act.slice(4));}
+}
+function rvShowUpdateIfNeeded(){
+  if(window.__RV_NO_UPDATE_NOTICE||document.getElementById('RV_UPD_OV'))return false;
+  var rel=rvSortedReleases();if(!rel.length)return false;
+  var key=rvUserKey(),seen='';
+  try{seen=localStorage.getItem(key)||'';}catch(e){}
+  var list=seen?rel.filter(function(r){return r.id>seen;}).slice(0,3):rel.slice(0,1);
+  if(!list.length)return false;
+  try{localStorage.setItem(key,rel[0].id);}catch(e){}     // همین الان «دیده شد» ثبت می‌شه تا فقط یک‌بار نشون داده بشه
+  list.slice().reverse().forEach(function(r){
+    if(ADM_NOTIFS.some(function(n){return n.act==='upd:'+r.id;}))return;
+    addNotif('🆕 پنل به‌روز شد — نسخه‌ی '+rvRelDate(r)+': '+accFa((r.news||[]).length)+' امکانِ جدید و '+accFa((r.fixes||[]).length)+' رفعِ مشکل. (برای دیدنِ فهرست بزن)','upd:'+r.id);
+  });
+  rvRenderUpdateModal(list,false);
+  return true;
+}
+whenAdminReady(function(){setTimeout(rvShowUpdateIfNeeded,1500);});
 
 // ── حالتِ اتصالِ «سازگار» (long-polling): برای اینترنت/فیلترشکن‌هایی که اتصالِ زنده‌ی فایربیس رو گیر می‌ندازن ──
 var FB_COMPAT_KEY='rv_fb_compat';
@@ -4061,8 +4160,8 @@ function loadNotifs(){
   renderNotifs();updateNotifDot();
 }
 function saveNotifs(){try{localStorage.setItem('rv_admin_notifs',JSON.stringify(ADM_NOTIFS));}catch(e){}}
-function addNotif(text){
-  ADM_NOTIFS.unshift({text:text,time:new Date().toISOString(),read:false});
+function addNotif(text,act){
+  ADM_NOTIFS.unshift({text:text,time:new Date().toISOString(),read:false,act:act||null});
   if(ADM_NOTIFS.length>60)ADM_NOTIFS=ADM_NOTIFS.slice(0,60);
   saveNotifs();renderNotifs();updateNotifDot();
 }
@@ -4074,7 +4173,7 @@ function renderNotifs(){
   var el=document.getElementById('NOTIF_LIST');if(!el)return;
   if(!ADM_NOTIFS.length){el.innerHTML='<div class="notif-empty">اعلانی وجود ندارد</div>';return;}
   el.innerHTML=ADM_NOTIFS.map(function(n){
-    return '<div class="notif-item'+(n.read?'':' unread')+'"><div class="notif-item-text">'+n.text+'</div><div class="notif-item-time">'+notifTimeLabel(n.time)+'</div></div>';
+    return '<div class="notif-item'+(n.read?'':' unread')+'"'+(n.act?' onclick="rvNotifAct(this.getAttribute(\'data-act\'))" data-act="'+String(n.act).replace(/"/g,'&quot;')+'" style="cursor:pointer"':'')+'><div class="notif-item-text">'+n.text+'</div><div class="notif-item-time">'+notifTimeLabel(n.time)+'</div></div>';
   }).join('');
 }
 function updateNotifDot(){
