@@ -563,20 +563,116 @@ try{
   db.settings(_fbCompat?{experimentalForceLongPolling:true}:{experimentalAutoDetectLongPolling:true});
 }catch(_se){console.warn('firestore settings skipped',_se);}
 var STOCK_LEFT={};
+// ── وقتی اتصال به فایربیس برقرار نشد: تشخیصِ علت + «حالتِ سازگار» (long-polling) ──
+function shopCompatOn(){try{return localStorage.getItem('rv_fb_compat')==='1';}catch(e){return false;}}
+function shopSetCompat(on,noReload){
+  try{localStorage.setItem('rv_fb_compat',on?'1':'0');}catch(e){}
+  if(!noReload)location.reload();
+}
+function shopReachGoogle(){
+  return new Promise(function(res){
+    var done=false,ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var t=setTimeout(function(){if(done)return;done=true;try{if(ctrl)ctrl.abort();}catch(e){}res(false);},8000);
+    try{
+      fetch('https://firestore.googleapis.com/?_='+Date.now(),{mode:'no-cors',cache:'no-store',signal:ctrl?ctrl.signal:undefined})
+        .then(function(){if(done)return;done=true;clearTimeout(t);res(true);})
+        .catch(function(){if(done)return;done=true;clearTimeout(t);res(false);});
+    }catch(e){if(!done){done=true;clearTimeout(t);res(false);}}
+  });
+}
+function shopConnErrHTML(msgHtml,retryCall){
+  var btn='style="background:#3a2e26;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer;margin:4px"';
+  setTimeout(shopRunConnDiag,50);
+  return msgHtml+'<br><br><button onclick="'+retryCall+'" '+btn+'>🔄 تلاش دوباره</button>'+
+    '<button onclick="shopSetCompat('+(shopCompatOn()?'false':'true')+')" '+btn.replace('#3a2e26','#b0517a')+'>'+(shopCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button>'+
+    '<div id="SHOP_CONN_DIAG" style="margin-top:10px;font-size:0.76rem;line-height:1.9;color:#8a7a6c">⏳ در حال بررسیِ علت...</div>';
+}
+function shopRunConnDiag(){
+  var el=document.getElementById('SHOP_CONN_DIAG');if(!el)return;
+  if(navigator.onLine===false){el.innerHTML='📵 اینترنتِ گوشی قطعه. اینترنت رو وصل کن و «تلاش دوباره» رو بزن.';return;}
+  shopReachGoogle().then(function(ok){
+    var e2=document.getElementById('SHOP_CONN_DIAG');if(!e2)return;
+    if(!ok)e2.innerHTML='❌ این اینترنت یا فیلترشکن به سرورهای گوگل نمی‌رسه.<br>👉 فیلترشکن رو روشن کن، یا یه سرور/پروتکلِ دیگه امتحان کن. مطمئن شو <b>همین مرورگر</b> داخلِ فیلترشکنه (بعضی فیلترشکن‌ها فقط تلگرام یا چند برنامه‌ی خاص رو می‌گیرن).';
+    else e2.innerHTML='✅ به گوگل می‌رسه ولی اتصالِ زنده‌ی فایربیس گیر کرده.<br>👉 دکمه‌ی «🔧 حالتِ سازگار» رو بزن.';
+  });
+}
 function shopStockKey(p){
   function san(x){var o=String(x).trim().replace(/[\/\s]+/g,'-').replace(/[^\w\-.\u0600-\u06FF]/g,'');return o.slice(0,120)||'x';}
   function en(x){return String(x==null?'':x).replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d);}).replace(/[٠-٩]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'.indexOf(d);});}
   return san(en(String(p.brand||'').trim()))+'__'+san(en(String(p.code||'').trim()));
 }
+function applyStockSnap(snap){
+  var m={};
+  snap.forEach(function(d){var l=Number(d.data().left);if(l>0&&l<12)m[d.id]=l;});
+  STOCK_LEFT=m;
+  try{refreshPdpBoxes();}catch(e){}
+}
 function loadStockLeft(){
   try{
-    db.collection('stockPublic').get({source:'server'}).then(function(snap){
-      var m={};
-      snap.forEach(function(d){var l=Number(d.data().left);if(l>0&&l<12)m[d.id]=l;});
-      STOCK_LEFT=m;
-      try{refreshPdpBoxes();}catch(e){}
-    }).catch(function(e){console.warn('stockPublic',e);});
+    db.collection('stockPublic').get({source:'server'}).then(applyStockSnap).catch(function(e){console.warn('stockPublic',e);});
   }catch(e){console.warn('stockPublic',e);}
+}
+// موجودی رو دوباره از سرور بگیر (حداکثر ۴ ثانیه صبر)، بعد cb رو صدا بزن
+function shopFreshStock(cb){
+  var done=false,t;
+  function fin(){if(done)return;done=true;clearTimeout(t);cb();}
+  t=setTimeout(fin,4000);
+  try{
+    db.collection('stockPublic').get({source:'server'}).then(function(snap){applyStockSnap(snap);fin();}).catch(fin);
+  }catch(e){fin();}
+}
+// ── سقفِ سفارش: وقتی «تنها N عدد» نشون داده می‌شه، بیشتر از N نمی‌شه سفارش داد (کلِ رنگ‌ها/سایزها/سبد روی هم) ──
+function stockKeyOfLine(c){
+  if(c&&c.brand)return shopStockKey(c);
+  var pr=(typeof PRODUCTS!=='undefined'&&c)?PRODUCTS.filter(function(x){return x.id===c.id;})[0]:null;
+  if(pr)return shopStockKey(pr);
+  if(c&&c.code){
+    var suffix='__'+shopStockKey({brand:'x',code:c.code}).split('__')[1];
+    var cands=Object.keys(STOCK_LEFT).filter(function(k){return k.slice(-suffix.length)===suffix;});
+    if(cands.length===1)return cands[0];
+  }
+  return shopStockKey(c||{});
+}
+function stockCapOf(p){
+  var l=STOCK_LEFT[stockKeyOfLine(p)];
+  return (l>0&&l<12)?l:null;
+}
+function cartQtyOfProduct(p,excludeIdx){
+  var k=stockKeyOfLine(p),sum=0;
+  CART.forEach(function(c,i){if(i===excludeIdx)return;if(stockKeyOfLine(c)===k)sum+=Number(c.qty)||0;});
+  return sum;
+}
+function stockRemainingFor(p,excludeIdx){
+  var cap=stockCapOf(p);
+  if(cap===null)return null;
+  return Math.max(0,cap-cartQtyOfProduct(p,excludeIdx));
+}
+// گامِ «+/−» با سقفِ موجودی: اگه باقی‌مانده کمتر از گام بود، «+» همه‌ی باقی‌مانده رو برمی‌داره
+function stepQtyWithCap(cur,d,step,allowed){
+  if(d>0){
+    if(allowed===null)return cur+step;
+    var avail=allowed-cur;
+    if(avail<=0)return cur;
+    return cur+(avail<step?avail:step);
+  }
+  var minQ=(allowed===null)?step:Math.min(step,Math.max(allowed,0));
+  return Math.max(minQ,cur-step);
+}
+function stockBlockMsg(allowed,cap){
+  if(allowed<=0)return 'همه‌ی موجودیِ این محصول تو سبدته';
+  if(allowed===cap)return 'حداکثر '+faNum(allowed)+' عدد موجوده';
+  return 'فقط '+faNum(allowed)+' عدد دیگه موجوده (بقیه تو سبدته)';
+}
+function cartStockIssues(){
+  var by={},out=[];
+  CART.forEach(function(c){
+    var k=stockKeyOfLine(c),cap=STOCK_LEFT[k];
+    if(!(cap>0&&cap<12))return;
+    var o=by[k]||(by[k]={title:c.title||c.code,cap:cap,qty:0});
+    o.qty+=Number(c.qty)||0;
+  });
+  Object.keys(by).forEach(function(k){if(by[k].qty>by[k].cap)out.push(by[k]);});
+  return out;
 }
 loadStockLeft();
 
@@ -806,7 +902,7 @@ function loadInitialChunk(catKey,st,afterDoc){
     console.error('loadInitialChunk error',err);
     st.loading=false;
     var grid=document.getElementById('GRID');
-    if(grid)grid.innerHTML='<div class="nores">اتصال به سرور برقرار نشد، پس محصولات نیومدن.<br>اگه فیلترشکن داری مطمئن شو روشنه، بعد دوباره امتحان کن.<br><br><button onclick="retryLoadCategory(\''+catKey+'\')" style="background:#3a2e26;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer">🔄 تلاش دوباره</button></div>';
+    if(grid)grid.innerHTML='<div class="nores">'+shopConnErrHTML('اتصال به سرور برقرار نشد، پس محصولات نیومدن.','retryLoadCategory(\''+catKey+'\')')+'</div>';
     hideInitLoader();
   });
 }
@@ -1234,6 +1330,14 @@ function pdpPriceHTML(p){
 function refreshPdpBoxes(){
   var b=document.getElementById('PDP_BOXES');
   if(b&&window._CURP)b.innerHTML=pdpBoxesHTML(window._CURP);
+  var p=window._CURP;
+  if(p){
+    var rem=stockRemainingFor(p);
+    if(rem!==null&&rem>0&&window._CURQTY>rem){
+      window._CURQTY=rem;
+      var el=document.getElementById('MQTY');if(el)el.textContent=window._CURQTY;
+    }
+  }
 }
 setInterval(function(){
   document.querySelectorAll('.pdp-offer-cd').forEach(function(el){
@@ -1247,6 +1351,7 @@ function renderModalContent(){
   var p=group[window._CURVARIANT];
   window._CURP=p;
   window._CURQTY=Number(p.minOrder)||1;
+  (function(){var _r=stockRemainingFor(p);if(_r!==null&&_r>0&&window._CURQTY>_r)window._CURQTY=_r;})();
   window._MODAL_IMG_IDX=0;
   window._PDP_TAB='spec';
   var nm=productDisplayName(p);
@@ -1359,8 +1464,18 @@ function renderModalContent(){
 function changeColorQty(key,delta,minOrder){
   var cur=window._COLOR_QTYS[key]||0;
   var next;
+  var _p=window._CURP,_rem=_p?stockRemainingFor(_p):null,_cap=_p?stockCapOf(_p):null;
+  var _allowed=null;
+  if(_rem!==null){
+    var _others=0;Object.keys(window._COLOR_QTYS).forEach(function(k){if(k!==key)_others+=window._COLOR_QTYS[k]||0;});
+    _allowed=Math.max(0,_rem-_others);
+  }
   if(delta>0){
-    next=cur+minOrder;
+    next=stepQtyWithCap(cur,1,minOrder,_allowed);
+    if(_allowed!==null&&next===cur){
+      var _e=document.getElementById('CQTY_ERR');if(_e)_e.textContent=stockBlockMsg(_allowed,_cap)+' (جمعِ همه‌ی رنگ‌ها و سایزها)';
+      return;
+    }
   }else{
     next=cur<=minOrder?0:cur-minOrder;
   }
@@ -1376,6 +1491,12 @@ function addToCartMultiColor(){
   var err=document.getElementById('CQTY_ERR');
   var picked=Object.keys(window._COLOR_QTYS).filter(function(k){return window._COLOR_QTYS[k]>0;});
   if(!picked.length){err.textContent='لطفاً حداقل یه گزینه رو با تعداد انتخاب کن';return;}
+  var _rem2=stockRemainingFor(p),_cap2=stockCapOf(p);
+  if(_rem2!==null){
+    var _tot=0;picked.forEach(function(k){_tot+=window._COLOR_QTYS[k]||0;});
+    if(_rem2<=0){err.textContent=stockBlockMsg(0,_cap2);return;}
+    if(_tot>_rem2){err.textContent='جمعِ تعدادها ('+faNum(_tot)+') از موجودی بیشتره. '+stockBlockMsg(_rem2,_cap2)+'؛ تعداد رو کم کن.';return;}
+  }
   picked.forEach(function(key){
     var qty=window._COLOR_QTYS[key];
     var isMix=(key==='__mix__');
@@ -1507,8 +1628,10 @@ function submitReview(code){
 }
 function chQty(d,minOrder){
   var step=Number(minOrder)||1;
+  var _p=window._CURP,allowed=_p?stockRemainingFor(_p):null,cap=_p?stockCapOf(_p):null;
   var cur=window._CURQTY||step;
-  var next=d>0?(cur+step):Math.max(step,cur-step);
+  var next=stepQtyWithCap(cur,d,step,allowed);
+  if(d>0&&allowed!==null&&next===cur){showToast(stockBlockMsg(allowed,cap));return;}
   window._CURQTY=next;
   var el=document.getElementById('MQTY');if(el)el.textContent=window._CURQTY;
 }
@@ -1632,7 +1755,7 @@ function fetchProductByCodeDirect(code,discountPrice){
   }).catch(function(err){
     console.error('fetchProductByCodeDirect error',err);
     _lastDirectFetch={code:code,price:discountPrice};
-    if(body)body.innerHTML='<button class="modal-close" onclick="goHome()">✕</button><div style="clear:both"></div><div style="text-align:center;padding:40px 20px;color:#c0304a">اتصال به سرور برقرار نشد، پس محصول نیومد (این یعنی محصول حذف نشده).<br>اگه فیلترشکن داری مطمئن شو روشنه.<br><br><button onclick="retryDirectFetch()" style="background:#3a2e26;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer">🔄 تلاش دوباره</button></div>';
+    if(body)body.innerHTML='<button class="modal-close" onclick="goHome()">✕</button><div style="clear:both"></div><div style="text-align:center;padding:40px 20px;color:#c0304a">'+shopConnErrHTML('اتصال به سرور برقرار نشد، پس محصول نیومد (این یعنی محصول حذف نشده).','retryDirectFetch()')+'</div>';
   });
 }
 function requireLoginGate(){
@@ -3180,6 +3303,11 @@ window.addEventListener('scroll',function(){updateFab();});
 function addToCart(){
   var p=window._CURP,qty=window._CURQTY||1;
   if(!p)return;
+  var _rem=stockRemainingFor(p),_cap=stockCapOf(p);
+  if(_rem!==null){
+    if(_rem<=0){showToast(stockBlockMsg(0,_cap));return;}
+    if(qty>_rem){window._CURQTY=_rem;var _m=document.getElementById('MQTY');if(_m)_m.textContent=_rem;showToast(stockBlockMsg(_rem,_cap));return;}
+  }
   var colorEl=document.getElementById('MCOLOR');
   var manualNote=colorEl?colorEl.value.trim():'';
   var colorNote=p.colors||'';
@@ -3246,6 +3374,7 @@ function renderCart(){
   body.innerHTML=
     buildCartHeaderHTML()+
     '<div class="modal-name" style="margin:10px 0">سبد خرید ('+CART.length+' کالا)</div>'+
+    (function(){var iss=cartStockIssues();return iss.length?('<div id="CART_STOCK_WARN" style="background:#fdecef;border:1.5px solid #ef3b57;color:#b0173a;border-radius:10px;padding:9px 11px;font-size:0.76rem;line-height:1.9;margin-bottom:8px;font-weight:700">⚠️ موجودیِ بعضی کالاها از تعدادِ سبدت کمتره:<br>'+iss.map(function(o){return '• '+o.title+': فقط '+faNum(o.cap)+' عدد موجوده (تو سبدت '+faNum(o.qty)+')';}).join('<br>')+'<br>تعداد رو اصلاح کن تا سفارش ثبت بشه.</div>'):'';})()+
     itemsHTML+
     '<div class="cart-total-row"><span>جمع کل ('+CART.length+' کالا)</span><span>'+fmtP(subtotal)+'</span></div>'+
     '<div class="form-field" style="margin-top:8px">'+
@@ -3318,7 +3447,10 @@ function applyDiscountCode(){
 function cartQty(i,d){
   var step=Number(CART[i].minOrder)||1;
   var cur=CART[i].qty||step;
-  CART[i].qty=d>0?(cur+step):Math.max(step,cur-step);
+  var _allowed=stockRemainingFor(CART[i],i),_cap=stockCapOf(CART[i]);
+  var _next=stepQtyWithCap(cur,d,step,_allowed);
+  if(d>0&&_allowed!==null&&_next===cur){showToast(stockBlockMsg(_allowed,_cap));return;}
+  CART[i].qty=_next;
   saveCart();updateFab();renderCart();
 }
 var CART_MENU_OPEN=false;
@@ -3586,6 +3718,7 @@ function submitOrder(){
   if(email&&!isValidEmail(email)){errEl.textContent='ایمیلی که وارد کردی معتبر نیست';return;}
   errEl.textContent='';
   var btn=document.getElementById('OF_SUBMIT');
+  var _btnTxt=btn.textContent;
   btn.disabled=true;btn.textContent='در حال بررسی سفارش...';
   function proceedWithSubmit(){
   var orderNo=genOrderNo();
@@ -3688,8 +3821,21 @@ function submitOrder(){
     }
   });
   } // end proceedWithSubmit
+  function _stockGate(){
+    var iss=cartStockIssues();
+    if(iss.length){
+      btn.disabled=false;btn.textContent=_btnTxt;
+      errEl.textContent='موجودیِ کافی نیست: '+iss.map(function(o){return o.title+' (فقط '+faNum(o.cap)+' عدد موجوده، تو سبدت '+faNum(o.qty)+')';}).join('، ')+'. لطفاً تعداد رو اصلاح کن.';
+      var _bk=document.createElement('button');_bk.type='button';_bk.id='OF_BACK_CART';_bk.textContent='🛒 برگشت به سبد و اصلاح تعداد';
+      _bk.style.cssText='display:block;margin:8px auto 0;background:#3a2e26;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:900;cursor:pointer;font-size:0.78rem';
+      _bk.onclick=function(){renderCart();};
+      errEl.appendChild(_bk);
+      return false;
+    }
+    return true;
+  }
   btn.textContent='در حال ثبت سفارش...';
-  proceedWithSubmit();
+  shopFreshStock(function(){if(_stockGate())proceedWithSubmit();});
 }
 
 var BANNER_ITEMS=[];
