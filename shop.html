@@ -332,6 +332,11 @@ body.scroll-locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .vip-discount-badge{position:absolute;top:7px;left:7px;background:#e0304f;color:#fff;font-size:0.6rem;font-weight:900;padding:2px 7px;border-radius:7px;z-index:2}
 .vip-pct-badge{position:absolute;top:7px;left:7px;background:#ff1744;color:#fff;font-size:0.66rem;font-weight:900;padding:3px 8px;border-radius:8px;z-index:2;box-shadow:0 2px 6px rgba(255,23,68,0.4)}
 .vip-countdown{margin-top:6px;font-size:0.66rem;font-weight:800;color:#fff;background:#e0304f;padding:3px 7px;border-radius:7px;display:inline-block;direction:ltr}
+.img-spin{position:absolute;top:10px;left:10px;width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.55);border-top-color:#b0517a;background:rgba(0,0,0,.25);animation:rvspin .8s linear infinite;z-index:3}
+@keyframes rvspin{to{transform:rotate(360deg)}}
+.pdp-crumb{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 2px 2px;font-size:0.8rem;color:#8a7a6c;line-height:1.9}
+.pdp-crumb a{cursor:pointer;color:#6b5a4c;font-weight:700;text-decoration:none;border-bottom:1px dashed #cdbfae;padding-bottom:1px}
+.pdp-crumb .sep{color:#b9a999;font-weight:900}
 .pdp-boxes{margin:8px 0 2px}
 .pdp-offer{display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg,#ffe3e8,#fff1f3);border-top:3px solid #ef3b57;border-radius:12px;padding:10px 12px;margin-bottom:8px;color:#c4143a;font-weight:900;font-size:0.82rem}
 .pdp-offer-cd{font-size:0.9rem;direction:ltr;white-space:nowrap}
@@ -793,22 +798,145 @@ function productDisplayName(p){
   return joined||p.code||'';
 }
 var COLOR_HEX_MAP={
-  'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
-  'مشکی':'#000000','ملانژ':'#B0AAA4',
-  'قرمز':'#E53935','زرشکی':'#7B1E3A','شرابی':'#722F37','بادمجونی':'#4C2C4E',
-  'آبی':'#1E88E5','آبی آسمانی':'#87CEEB','آبی کاربنی':'#4A6FA5','آبی نفتی':'#1B4F72','آبی اطلسی':'#2E5C8A','سرمه‌ای':'#0B1F3A','سرمه ای':'#0B1F3A',
-  'زرد':'#FDD835','زرد لیمویی':'#E3F400','زرد فسفری':'#E8F500','طلایی':'#D4AF37','نباتی':'#EDE0C0',
-  'نارنجی':'#FB8C00','نارنجی تیره':'#C56000','نارنجی فسفری':'#FF6D00','هلویی':'#FFCBA4',
-  'صورتی':'#FF69B4','صورتی تیره':'#D6467C','صورتی پاستیلی':'#FFD1DC','سرخ‌آبی':'#C2185B','سرخ‌آبی تیره':'#8E1550',
-  'سبز':'#43A047','سبز صابونی':'#A8C686','سبز زمردی':'#009B77','سبز یشمی':'#00A86B','سبز فسفری':'#7FFF00','سبز پسته‌ای':'#93C572','سبز کله‌غازی':'#4B5320','زیتونی':'#6B7A3A',
-  'قهوه‌ای':'#6F4E37','قهوه ای':'#6F4E37','کرم':'#F5E6CA','نسکافه‌ای':'#A67B5B','نسکافه ای':'#A67B5B','شکلاتی':'#5C3317','قهوه‌ای خاکستری':'#7A6C5D','قهوه ای خاکستری':'#7A6C5D','فیلی':'#C4B7A6',
-  'طوسی روشن':'#D3D3D3','طوسی تیره':'#696969','خاکستری':'#808080','خاکستری تیره':'#4F4F4F','موشی':'#8B8589','دلفینی':'#8E9AAF'
+  'سفید شیری':'#FFFDF5',
+  'سفید':'#FFFFFF',
+  'سفید استخوانی':'#F0EAD6',
+  'سفید یخی':'#F4F8FB',
+  'کرم':'#F5E6CA',
+  'نباتی':'#EDE0C0',
+  'نخودی':'#E8D9A8',
+  'شامپاینی':'#F7E7CE',
+  'نود روشن':'#F3D9C8',
+  'نود':'#E8C4A8',
+  'گوشتی':'#F1C9A5',
+  'پوستی':'#E5B99B',
+  'بژ':'#D9C3A5',
+  'بژ تیره':'#BFA27D',
+  'کاراملی':'#C68E4F',
+  'شتری':'#C19A6B',
+  'عسلی':'#C9993A',
+  'خاکی':'#B5A97A',
+  'کرم خاکی':'#D8C9A3',
+  'فیلی':'#C4B7A6',
+  'مشکی':'#000000',
+  'ملانژ':'#B0AAA4',
+  'طوسی روشن':'#D3D3D3',
+  'خاکستری':'#808080',
+  'طوسی تیره':'#696969',
+  'خاکستری تیره':'#4F4F4F',
+  'موشی':'#8B8589',
+  'دلفینی':'#8E9AAF',
+  'ذغالی':'#36454F',
+  'دودی':'#5E5E5E',
+  'سربی':'#5D6D7E',
+  'نقره‌ای':'#C0C0C0',
+  'قرمز':'#E53935',
+  'قرمز تیره':'#8B0000',
+  'آجری':'#B5483A',
+  'زرشکی':'#7B1E3A',
+  'شرابی':'#722F37',
+  'عنابی':'#6B2230',
+  'آلبالویی':'#6D1A36',
+  'گیلاسی':'#B71C3C',
+  'صورتی':'#FF69B4',
+  'صورتی روشن':'#F8C8DC',
+  'صورتی پاستیلی':'#FFD1DC',
+  'صورتی آدامسی':'#FF9EC4',
+  'صورتی بلاش':'#F4C2C2',
+  'گلبه‌ای':'#D8A7B1',
+  'رزگلد':'#B76E79',
+  'صورتی تیره':'#D6467C',
+  'تمشکی':'#B0305C',
+  'سرخ‌آبی':'#C2185B',
+  'سرخ‌آبی تیره':'#8E1550',
+  'نارنجی':'#FB8C00',
+  'نارنجی تیره':'#C56000',
+  'نارنجی فسفری':'#FF6D00',
+  'نارنجی برنزه':'#C77B30',
+  'هلویی':'#FFCBA4',
+  'مرجانی':'#FF7F6E',
+  'سالمونی':'#FA8072',
+  'زرد':'#FDD835',
+  'زرد لیمویی':'#E3F400',
+  'زرد فسفری':'#E8F500',
+  'کره‌ای':'#F5E6A8',
+  'خردلی':'#D4A017',
+  'زعفرانی':'#F4A300',
+  'طلایی':'#D4AF37',
+  'مسی':'#B87333',
+  'برنزی':'#A0723A',
+  'سبز':'#43A047',
+  'سبز روشن':'#A5D6A7',
+  'سبز تیره':'#1B5E20',
+  'سبز جنگلی':'#2E5D34',
+  'سبز دریایی':'#2E8B57',
+  'سبز صابونی':'#A8C686',
+  'سبز پسته‌ای':'#93C572',
+  'سبز نعنایی':'#AAF0D1',
+  'سبز زمردی':'#009B77',
+  'سبز یشمی':'#00A86B',
+  'سبز فسفری':'#7FFF00',
+  'سبز کله‌غازی':'#4B5320',
+  'زیتونی':'#6B7A3A',
+  'زیتونی تیره':'#556B2F',
+  'سالویی':'#9CAF88',
+  'لجنی':'#6B6E3F',
+  'فیروزه‌ای':'#30D5C8',
+  'سبز آبی':'#008080',
+  'آبی':'#1E88E5',
+  'آبی آسمانی':'#87CEEB',
+  'آبی یخی':'#CFE8F3',
+  'آبی بچگانه':'#A7C7E7',
+  'آبی پاستلی':'#B5D5F0',
+  'آبی جینی':'#5B7FA6',
+  'آبی کاربنی':'#4A6FA5',
+  'آبی اطلسی':'#2E5C8A',
+  'آبی رویال':'#2B50C8',
+  'آبی کبالت':'#0047AB',
+  'لاجوردی':'#1F3A93',
+  'آبی نفتی':'#1B4F72',
+  'آبی خاکستری':'#6C7A89',
+  'سرمه‌ای':'#0B1F3A',
+  'بنفش':'#9C27B0',
+  'یاسی':'#C8A2C8',
+  'یاسی تیره':'#9D7FBF',
+  'بنفش پاستلی':'#D8C3E8',
+  'اسطوخودوسی':'#B57EDC',
+  'ارغوانی':'#8E2A7D',
+  'آلویی':'#6E2C5A',
+  'بادمجونی':'#4C2C4E',
+  'قهوه‌ای':'#6F4E37',
+  'قهوه‌ای روشن':'#A47551',
+  'قهوه‌ای تیره':'#4B3621',
+  'نسکافه‌ای':'#A67B5B',
+  'کاپوچینویی':'#A68B7B',
+  'موکا':'#7B5B45',
+  'شکلاتی':'#5C3317',
+  'قهوه‌ای خاکستری':'#7A6C5D',
+  'نقره ای':'#C0C0C0',
+  'گلبه ای':'#D8A7B1',
+  'سرخ آبی':'#C2185B',
+  'سرخ آبی تیره':'#8E1550',
+  'کره ای':'#F5E6A8',
+  'سبز پسته ای':'#93C572',
+  'سبز کله غازی':'#4B5320',
+  'فیروزه ای':'#30D5C8',
+  'سرمه ای':'#0B1F3A',
+  'قهوه ای':'#6F4E37',
+  'قهوه ای روشن':'#A47551',
+  'قهوه ای تیره':'#4B3621',
+  'نسکافه ای':'#A67B5B',
+  'قهوه ای خاکستری':'#7A6C5D'
 };
+var COLOR_NORM_MAP={};
+function colorKey(s){return String(s==null?'':s).toLowerCase().replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f\s]+/g,'');}
+Object.keys(COLOR_HEX_MAP).forEach(function(k){COLOR_NORM_MAP[colorKey(k)]=COLOR_HEX_MAP[k];});
 function colorSwatchHTML(name){
-  var hex=COLOR_HEX_MAP[(name||'').trim()];
+  var nm=(name||'').trim();
+  var hex=COLOR_HEX_MAP[nm]||COLOR_NORM_MAP[colorKey(nm)];
   if(!hex)return '';
-  var paleSet={'#FFFFFF':1,'#FFFDF5':1,'#F0EAD6':1,'#F5E6CA':1};
-  var isPale=!!paleSet[hex.toUpperCase()];
+  var h=hex.replace('#',''),r=parseInt(h.substr(0,2),16)||0,g=parseInt(h.substr(2,2),16)||0,b=parseInt(h.substr(4,2),16)||0;
+  var isPale=(0.299*r+0.587*g+0.114*b)>215;
   var border=isPale?'2px solid #a89a86':'1px solid rgba(0,0,0,0.12)';
   var shadow=isPale?';box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)':'';
   return '<span class="color-dot" style="background:'+hex+';border:'+border+shadow+'"></span>';
@@ -850,6 +978,66 @@ function catQueryBase(catKey){
   }
   return q.orderBy(firebase.firestore.FieldPath.documentId());
 }
+// ── عکسِ سبک: کارت‌ها عکسِ کوچک (thumb) دارن؛ عکسِ بزرگ از productImages فقط وقتی صفحه‌ی محصول باز می‌شه ──
+var BIG_CACHE={};
+function shopNorm(d,docId){
+  if(!d)return d;
+  if(!d.id&&docId)d.id=docId;
+  if(d.thumb){
+    d.__thumb=d.thumb;d.__hasBig=!!(d.hasImg||d.hasImg2);
+    var c=BIG_CACHE[d.id];
+    if(c){d.img=c.img||d.thumb;d.img2=c.img2||null;d.__bigLoaded=true;}
+    else{d.img=d.thumb;d.img2=null;}
+  }
+  return d;
+}
+function shopDocData(doc){return shopNorm(doc.data(),doc.id);}
+function thumbOf(p){return p?(p.__thumb||p.img||null):null;}
+function modalImgWrapHTML(p){
+  if(!p||!p.img)return '';
+  var loading=p.__hasBig&&!p.__bigLoaded;
+  return '<div class="modal-img-wrap" id="MODAL_IMG_WRAP">'+
+    '<div class="modal-img-track" id="MODAL_IMG_TRACK">'+
+      '<img class="modal-img" src="'+p.img+'"'+(loading?' style="filter:blur(1.5px)"':'')+'>'+
+      (p.img2?('<img class="modal-img" src="'+p.img2+'">'):'')+
+    '</div>'+
+    (loading?'<div class="img-spin" id="MODAL_IMG_SPIN" aria-label="در حال بارگذاری تصویر"></div>':'')+
+    (p.img2?(
+      '<button class="banner-arrow prev" onclick="modalImgNav(-1)" aria-label="قبلی" style="bottom:auto;top:50%;transform:translateY(-50%)">‹</button>'+
+      '<button class="banner-arrow next" onclick="modalImgNav(1)" aria-label="بعدی" style="bottom:auto;top:50%;transform:translateY(-50%)">›</button>'+
+      '<div class="modal-img-dots"><span class="modal-img-dot on" onclick="setModalImgIdx(0)"></span><span class="modal-img-dot" onclick="setModalImgIdx(1)"></span></div>'
+    ):'')+
+  '</div>';
+}
+function shopLoadBigForCurrent(){
+  var p=window._CURGROUP&&window._CURGROUP[window._CURVARIANT];
+  if(!p||!p.__hasBig||p.__bigLoaded||p.__bigLoading||!p.id)return;
+  p.__bigLoading=true;
+  var id=p.id;
+  function done(o){
+    BIG_CACHE[id]={img:o.img||null,img2:o.img2||null};
+    [p].concat(PRODUCTS.filter(function(x){return x.id===id;})).forEach(function(x){
+      x.img=BIG_CACHE[id].img||x.__thumb||x.img;x.img2=BIG_CACHE[id].img2||null;x.__bigLoaded=true;x.__bigLoading=false;
+    });
+    var cur=window._CURGROUP&&window._CURGROUP[window._CURVARIANT];
+    if(cur&&cur.id===id){
+      var w=document.getElementById('MODAL_IMG_WRAP');
+      if(w){window._MODAL_IMG_IDX=0;w.outerHTML=modalImgWrapHTML(cur);}
+    }
+  }
+  function fail(){
+    p.__bigLoading=false;
+    var sp=document.getElementById('MODAL_IMG_SPIN');if(sp)sp.remove();
+  }
+  try{
+    db.collection('productImages').doc(id).get().then(function(d){
+      if(d.exists&&d.data()&&(d.data().img||d.data().img2))done(d.data());
+      else{ // محصولِ قدیمی: عکسِ بزرگ تو خودِ سند بوده؛ همون thumb کافیه
+        p.__bigLoading=false;p.__bigLoaded=true;var sp=document.getElementById('MODAL_IMG_SPIN');if(sp)sp.remove();
+      }
+    }).catch(function(e){console.warn('productImages',e);fail();});
+  }catch(e){fail();}
+}
 function mergeIntoGlobalProducts(items){
   var known={};
   PRODUCTS.forEach(function(p){if(p.id)known[p.id]=true;});
@@ -883,10 +1071,10 @@ function loadInitialChunk(catKey,st,afterDoc){
   if(afterDoc)q=q.startAfter(afterDoc);
   q.get({source:'server'}).then(function(snap){
     var gotFull=snap.docs.length===INITIAL_CHUNK_SIZE;
-    snap.forEach(function(doc){st.items.push(doc.data());});
+    snap.forEach(function(doc){st.items.push(shopDocData(doc));});
     var newLastDoc=snap.docs.length?snap.docs[snap.docs.length-1]:afterDoc;
     st.lastDoc=newLastDoc;
-    mergeIntoGlobalProducts(snap.docs.map(function(d){return d.data();}));
+    mergeIntoGlobalProducts(snap.docs.map(function(d){return shopDocData(d);}));
     renderChips();
     _ROUTING_READY=true;renderRoute();
     renderGrid();
@@ -912,7 +1100,7 @@ function loadMoreForCategory(){
   st.loading=true;
   renderGrid();
   catQueryBase(CUR_CAT).startAfter(st.lastDoc).limit(CAT_PAGE_SIZE).get().then(function(snap){
-    snap.forEach(function(doc){st.items.push(doc.data());});
+    snap.forEach(function(doc){st.items.push(shopDocData(doc));});
     st.lastDoc=snap.docs.length?snap.docs[snap.docs.length-1]:st.lastDoc;
     st.hasMore=snap.docs.length===CAT_PAGE_SIZE;
     st.loading=false;
@@ -933,7 +1121,7 @@ function ensureFullyLoadedThenRender(){
   renderGrid();
   (function loadNextBatch(){
     catQueryBase(CUR_CAT).startAfter(st.lastDoc).limit(CAT_PAGE_SIZE).get().then(function(snap){
-      snap.forEach(function(doc){st.items.push(doc.data());});
+      snap.forEach(function(doc){st.items.push(shopDocData(doc));});
       st.lastDoc=snap.docs.length?snap.docs[snap.docs.length-1]:st.lastDoc;
       st.hasMore=snap.docs.length===CAT_PAGE_SIZE;
       mergeIntoGlobalProducts(st.items);
@@ -964,7 +1152,7 @@ function backgroundLoadAllForSearch(){
   q.get().then(function(snap){
     if(snap.empty){_bgSearchDone=true;_bgSearchLoading=false;return;}
     var items=[];
-    snap.forEach(function(doc){items.push(doc.data());});
+    snap.forEach(function(doc){items.push(shopDocData(doc));});
     mergeIntoGlobalProducts(items);
     _bgLastDoc=snap.docs[snap.docs.length-1];
     _bgSearchLoading=false;
@@ -1167,7 +1355,7 @@ function setCatFromHome(v){
 function productCardHTML(p,clickExpr,groupCount){
   var st=p.stock==='in'?'<span class="badge-in">موجود</span>':p.stock==='call'?'<span class="badge-call">تماس بگیرید</span>':'<span class="badge-out">ناموجود</span>';
   var nm=productDisplayName(p);
-  var imgHTML=p.img?'<img class="card-img" src="'+p.img+'" loading="lazy">':'<div class="card-img-ph">👗</div>';
+  var imgHTML=thumbOf(p)?'<img class="card-img" src="'+thumbOf(p)+'" loading="lazy" decoding="async">':'<div class="card-img-ph">👗</div>';
   var colorTag=(groupCount&&groupCount>1)?('<span class="card-tag card-tag-color">'+groupCount+' رنگ</span>'):(p.colors?'<span class="card-tag">'+p.colors+'</span>':'');
   return '<div class="card" onclick="'+clickExpr+'">'+imgHTML+'<span class="cat-badge">'+(p.tabLabel||'')+'</span>'+
     '<span onclick="event.stopPropagation();toggleWishlist(\''+p.code+'\',this)" style="position:absolute;top:8px;left:8px;z-index:2;background:rgba(255,255,255,0.85);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.15)">'+(isInWishlist(p.code)?HEART_ON_ICON.replace('width="22" height="22"','width="17" height="17"'):HEART_OFF_ICON.replace('width="22" height="22"','width="17" height="17"'))+'</span>'+
@@ -1311,6 +1499,27 @@ function pdpOfferInfo(p){
   }
   return null;
 }
+// مسیرِ دسته‌بندی بالای اسمِ محصول (مثلِ «سوتین و ست ‹ سوتین — اسفنجی فنردار»)؛ با کلیک، لیستِ همون دسته باز می‌شه
+function pdpCrumbHTML(p){
+  if(!p)return '';
+  var main=CATS.filter(function(c){return c.tab&&c.tab===p.tab&&!c.type;})[0];
+  var sub=p.type?CATS.filter(function(c){return c.tab===p.tab&&c.type===p.type;})[0]:null;
+  var parts=[];
+  if(main)parts.push({v:main.v,l:main.l});
+  else if(p.tabLabel&&p.tab)parts.push({v:p.tab,l:p.tabLabel});
+  if(sub)parts.push({v:sub.v,l:sub.l});
+  if(!parts.length)return '';
+  return '<div class="pdp-crumb" id="PDP_CRUMB">'+parts.map(function(x,i){
+    return (i?'<span class="sep">‹</span>':'')+'<a onclick="crumbGo(\''+x.v+'\')">'+x.l+'</a>';
+  }).join('')+'</div>';
+}
+function crumbGo(v){
+  if(!requireLoginGate())return;
+  CUR_CAT=v;CUR_BRAND='all';CUR_FABRIC_TAGS=[];
+  if(location.hash)navTo('');
+  renderChips();renderGrid();
+  setTimeout(function(){var g=document.getElementById('GRID');if(g&&g.scrollIntoView)g.scrollIntoView({behavior:'smooth',block:'start'});},150);
+}
 function pdpBoxesHTML(p){
   var h='',o=pdpOfferInfo(p);
   if(o){
@@ -1430,18 +1639,9 @@ function renderModalContent(){
     '<button class="addcart-btn" onclick="addToCart()">🛒 افزودن به سبد خرید</button>'):'<div class="modal-row"><span>وضعیت</span><span>ناموجود</span></div>');
   }
   var html='<button class="modal-close" onclick="goHome()" style="margin-top:-6px">✕</button><div style="clear:both"></div>'+
-    (p.img?('<div class="modal-img-wrap" id="MODAL_IMG_WRAP">'+
-      '<div class="modal-img-track" id="MODAL_IMG_TRACK">'+
-        '<img class="modal-img" src="'+p.img+'">'+
-        (p.img2?('<img class="modal-img" src="'+p.img2+'">'):'')+
-      '</div>'+
-      (p.img2?(
-        '<button class="banner-arrow prev" onclick="modalImgNav(-1)" aria-label="قبلی" style="bottom:auto;top:50%;transform:translateY(-50%)">‹</button>'+
-        '<button class="banner-arrow next" onclick="modalImgNav(1)" aria-label="بعدی" style="bottom:auto;top:50%;transform:translateY(-50%)">›</button>'+
-        '<div class="modal-img-dots"><span class="modal-img-dot on" onclick="setModalImgIdx(0)"></span><span class="modal-img-dot" onclick="setModalImgIdx(1)"></span></div>'
-      ):'')+
-      '</div>'):'')+
+    modalImgWrapHTML(p)+
     '<div id="PDP_BOXES" class="pdp-boxes">'+pdpBoxesHTML(p)+'</div>'+
+    pdpCrumbHTML(p)+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div class="modal-name" style="flex:1">'+nm+'</div>'+
       '<button onclick="toggleWishlist(\''+p.code+'\',this)" style="background:none;border:none;padding:4px;cursor:pointer;flex-shrink:0" id="WISH_BTN_'+p.code+'">'+(isInWishlist(p.code)?HEART_ON_ICON:HEART_OFF_ICON)+'</button></div>'+
     '<div onclick="shareProductByCode(\''+p.code+'\')" style="display:flex;align-items:center;gap:6px;color:#8a7a6c;font-size:0.76rem;cursor:pointer;margin:4px 0 8px">'+SHARE_ICON+'<span>اشتراک‌گذاری این محصول</span></div>'+
@@ -1459,6 +1659,7 @@ function renderModalContent(){
     '</div>'+
     '<div id="PDP_TAB_CONTENT"></div>';
   document.getElementById('MODAL_BODY').innerHTML=html;
+  setTimeout(shopLoadBigForCurrent,0);
   renderPdpTabContent();
 }
 function changeColorQty(key,delta,minOrder){
@@ -1507,7 +1708,7 @@ function addToCartMultiColor(){
     var cartKey=isSize?(p.id+'::'+key):(p.id+'::'+colorNote);
     var existing=CART.find(function(c){return c.key===cartKey;});
     if(existing){existing.qty+=qty;existing.minOrder=lineMinOrder;}
-    else CART.push({key:cartKey,id:p.id,code:p.code,brand:p.brand||'',title:productDisplayName(p),price:linePrice,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:lineMinOrder});
+    else CART.push({key:cartKey,id:p.id,code:p.code,brand:p.brand||'',title:productDisplayName(p),price:linePrice,img:thumbOf(p),tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:lineMinOrder});
   });
   saveCart();updateFab();closeModal();
   showToast(productDisplayName(p)+' به سبد اضافه شد ✅');
@@ -1745,7 +1946,7 @@ function fetchProductByCodeDirect(code,discountPrice){
       return;
     }
     var group=[];
-    snap.forEach(function(doc){group.push(doc.data());});
+    snap.forEach(function(doc){group.push(shopDocData(doc));});
     mergeIntoGlobalProducts(group);
     if(discountPrice){
       group=group.map(function(pp){var c=Object.assign({},pp);c.origPrice=pp.price;c.isOffer=true;c.price=discountPrice;return c;});
@@ -2117,7 +2318,7 @@ function toggleWishlist(code,btn){
     if(btn)btn.innerHTML=HEART_OFF_ICON;
     showToast('از لیست علاقه‌مندی‌ها حذف شد');
   }else{
-    WISHLIST.push({code:code,title:p?productDisplayName(p):code,price:p?p.price:0,img:p?(p.img||null):null,addedAt:Date.now()});
+    WISHLIST.push({code:code,title:p?productDisplayName(p):code,price:p?p.price:0,img:p?thumbOf(p):null,addedAt:Date.now()});
     if(btn)btn.innerHTML=HEART_ON_ICON;
     showToast('به لیست علاقه‌مندی‌ها اضافه شد ❤️');
   }
@@ -3315,7 +3516,7 @@ function addToCart(){
   var key=p.id+'::'+colorNote;
   var existing=CART.find(function(c){return c.key===key;});
   if(existing){existing.qty+=qty;existing.minOrder=p.minOrder||1;}
-  else CART.push({key:key,id:p.id,code:p.code,brand:p.brand||'',title:productDisplayName(p),price:p.price,img:p.img||null,tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:p.minOrder||1});
+  else CART.push({key:key,id:p.id,code:p.code,brand:p.brand||'',title:productDisplayName(p),price:p.price,img:thumbOf(p),tab:p.tab,tabLabel:p.tabLabel,qty:qty,colorNote:colorNote,minOrder:p.minOrder||1});
   saveCart();updateFab();closeModal();
   showToast(productDisplayName(p)+' به سبد اضافه شد ✅');
   maybeWarnGuestCart();

@@ -303,6 +303,7 @@ input[type=file]{display:none}
 .srch-item-name{font-size:0.78rem;font-weight:700;color:#3d2b1f}
 .srch-item-price{font-size:0.7rem;color:#9a6e3a}
 @media(max-width:640px){.g2{grid-template-columns:1fr}.pbtns{grid-template-columns:1fr}}
+.srch-grp{position:sticky;top:0;background:#f3e9db;color:#7a5a38;font-size:0.7rem;font-weight:900;padding:5px 10px;border-bottom:1px solid #e2cdb0;z-index:1}
 </style>
 </head>
 <body>
@@ -857,7 +858,7 @@ input[type=file]{display:none}
     </div>
 
     <div id="CG_MIXPKG_WRAP" style="display:none">
-      <div class="g1"><span class="lbl">توضیح ترکیب بسته میکس (اختیاری)</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
+      <div class="g1"><span class="lbl">عنوان یا ترکیب بسته میکس (اختیاری) — بالای قیمتِ بسته نوشته می‌شه</span><input class="fi" type="text" id="CG_MIX_DESC" placeholder="مثال: میکس ۶ رنگ (قرمز، آبی، سبز، زرد، صورتی، بنفش)"></div>
       <div id="CG_SP_MODE_TABS_WRAP" style="display:none;margin-bottom:8px">
         <div style="display:flex;gap:6px">
           <button type="button" id="CG_SP_MODETAB_unit" class="chip on" style="flex:1" onclick="setCgSpMode('unit')">قیمت دونه‌ای</button>
@@ -963,6 +964,11 @@ input[type=file]{display:none}
 </div>
 
 <div class="pg" id="psitecontent">
+  <div class="card rv-owner-only" id="LIGHTMIG_CARD"><div class="ctitle">🪶 سبک‌سازیِ عکس محصولات</div>
+    <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:8px;line-height:1.9">عکس‌های بزرگِ محصولات رو از سندِ اصلی جدا می‌کنه تا پنل و سایت روی گوشی‌های ضعیف سبک لود بشن (فقط یه عکسِ کوچک همراهِ اطلاعات میاد و عکسِ بزرگ موقعِ نیاز). چیزی پاک نمی‌شه و می‌شه چندبار زد؛ هر بار از همون‌جا ادامه می‌ده.<br><b>اول فایلِ جدیدِ سایتِ مشتری رو آپلود کن.</b></p>
+    <button class="sbig stg" onclick="lightMigrate()">🪶 شروعِ سبک‌سازی</button>
+    <div class="stat" id="LIGHTMIG_STAT"></div>
+  </div>
   <div class="card"><div class="ctitle">بنرهای اسلایدر (4 بنر)</div>
     <p style="font-size:0.76rem;color:#9a6e3a;margin-bottom:10px">این بنرها در صفحه مشتری به صورت اسلایدر نمایش داده میشوند. تصویر با نسبت 4:3 بهتره (همون نسبتی که قاب بنر تو سایت داره؛ نسبت‌های دیگه از کنار بریده میشن).</p>
     <button class="sbig stg" style="margin:0 0 6px" onclick="autoSyncBanners(true)">🔄 همگام‌سازی بنرها با سایت</button>
@@ -1311,11 +1317,403 @@ function initFirebase(){
     if(typeof firebase==='undefined')return false;
     fbApp=firebase.apps&&firebase.apps.length?firebase.apps[0]:firebase.initializeApp(firebaseConfig);
     fbDb=firebase.firestore();
+    try{rvInstallResilience();}catch(_rv){console.warn('rv resilience',_rv);}
     try{fbDb.settings(fbCompatOn()?{experimentalForceLongPolling:true}:{experimentalAutoDetectLongPolling:true});}
     catch(se){console.warn('firestore settings skipped',se);}
     return true;
   }catch(e){console.error('firebase init error',e);return false;}
 }
+// ══════════ مدیرِ اتصال و لود ══════════
+// ۱) هر ۲ ثانیه وضعیتِ اینترنت/فیلترشکن/فایربیس چک می‌شه ۲) لودهایی که شکست خوردن خودکار (با صبر و بدونِ پاک‌کردنِ کارِ کاربر) دوباره امتحان می‌شن
+// ۳) شنونده‌های زنده‌ی فایربیس با خطا نمی‌میرن ۴) هر «در حال …» یه چرخنده‌ی متحرک می‌گیره ۵) گزارشِ قابلِ کپی برای پیدا کردنِ علتِ مشکل
+var RV_T=window.__RV_T||{};
+var RV_TICK_MS=RV_T.tick||2000,RV_PROBE_MS=RV_T.probe||3500,RV_STUCK_MS=RV_T.stuck||6000,RV_LIVE_FIRST_MS=RV_T.liveFirst||25000,RV_COMPAT_AUTO_MS=RV_T.compat||20000,RV_LOAD_TIMEOUT=RV_T.loadTimeout||45000;
+var RV_LISTEN_FIRST_MS=RV_T.listenFirst||20000,RV_LISTEN_BACKOFF_BASE=RV_T.backoff||2000,RV_LISTEN_BACKOFF_MAX=RV_T.backoffMax||60000,RV_LISTEN_MAX_TRIES=12;
+var RVNET={state:'unknown',lat:0,hist:[],fails:0,okAt:0,started:0,live:null,liveSince:0,stuckSince:0,compatSuggested:false,alert:null,tickN:0,timer:null,ui:false,probes:0,liveWatch:false,lastChange:0};
+var RVLOAD={},RVLISTEN={list:[],failed:0},RVREAD={total:0,by:{},since:Date.now()};
+function rvCountReads(path,n){n=Number(n)||0;if(!n)return;RVREAD.total+=n;var k=String(path||'?').split('/')[0]||'?';RVREAD.by[k]=(RVREAD.by[k]||0)+n;}
+function rvTopReads(n){return Object.keys(RVREAD.by).sort(function(x,y){return RVREAD.by[y]-RVREAD.by[x];}).slice(0,n||5).map(function(k){return {name:k,n:RVREAD.by[k]};});}
+
+// ── طبقه‌بندیِ خطا: سهمیه / دسترسی / ورود / اینترنت ──
+function rvErrInfo(e){
+  var code=String(e&&e.code||'').replace(/^firestore\//,''),msg=String(e&&e.message||e||'');
+  var kind='other',txt=msg||'خطای ناشناخته';
+  if(code==='resource-exhausted'||/quota/i.test(msg)){kind='quota';txt='سهمیه‌ی روزانه‌ی فایربیس تموم شده';}
+  else if(code==='permission-denied'){kind='perm';txt='قوانینِ فایربیس اجازه نمی‌دن (یا ورود منقضی شده)';}
+  else if(code==='unauthenticated'){kind='auth';txt='ورودت منقضی شده؛ خروج و ورود دوباره';}
+  else if(code==='unavailable'||code==='deadline-exceeded'||/^timeout:|timeout|network|Failed to get|offline|fetch/i.test(msg)){kind='net';txt='اتصال به سرور برقرار نشد یا کند بود';}
+  return {kind:kind,code:code||'-',msg:txt,raw:msg.slice(0,140)};
+}
+function rvAlertFor(info){
+  if(info.kind==='quota')return '⛔ سهمیه‌ی روزانه‌ی فایربیس (پلنِ رایگان) تموم شده؛ تا ریستِ شبانه (نیمه‌شبِ وقتِ پاسیفیک، حدود ۱۱:۳۰ صبحِ ایران) هیچ‌کس نمی‌تونه محصولات رو بگیره، مگه پلنِ Blaze رو فعال کنی.';
+  if(info.kind==='perm')return '🔒 قوانینِ فایربیس اجازه‌ی خوندن نمی‌دن. اگه تازه قوانین رو عوض کردی «Publish» رو زده باشی؛ وگرنه خروج و ورودِ دوباره.';
+  if(info.kind==='auth')return '🔑 ورودت منقضی شده؛ یه بار خروج و دوباره وارد شو.';
+  return '';
+}
+
+// ── چک‌کردنِ اتصال ──
+function rvProbe(){
+  var ov=window.__RVNET_PROBE;
+  if(typeof ov==='function')return Promise.resolve().then(function(){return ov();});
+  return new Promise(function(res){
+    var t0=Date.now(),done=false,ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var to=setTimeout(function(){if(done)return;done=true;try{if(ctrl)ctrl.abort();}catch(e){}res({ok:false,ms:RV_PROBE_MS});},RV_PROBE_MS);
+    try{
+      fetch('https://firestore.googleapis.com/?_='+Date.now(),{mode:'no-cors',cache:'no-store',signal:ctrl?ctrl.signal:undefined})
+        .then(function(){if(done)return;done=true;clearTimeout(to);res({ok:true,ms:Date.now()-t0});})
+        .catch(function(){if(done)return;done=true;clearTimeout(to);res({ok:false,ms:Date.now()-t0});});
+    }catch(e){if(!done){done=true;clearTimeout(to);res({ok:false,ms:0});}}
+  });
+}
+function rvRecord(r){
+  RVNET.probes++;RVNET.hist.push(r);if(RVNET.hist.length>6)RVNET.hist.shift();
+  if(r.ok){RVNET.fails=0;RVNET.okAt=Date.now();RVNET.lat=r.ms;}else RVNET.fails++;
+}
+function rvDecide(){
+  var now=Date.now();
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return 'offline';
+  if(RVNET.fails>=2)return 'offline';
+  if(RVNET.live===false&&RVNET.liveSince&&now-RVNET.liveSince>RV_STUCK_MS)return 'stuck';
+  if(RVNET.live===null&&RVNET.started&&now-RVNET.started>RV_LIVE_FIRST_MS&&RVNET.hist.length&&RVNET.liveWatch)return 'stuck';
+  var oks=RVNET.hist.filter(function(h){return h.ok;}).slice(-3);
+  if(oks.length>=2){var avg=oks.reduce(function(s,h){return s+h.ms;},0)/oks.length;if(avg>1800)return 'slow';}
+  return 'online';
+}
+function rvSetState(next){
+  var prev=RVNET.state;
+  if(next===prev){rvRender();return;}
+  RVNET.state=next;RVNET.lastChange=Date.now();
+  if(next==='offline'||next==='stuck'){if(!RVNET.stuckSince)RVNET.stuckSince=Date.now();}
+  else RVNET.stuckSince=0;
+  rvRender();
+  if(next==='online'&&(prev==='offline'||prev==='stuck'||prev==='slow')){
+    rvToast('✅ اتصال برقرار شد');
+    rvHealAll('back-online');
+  }
+}
+function rvToast(m){try{if(typeof showToast==='function')showToast(m);}catch(e){}}
+function rvTick(){
+  RVNET.tickN++;
+  if(typeof document!=='undefined'&&document.hidden&&RVNET.tickN%5!==0)return;
+  rvProbe().then(function(r){rvRecord(r);rvSetState(rvDecide());rvWatchdog();rvUpdateTop();}).catch(function(){});
+}
+
+// ── لودرها: ثبتِ وضعیت + تلاشِ دوبارهٔ خودکار ──
+function rvLoaderStart(name,retry,label){
+  var l=RVLOAD[name]=RVLOAD[name]||{name:name,attempts:0,label:name};
+  if(label)l.label=label;if(retry)l.retry=retry;
+  l.status='loading';l.startedAt=Date.now();
+  return l;
+}
+function rvLoaderOk(name){
+  var l=RVLOAD[name];if(!l)return;
+  l.status='ok';l.okAt=Date.now();l.err=null;l.attempts=0;
+  if(RVNET.alert&&RVNET.alert.loader===name)RVNET.alert=null;
+  rvRender();rvUpdateTop();
+}
+function rvLoaderFail(name,err){
+  var l=RVLOAD[name]||(RVLOAD[name]={name:name,attempts:0,label:name});
+  var info=rvErrInfo(err);
+  l.status='failed';l.failedAt=Date.now();l.err=info;
+  var wait=info.kind==='quota'?300000:Math.min(30000,3000*Math.pow(2,Math.min(l.attempts,4)));
+  l.nextAt=Date.now()+wait;
+  var a=rvAlertFor(info);
+  if(a)RVNET.alert={loader:name,msg:a,kind:info.kind};
+  rvRender();rvUpdateTop();
+}
+function rvProductsSafeToReload(){
+  var inputs=document.querySelectorAll('[id^="CD"]');
+  for(var i=0;i<inputs.length;i++){if((inputs[i].value||'').trim())return false;}
+  return true;
+}
+function rvRunLoader(name,manual){
+  var l=RVLOAD[name];if(!l||!l.retry)return;
+  if(name==='products'&&!manual&&!rvProductsSafeToReload())return;
+  l.attempts++;l.lastTry=Date.now();
+  try{l.retry();}catch(e){rvLoaderFail(name,e);}
+}
+function rvWatchdog(){
+  var now=Date.now(),online=(RVNET.state==='online'||RVNET.state==='slow');
+  Object.keys(RVLOAD).forEach(function(n){
+    var l=RVLOAD[n];
+    if(l.status==='loading'&&now-l.startedAt>RV_LOAD_TIMEOUT){l.status='failed';l.failedAt=now;l.err={kind:'net',code:'timeout',msg:'کند شد (تایم‌اوت)',raw:'timeout'};l.nextAt=now;}
+    if(l.status==='failed'&&l.retry&&online&&now>=(l.nextAt||0)&&(!l.err||l.err.kind!=='quota'||now>=l.nextAt)){rvRunLoader(n,false);}
+  });
+  if(RVNET.state==='stuck'&&RVNET.stuckSince&&now-RVNET.stuckSince>RV_COMPAT_AUTO_MS&&!fbCompatOn()&&!RVNET.compatSuggested){
+    RVNET.compatSuggested=true;
+    try{localStorage.setItem(FB_COMPAT_KEY,'1');}catch(e){}
+    rvRender();
+  }
+}
+function rvHealAll(reason){
+  var d=0;
+  Object.keys(RVLOAD).forEach(function(n){
+    var l=RVLOAD[n];
+    if(l.status==='failed'||l.status==='loading'&&Date.now()-l.startedAt>RV_LOAD_TIMEOUT){
+      setTimeout(function(){rvRunLoader(n,reason==='manual');},d);d+=350;
+    }
+  });
+  RVLISTEN.list.slice().forEach(function(e){if(e.resub&&(e.lastErr||!e.first))e.resub();});
+}
+
+// ── شنونده‌های زنده‌ی فایربیس: با خطا نمی‌میرن، دوباره (با صبر) راه می‌افتن ──
+function rvPathOf(ref){return String(ref&&(ref.path||(ref._n?(ref._n+(ref._i?('/'+ref._i):'')):''))||'?');}
+function rvInstallResilience(){
+  if(window.__RV_RES_DONE)return;
+  window.__RV_RES_DONE=true;
+  try{
+    var fs=firebase.firestore;
+    [fs.Query&&fs.Query.prototype,fs.DocumentReference&&fs.DocumentReference.prototype].forEach(function(proto,i){
+      if(!proto)return;
+      if(typeof proto.onSnapshot==='function'&&!proto.onSnapshot.__rvw)rvWrapOnSnapshot(proto);
+      if(typeof proto.get==='function'&&!proto.get.__rvw)rvWrapGet(proto,i===1);
+    });
+  }catch(e){console.warn('rvInstallResilience',e);}
+}
+function rvWrapGet(proto,isDoc){
+  var og=proto.get;
+  var w=function(){
+    var self=this,p=og.apply(this,arguments);
+    try{p.then(function(s){try{rvCountReads(rvPathOf(self),isDoc?1:(s&&s.size!=null?s.size:0));}catch(e){}},function(){});}catch(e){}
+    return p;
+  };
+  w.__rvw=true;proto.get=w;
+}
+function rvWrapOnSnapshot(proto){
+  var orig=proto.onSnapshot;
+  var w=function(){
+    var self=this,args=Array.prototype.slice.call(arguments),fi=-1;
+    for(var i=0;i<args.length;i++){if(typeof args[i]==='function'){fi=i;break;}}
+    if(fi<0)return orig.apply(self,args);
+    var userErr=(typeof args[fi+1]==='function')?args[fi+1]:null;
+    var entry={name:rvPathOf(self),tries:0,first:false,stopped:false,unsub:null,timer:null,wd:null,lastErr:null};
+    RVLISTEN.list.push(entry);
+    function sub(){
+      if(entry.stopped)return;
+      entry.first=false;
+      var a2=args.slice();
+      a2[fi]=function(s){
+        try{
+          var firstTime=!entry.counted;entry.counted=true;
+          var cnt=firstTime?((s&&s.size!=null)?s.size:(s&&s.exists?1:0)):((s&&typeof s.docChanges==='function')?s.docChanges().length:((s&&s.exists)?1:0));
+          rvCountReads(entry.name,cnt);
+        }catch(e){}
+        entry.first=true;entry.tries=0;entry.lastErr=null;clearTimeout(entry.wd);return args[fi].apply(this,arguments);
+      };
+      var errH=function(err){
+        entry.lastErr=rvErrInfo(err);RVLISTEN.failed++;clearTimeout(entry.wd);
+        try{if(userErr)userErr(err);}catch(e){}
+        schedule();
+      };
+      if(userErr)a2[fi+1]=errH;else a2.splice(fi+1,0,errH);
+      try{entry.unsub=orig.apply(self,a2);}catch(e){errH(e);return;}
+      clearTimeout(entry.wd);
+      entry.wd=setTimeout(function wdTick(){
+        if(entry.first||entry.stopped)return;
+        if(RVNET.state==='online'){
+          try{entry.unsub&&entry.unsub();}catch(e){}
+          entry.tries++;
+          if(entry.tries<=RV_LISTEN_MAX_TRIES)sub();
+        }else{entry.wd=setTimeout(wdTick,RV_LISTEN_FIRST_MS);}
+      },RV_LISTEN_FIRST_MS);
+    }
+    function schedule(){
+      if(entry.stopped)return;
+      try{entry.unsub&&entry.unsub();}catch(e){}
+      entry.tries++;
+      if(entry.tries>RV_LISTEN_MAX_TRIES)return;
+      var d=Math.min(RV_LISTEN_BACKOFF_MAX,RV_LISTEN_BACKOFF_BASE*Math.pow(2,entry.tries-1));
+      clearTimeout(entry.timer);entry.timer=setTimeout(sub,d);
+    }
+    entry.resub=function(){if(entry.stopped)return;clearTimeout(entry.timer);clearTimeout(entry.wd);try{entry.unsub&&entry.unsub();}catch(e){}entry.tries=0;sub();};
+    sub();
+    return function(){
+      entry.stopped=true;clearTimeout(entry.timer);clearTimeout(entry.wd);
+      try{entry.unsub&&entry.unsub();}catch(e){}
+      RVLISTEN.list=RVLISTEN.list.filter(function(x){return x!==entry;});
+    };
+  };
+  w.__rvw=true;proto.onSnapshot=w;
+}
+// شنونده‌ی «سلامتِ اتصالِ زنده»: اگه اسنپ‌شات از کش بیاد یعنی اتصالِ زنده به فایربیس قطعه
+function rvStartLiveWatch(){
+  if(RVNET.liveWatch||!initFirebase())return;
+  RVNET.liveWatch=true;
+  try{
+    fbDb.collection('settings').doc('appConfig').onSnapshot({includeMetadataChanges:true},function(s){rvLiveSnap(s);},function(e){RVNET.liveErr=rvErrInfo(e);});
+  }catch(e){RVNET.liveWatch=false;}
+}
+function rvLiveSnap(s){
+  var fc=!!(s&&s.metadata&&s.metadata.fromCache),prev=RVNET.live;
+  RVNET.live=!fc;
+  if(prev!==RVNET.live)RVNET.liveSince=Date.now();
+  rvSetState(rvDecide());
+}
+
+// ── رابطِ کاربری: نگینِ وضعیت + بنر + پنلِ جزئیات + نوارِ بالا ──
+var RV_CSS=".rv-loading::before,.rv-spin::before{content:'';display:inline-block;width:.95em;height:.95em;margin-inline-end:.5em;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:rvspin .75s linear infinite;vertical-align:-.12em;flex-shrink:0;opacity:.85}"+
+"@keyframes rvspin{to{transform:rotate(360deg)}}.rv-hg{display:none}"+
+"#RV_TOPBAR{position:fixed;top:0;left:0;right:0;height:3px;z-index:100001;overflow:hidden;opacity:0;transition:opacity .25s;pointer-events:none;background:rgba(176,81,122,.15)}#RV_TOPBAR.on{opacity:1}"+
+"#RV_TOPBAR::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,#b0517a,transparent);animation:rvbar 1.1s ease-in-out infinite}@keyframes rvbar{0%{left:-40%}100%{left:100%}}"+
+"#RVNET_PILL{position:fixed;bottom:12px;left:10px;z-index:100000;display:flex;align-items:center;gap:6px;background:rgba(30,20,15,.82);color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);direction:rtl}"+
+".rv-dot{width:9px;height:9px;border-radius:50%;background:#9aa;display:inline-block}.rv-st-online .rv-dot{background:#2ecc71}.rv-st-slow .rv-dot{background:#f1c40f;animation:rvpulse 1s infinite}.rv-st-stuck .rv-dot,.rv-st-offline .rv-dot{background:#e74c3c;animation:rvpulse .7s infinite}@keyframes rvpulse{50%{opacity:.35}}"+
+"#RVNET_BANNER{position:fixed;top:0;left:0;right:0;z-index:100000;padding:9px 12px;font:700 12px/1.8 sans-serif;color:#fff;direction:rtl;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}#RVNET_BANNER.warn{background:#b8651b}#RVNET_BANNER.err{background:#8a1f35}"+
+"#RVNET_BANNER button{margin:4px 3px 0;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:4px 10px;font:700 11px sans-serif;cursor:pointer}"+
+"#RVNET_PANEL{position:fixed;bottom:44px;left:10px;z-index:100000;width:min(330px,92vw);background:#fff;color:#3d2b1f;border:2px solid #d4a87a;border-radius:12px;padding:10px 12px;font:600 12px/1.9 sans-serif;direction:rtl;box-shadow:0 4px 18px rgba(0,0,0,.35);max-height:70vh;overflow:auto}"+
+"#RVNET_PANEL button{margin:3px 2px;background:#3d2b1f;color:#fff;border:none;border-radius:8px;padding:6px 10px;font:700 11px sans-serif;cursor:pointer}";
+var RV_LABEL={online:'آنلاین',slow:'کند',stuck:'فایربیس گیر کرده',offline:'قطع',unknown:'در حال بررسی...'};
+function rvEnsureUI(){
+  if(RVNET.ui||typeof document==='undefined'||!document.body)return;
+  RVNET.ui=true;
+  var st=document.createElement('style');st.id='RVNET_CSS';st.textContent=RV_CSS;document.head.appendChild(st);
+  var top=document.createElement('div');top.id='RV_TOPBAR';document.body.appendChild(top);
+  var ban=document.createElement('div');ban.id='RVNET_BANNER';ban.style.display='none';document.body.appendChild(ban);
+  var pill=document.createElement('div');pill.id='RVNET_PILL';pill.innerHTML='<span class="rv-dot"></span><span id="RVNET_PILL_T"></span>';pill.onclick=rvTogglePanel;document.body.appendChild(pill);
+  var pan=document.createElement('div');pan.id='RVNET_PANEL';pan.style.display='none';document.body.appendChild(pan);
+}
+function rvRender(){
+  if(!RVNET.ui)return;
+  var s=RVNET.state,pill=document.getElementById('RVNET_PILL'),t=document.getElementById('RVNET_PILL_T');
+  if(pill){pill.className='rv-st-'+s;}
+  if(t)t.textContent=RV_LABEL[s]||s;
+  var ban=document.getElementById('RVNET_BANNER');
+  if(ban){
+    var msg='',cls='warn',spin=false,btns='<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره</button>';
+    if(RVNET.alert){msg=RVNET.alert.msg;cls='err';}
+    else if(s==='offline'){msg='📵 اینترنت یا فیلترشکن قطعه (یا به گوگل نمی‌رسه). هر ۲ ثانیه چک می‌کنم و وصل که شد خودم ادامه می‌دم';spin=true;}
+    else if(s==='stuck'){msg='🐢 به اینترنت وصلی، ولی اتصالِ زنده‌ی فایربیس گیر کرده (معمولاً فیلترشکن). دارم دوباره تلاش می‌کنم';spin=true;}
+    if(RVNET.compatSuggested&&s!=='online'){msg+='<br>🔧 «حالتِ سازگار» برای دفعه‌ی بعد خودکار روشن شد؛ برای اعمالِ همین الان بزن:';btns+='<button onclick="location.reload()">↻ بارگذاری مجدد</button>';}
+    else if(msg&&RVNET.alert&&RVNET.alert.kind==='net'){btns+='<button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button>';}
+    if(msg){ban.className=cls;ban.innerHTML='<span'+(spin?' class="rv-spin"':'')+'>'+msg+'</span><br>'+btns;ban.style.display='block';}
+    else{ban.style.display='none';ban.innerHTML='';}
+  }
+  var pan=document.getElementById('RVNET_PANEL');
+  if(pan&&pan.style.display!=='none')rvRenderPanel();
+}
+function rvCompatToggle(){setFbCompatMode(!fbCompatOn());}
+function rvTogglePanel(){
+  var pan=document.getElementById('RVNET_PANEL');if(!pan)return;
+  if(pan.style.display==='none'){pan.style.display='block';rvRenderPanel();}else pan.style.display='none';
+}
+function rvRenderPanel(){
+  var pan=document.getElementById('RVNET_PANEL');if(!pan)return;
+  var ls=Object.keys(RVLOAD).map(function(n){
+    var l=RVLOAD[n],ic=l.status==='ok'?'✅':(l.status==='loading'?'⏳':'❌');
+    return '<div>'+ic+' '+accEsc(l.label||n)+(l.status==='failed'&&l.err?(' — '+accEsc(l.err.msg)+' ['+accEsc(l.err.code)+']'):'')+(l.attempts?(' · تلاش '+l.attempts):'')+'</div>';
+  }).join('')||'<div style="color:#9a6e3a">هنوز لودی ثبت نشده</div>';
+  var dead=RVLISTEN.list.filter(function(e){return e.lastErr;}).length;
+  pan.innerHTML='<b>وضعیتِ اتصال:</b> '+(RV_LABEL[RVNET.state]||RVNET.state)+' · تأخیر '+accFa(RVNET.lat)+' میلی‌ثانیه<br><b>لودها:</b>'+ls+
+    '<div><b>شنونده‌های زنده:</b> '+accFa(RVLISTEN.list.length)+' فعال'+(dead?(' · '+accFa(dead)+' با خطا (دوباره تلاش می‌شه)'):'')+'</div>'+
+    '<div><b>خواندن از فایربیس (این نشست):</b> '+accFa(RVREAD.total)+' سند'+(rvTopReads(4).length?('<br><span style="font-weight:600;color:#7a5a38">'+rvTopReads(4).map(function(x){return accEsc(x.name)+' '+accFa(x.n);}).join(' · ')+'</span>'):'')+'</div>'+
+    '<div><b>حالتِ اتصال:</b> '+(fbCompatOn()?'سازگار (long-polling)':'عادی (خودکار)')+'</div>'+
+    '<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره‌ی همه</button><button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button><button onclick="rvCopyReport()">📋 کپیِ گزارش</button>';
+}
+function rvReportText(){
+  var L=['گزارشِ اتصالِ پنل رُزاوی','زمان: '+new Date().toLocaleString('fa-IR'),
+    'وضعیت: '+RVNET.state+' | تأخیرِ آخر: '+RVNET.lat+'ms | شکستِ پیاپیِ چک: '+RVNET.fails+' | زنده: '+RVNET.live,
+    'آنلاینِ مرورگر: '+(typeof navigator!=='undefined'?navigator.onLine:'?')+' | حالتِ سازگار: '+(fbCompatOn()?'روشن':'خاموش'),
+    'چک‌های اخیر: '+RVNET.hist.map(function(h){return (h.ok?'✓':'✗')+h.ms;}).join(' ')];
+  Object.keys(RVLOAD).forEach(function(n){var l=RVLOAD[n];L.push('لود «'+(l.label||n)+'»: '+l.status+(l.err?(' | '+l.err.kind+' / '+l.err.code+' / '+l.err.raw):'')+' | تلاش '+l.attempts);});
+  L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
+  L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
+  L.push('مرورگر: '+(typeof navigator!=='undefined'?navigator.userAgent:'?'));
+  return L.join('\n');
+}
+function rvCopyReport(){
+  var txt=rvReportText();
+  function done(){rvToast('📋 گزارش کپی شد؛ برای امین بفرست');}
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(function(){rvCopyFallback(txt);done();});return;}
+  }catch(e){}
+  rvCopyFallback(txt);done();
+}
+function rvCopyFallback(txt){
+  try{var ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}catch(e){}
+}
+
+// ── چرخنده‌ی «در حال …»: هر متنی که «در حال … ...» یا «⏳» داشته باشه خودکار چرخنده می‌گیره + نوارِ بالا ──
+var RV_LOADING_RE=/(در حال[^\n]{0,70}?(\.{2,}|…))|^\s*⏳/;
+var RV_SPIN_SET=new Set(),RV_SCAN_Q=new Set(),RV_SCAN_T=null;
+function rvOwnText(el){var s='';for(var n=el.firstChild;n;n=n.nextSibling){if(n.nodeType===3)s+=n.data;}return s;}
+function rvCheckEl(el){
+  if(!el||el.nodeType!==1)return;
+  var tag=el.tagName;if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT'||tag==='OPTION')return;
+  if(el.id==='RVNET_PANEL'||el.id==='RVNET_BANNER'||el.id==='RVNET_PILL'||el.id==='RV_TOPBAR')return;
+  var own=rvOwnText(el);
+  var hg=el.firstElementChild&&el.firstElementChild.classList&&el.firstElementChild.classList.contains('rv-hg');
+  var load=hg||RV_LOADING_RE.test(own);
+  if(load){
+    if(!hg&&/^\s*⏳/.test(own)){
+      for(var n=el.firstChild;n;n=n.nextSibling){
+        if(n.nodeType===3&&/^\s*⏳/.test(n.data)){
+          var sp=document.createElement('span');sp.className='rv-hg';sp.textContent='⏳ ';
+          n.data=n.data.replace(/^\s*⏳\s*/,'');el.insertBefore(sp,n);break;
+        }
+      }
+    }
+    if(!el.classList.contains('rv-loading')){el.classList.add('rv-loading');}
+    RV_SPIN_SET.add(el);
+  }else if(el.classList.contains('rv-loading')){
+    el.classList.remove('rv-loading');RV_SPIN_SET.delete(el);
+  }
+}
+function rvScan(root,depth){
+  if(!root)return;
+  if(root.nodeType===3){if(root.parentNode&&root.parentNode.nodeType===1)rvCheckEl(root.parentNode);return;}
+  if(root.nodeType!==1)return;
+  var tag=root.tagName;if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT')return;
+  var t=root.textContent||'';
+  if(t.indexOf('در حال')<0&&t.indexOf('⏳')<0){if(root.classList.contains('rv-loading')){root.classList.remove('rv-loading');RV_SPIN_SET.delete(root);}return;}
+  rvCheckEl(root);
+  if((depth||0)>12)return;
+  var kids=root.children;
+  for(var i=0;i<kids.length&&i<300;i++)rvScan(kids[i],(depth||0)+1);
+}
+function rvFlushScan(){
+  RV_SCAN_T=null;
+  var q=Array.from(RV_SCAN_Q);RV_SCAN_Q.clear();
+  q.slice(0,600).forEach(function(n){try{rvScan(n,0);}catch(e){}});
+  rvUpdateTop();
+}
+function rvUpdateTop(){
+  var n=0;
+  RV_SPIN_SET.forEach(function(el){
+    if(!document.body.contains(el)){RV_SPIN_SET.delete(el);return;}
+    if(el.getClientRects().length>0)n++;
+  });
+  var busy=n>0||Object.keys(RVLOAD).some(function(k){return RVLOAD[k].status==='loading';});
+  var top=document.getElementById('RV_TOPBAR');if(top)top.classList.toggle('on',busy);
+}
+function rvStartObserver(){
+  if(RVNET.obs||typeof MutationObserver==='undefined'||!document.body)return;
+  RVNET.obs=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      if(m.type==='childList'){
+        m.addedNodes.forEach(function(nd){RV_SCAN_Q.add(nd);});
+        if(m.target&&m.target.nodeType===1)RV_SCAN_Q.add(m.target);
+      }else if(m.type==='characterData'&&m.target.parentNode){RV_SCAN_Q.add(m.target.parentNode);}
+    });
+    if(!RV_SCAN_T)RV_SCAN_T=setTimeout(rvFlushScan,80);
+  });
+  RVNET.obs.observe(document.body,{childList:true,subtree:true,characterData:true});
+  RV_SCAN_Q.add(document.body);RV_SCAN_T=setTimeout(rvFlushScan,0);
+}
+
+// ── راه‌اندازی ──
+function rvNetStart(){
+  if(RVNET.started)return;
+  RVNET.started=Date.now();
+  rvEnsureUI();rvStartObserver();rvStartLiveWatch();
+  rvTick();
+  RVNET.timer=setInterval(rvTick,RV_TICK_MS);
+  rvRender();
+}
+(function(){
+  function boot(){rvEnsureUI();rvStartObserver();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+whenAdminReady(rvNetStart);
+
 // ── حالتِ اتصالِ «سازگار» (long-polling): برای اینترنت/فیلترشکن‌هایی که اتصالِ زنده‌ی فایربیس رو گیر می‌ندازن ──
 var FB_COMPAT_KEY='rv_fb_compat';
 var FB_TEST_MS={google:8000,read:20000,write:15000};
@@ -2584,30 +2982,177 @@ function collectSingleProduct(targetRid){
   }
   return result;
 }
+// ══════════ عکسِ سبک: عکسِ بزرگِ محصول جدا از سندِ محصول (productImages) و فقط موقعِ نیاز لود می‌شه ══════════
+// products/{id}: همه‌ی اطلاعات + thumb (کوچک) + hasImg/hasImg2 | productImages/{id}: {img,img2} (بزرگ)
+var LIGHT_THUMB_W=240,LIGHT_THUMB_Q=0.6,RV_BIG_INFLIGHT={};
+function lightThumb(dataUrl,cb){
+  if(!dataUrl){cb(null);return;}
+  resizeDataUrl(dataUrl,LIGHT_THUMB_W,LIGHT_THUMB_Q,function(t){cb(t||null);});
+}
+function rvRowEl(rid){return document.getElementById('R'+rid);}
+var RV_ROW_IO=null;
+function rvShowThumbNow(rid){
+  var d=IMAGES[rid];if(!d)return;
+  var h=document.getElementById('PIM'+rid);if(!h)return;
+  if(h.tagName==='SPAN'){
+    var im=document.createElement('img');im.id='PIM'+rid;
+    im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';
+    im.decoding='async';im.src=d;h.replaceWith(im);
+  }else if(h.tagName==='IMG'&&h.getAttribute('src')!==d){h.src=d;}
+}
+// عکسِ کوچکِ ردیف: فقط وقتی ردیف تو صفحه دیده بشه رندر می‌شه (گوشی‌های ضعیف زیرِ بارِ دیکُدِ همه‌ی عکس‌ها نمی‌رن)
+function rvSetRowThumb(rid,d){
+  IMAGES[rid]=d;
+  var btn=document.getElementById('PIB'+rid);
+  if(typeof IntersectionObserver==='undefined'||!btn){rvShowThumbNow(rid);return;}
+  if(!RV_ROW_IO){
+    RV_ROW_IO=new IntersectionObserver(function(es){
+      es.forEach(function(e){if(e.isIntersecting){var id=e.target.getAttribute('data-rid');RV_ROW_IO.unobserve(e.target);rvShowThumbNow(id);}});
+    },{rootMargin:'300px'});
+  }
+  btn.setAttribute('data-rid',rid);RV_ROW_IO.observe(btn);
+}
+function rvFetchBig(docId){
+  var db=fbDb;
+  return withTimeout(db.collection('productImages').doc(docId).get({source:'server'}),25000,'bigimg').then(function(d){
+    if(d.exists){var x=d.data();if(x&&(x.img||x.img2))return {img:x.img||'',img2:x.img2||''};}
+    return withTimeout(db.collection('products').doc(docId).get({source:'server'}),25000,'bigimg-legacy').then(function(pd){
+      if(pd.exists){var y=pd.data();return {img:y.img||'',img2:y.img2||''};}
+      return {img:'',img2:''};
+    });
+  });
+}
+function ensureRowBig(rid){
+  var row=rvRowEl(rid);
+  if(!row||row.dataset.biglazy!=='1')return Promise.resolve(true);
+  if(RV_BIG_INFLIGHT[rid])return RV_BIG_INFLIGHT[rid];
+  if(!initFirebase())return Promise.reject(new Error('اتصال برقرار نیست'));
+  var prod=collectSingleProduct(rid);
+  if(!prod)return Promise.resolve(false);
+  var pr=rvFetchBig(prod.id).then(function(o){
+    var r=rvRowEl(rid);
+    if(r){
+      if(!r.dataset.siteimg)r.dataset.siteimg=o.img||'';
+      if(!r.dataset.siteimg2)r.dataset.siteimg2=o.img2||'';
+      r.dataset.biglazy='';
+      r.dataset.hasimg=r.dataset.siteimg?'1':'';
+      r.dataset.hasimg2=r.dataset.siteimg2?'1':'';
+    }
+    delete RV_BIG_INFLIGHT[rid];
+    return true;
+  }).catch(function(e){delete RV_BIG_INFLIGHT[rid];throw e;});
+  RV_BIG_INFLIGHT[rid]=pr;
+  return pr;
+}
+// آماده‌سازیِ نوشتنِ یه محصول: payload سبک (بدونِ عکس) + عکسِ بزرگ جدا؛ اگه عکسِ بزرگ لود نشده، عکس‌های سرور دست‌نخورده می‌مونه
+function lightPrepareWrite(prod,rid,cb){
+  var row=rvRowEl(rid)||{dataset:{}};
+  var payload=Object.assign({},prod);
+  delete payload.img;delete payload.img2;delete payload.rid;
+  var big=row.dataset.siteimg||'',big2=row.dataset.siteimg2||'';
+  function finish(b1,b2){
+    if(row.dataset.imgcleared==='1'&&!b1&&!b2){
+      payload.thumb=null;payload.hasImg=false;payload.hasImg2=false;
+      cb({id:prod.id,payload:payload,merge:true,bigDoc:null,clear:true});return;
+    }
+    if(!b1&&!b2){cb({id:prod.id,payload:payload,merge:true,bigDoc:null});return;}
+    function go(c1,c2){
+      lightThumb(c1||c2,function(th){
+        payload.thumb=th;payload.hasImg=!!c1;payload.hasImg2=!!c2;
+        cb({id:prod.id,payload:payload,merge:false,bigDoc:{img:c1||'',img2:c2||''}});
+      });
+    }
+    if((b1.length+b2.length)>900000){
+      resizeDataUrl(b1,480,0.7,function(s1){resizeDataUrl(b2,480,0.7,function(s2){go(s1||b1,s2||b2);});});
+    }else go(b1,b2);
+  }
+  if(!big&&row.dataset.imgdirty==='1'&&row.dataset.biglazy!=='1'){
+    var src=CATALOG_IMG_CACHE[rid]||IMAGES[rid]||null;
+    if(src){resizeDataUrl(src,640,0.85,function(s){finish(s,big2);});return;}
+  }
+  finish(big,big2);
+}
+function lightCommit(wr){
+  var payload=Object.assign({},wr.payload,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  var batch=fbDb.batch();
+  var pref=fbDb.collection('products').doc(wr.id);
+  if(wr.merge)batch.set(pref,payload,{merge:true});else batch.set(pref,payload);
+  var iref=fbDb.collection('productImages').doc(wr.id);
+  if(wr.bigDoc)batch.set(iref,{img:wr.bigDoc.img||'',img2:wr.bigDoc.img2||'',ts:Date.now()});
+  else if(wr.clear)batch.delete(iref);
+  return batch.commit();
+}
+// ── سبک‌سازیِ محصولاتِ قدیمی: عکسِ بزرگ از سندِ محصول به productImages منتقل می‌شه و یه عکسِ کوچک جاش می‌مونه ──
+var LIGHTMIG={running:false,done:0,fail:0,skipped:0};
+function lightMigStat(msg,type){
+  var el=document.getElementById('LIGHTMIG_STAT');if(!el)return;
+  el.textContent=msg;el.className='stat '+(type==='err'?'serr':(type==='ok'?'sok':'sload'));
+}
+function lightMigrate(){
+  if(LIGHTMIG.running)return;
+  if(!accIsOwner()){alert('این کار فقط برای مدیره');return;}
+  if(!initFirebase()){lightMigStat('اتصال به فایربیس برقرار نیست','err');return;}
+  if(!confirm('⚠️ قبل از شروع حتماً فایلِ جدیدِ سایتِ مشتری (shop.html) رو آپلود کرده باشی، وگرنه عکسِ محصولات روی سایت نمایش داده نمی‌شه.\n\nعکس‌های بزرگِ محصولات از سندِ اصلی جدا می‌شن (چیزی پاک نمی‌شه؛ عکس‌ها به یه جای جدا می‌رن). ادامه بدم؟'))return;
+  LIGHTMIG.running=true;LIGHTMIG.done=0;LIGHTMIG.fail=0;LIGHTMIG.skipped=0;
+  lightMigStat('در حال سبک‌سازی... ۰ محصول','load');
+  var PAGE=8;
+  function finish(){
+    LIGHTMIG.running=false;
+    lightMigStat('✅ تمام شد: '+LIGHTMIG.done+' محصول سبک شد'+(LIGHTMIG.skipped?(' ('+LIGHTMIG.skipped+' تا از قبل سبک بود)'):'')+(LIGHTMIG.fail?(' — '+LIGHTMIG.fail+' ناموفق؛ دوباره بزن'):''),LIGHTMIG.fail?'err':'ok');
+    addNotif('🪶 سبک‌سازیِ عکس‌ها تمام شد: '+LIGHTMIG.done+' محصول');
+  }
+  function migrateOne(d){
+    var x=d.data();
+    if(!x||(!x.img&&!x.img2)){LIGHTMIG.skipped++;return Promise.resolve();}
+    return new Promise(function(res){lightThumb(x.img||x.img2,res);}).then(function(th){
+      var b=fbDb.batch();
+      b.set(fbDb.collection('productImages').doc(d.id),{img:x.img||'',img2:x.img2||'',ts:Date.now()});
+      b.update(fbDb.collection('products').doc(d.id),{thumb:th,hasImg:!!x.img,hasImg2:!!x.img2,img:firebase.firestore.FieldValue.delete(),img2:firebase.firestore.FieldValue.delete()});
+      return withTimeout(b.commit(),30000,'migrate');
+    }).then(function(){
+      LIGHTMIG.done++;
+      lightMigStat('در حال سبک‌سازی... '+LIGHTMIG.done+' محصول','load');
+    }).catch(function(e){LIGHTMIG.fail++;console.error('lightMigrate',d.id,e);});
+  }
+  function nextPage(last){
+    var q=fbDb.collection('products').orderBy(firebase.firestore.FieldPath.documentId()).limit(PAGE);
+    if(last)q=q.startAfter(last);
+    return withTimeout(q.get({source:'server'}),60000,'migrate-read').then(function(snap){
+      if(snap.empty)return finish();
+      var docs=snap.docs,chain=Promise.resolve();
+      docs.forEach(function(d){chain=chain.then(function(){return migrateOne(d);});});
+      return chain.then(function(){return docs.length<PAGE?finish():nextPage(docs[docs.length-1]);});
+    });
+  }
+  nextPage(null).catch(function(e){
+    LIGHTMIG.running=false;console.error('lightMigrate',e);
+    lightMigStat('❌ سبک‌سازی نیمه‌کاره موند ('+LIGHTMIG.done+' محصول انجام شد): '+(e&&e.message||e)+' — دوباره «شروع» رو بزن؛ از همون‌جا ادامه می‌ده.','err');
+  });
+}
 function autoSyncSingleProduct(rid,force,silent){
   if(!initFirebase())return;
   var prod=collectSingleProduct(rid);
   if(!prod||!prod.code)return;
-  function pushIt(imgData){
-    prod.img=imgData;
-    delete prod.rid;
-    var payload=Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-    var approxSize=JSON.stringify(payload).length;
-    if(approxSize>200000){
-      if(!silent)addNotif('⚠️ «'+(prod.title||prod.code)+'» حجمش خیلی زیاده ('+Math.round(approxSize/1024)+'KB) — دارم عکسش رو بیشتر فشرده می‌کنم...');
-      resizeDataUrl(imgData,480,0.7,function(smaller){
-        prod.img=smaller;
-        var payload2=Object.assign({},prod,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-        writeToFirestore(payload2);
-      });
-      return;
-    }
-    writeToFirestore(payload);
+  var row=rvRowEl(rid);
+  // کاربر عکسِ ردیف رو عوض کرده ولی عکس‌های بزرگِ قبلی هنوز نیومدن: اول بیارشون تا عکسِ دوم از بین نره
+  if(row&&row.dataset.biglazy==='1'&&row.dataset.imgdirty==='1'){
+    ensureRowBig(rid).then(function(){autoSyncSingleProduct(rid,force,silent);}).catch(function(e){
+      addNotif('❌ «'+(prod.title||prod.code)+'»: دریافتِ عکس‌های قبلی از سرور ناموفق بود؛ ذخیره انجام نشد');
+      console.error('autoSyncSingleProduct big fetch',e);
+      if(FULL_SYNC_RESOLVE)FULL_SYNC_RESOLVE(false);
+    });
+    return;
   }
-  function writeToFirestore(payload){
-    fbDb.collection('products').doc(prod.id).set(payload).then(function(){
+  lightPrepareWrite(prod,rid,function(wr){
+    lightCommit(wr).then(function(){
+      var r=rvRowEl(rid);
+      if(r){
+        if(wr.bigDoc){r.dataset.hasimg=wr.payload.hasImg?'1':'';r.dataset.hasimg2=wr.payload.hasImg2?'1':'';}
+        r.dataset.imgdirty='';r.dataset.imgcleared='';
+        if(wr.payload.thumb){r.dataset.imgsrc=(r.dataset.imgsrc||'thumb');}
+      }
       if(!silent)addNotif('🔄 «'+(prod.title||prod.code)+'» خودکار با سایت همگام شد');
-      try{accEnsureItemForProduct(payload);}catch(_e){}
+      try{accEnsureItemForProduct(wr.payload);}catch(_e){}
       trackContentActivity();
       if(FULL_SYNC_RESOLVE)FULL_SYNC_RESOLVE(true);
     }).catch(function(e){
@@ -2615,16 +3160,7 @@ function autoSyncSingleProduct(rid,force,silent){
       console.error('autoSyncSingleProduct error',e);
       if(FULL_SYNC_RESOLVE)FULL_SYNC_RESOLVE(false);
     });
-  }
-  if(prod.img){
-    pushIt(prod.img);
-  }else if(CATALOG_IMG_CACHE[rid]){
-    pushIt(CATALOG_IMG_CACHE[rid]);
-  }else if(IMAGES[rid]){
-    resizeDataUrl(IMAGES[rid],640,0.85,function(small){CATALOG_IMG_CACHE[rid]=small;pushIt(small);});
-  }else{
-    pushIt(null);
-  }
+  });
 }
 var FULL_SYNC_RESOLVE=null;
 function fullSyncAllProductsToFirestore(){
@@ -2673,6 +3209,7 @@ function autoSyncDeleteProduct(docId){
   if(!initFirebase())return;
   fbDb.collection('products').doc(docId).delete().then(function(){
     addNotif('🗑️ محصول از سایت هم حذف شد');
+    try{fbDb.collection('productImages').doc(docId).delete().catch(function(){});}catch(_e){}
   }).catch(function(e){
     addNotif('❌ حذف محصول از سایت شکست خورد: '+(e&&e.message?e.message:e));
     console.error('autoSyncDeleteProduct error',e);
@@ -2719,8 +3256,9 @@ function collectAllProducts(){
           sizePriceList:JSON.parse(row.dataset.sizepricelist||'[]'),
           fabricTags:JSON.parse(row.dataset.fabrictags||'[]'),
           patternTags:JSON.parse(row.dataset.patterntags||'[]'),
-          img:row.dataset.siteimg||CATALOG_IMG_CACHE[rid]||null,
-          img2:row.dataset.siteimg2||null
+          img:row.dataset.biglazy==='1'?null:(row.dataset.siteimg||(row.dataset.imgdirty==='1'?CATALOG_IMG_CACHE[rid]:null)||null),
+          img2:row.dataset.biglazy==='1'?null:(row.dataset.siteimg2||null),
+          _thumb:(row.dataset.imgsrc==='thumb'&&IMAGES[rid])?IMAGES[rid]:null
         });
       });
     });
@@ -2810,27 +3348,51 @@ function collectSiteData(productImgMap){
   return {banners:banners,vip:vip};
 }
 function runFirestoreBatches(products,toDeleteIds){
-  var CH=30;
-  var ops=products.map(function(p){return {type:'set',id:p.id,data:p};})
-    .concat(toDeleteIds.map(function(id){return {type:'delete',id:id};}));
-  var chunks=[];
-  for(var i=0;i<ops.length;i+=CH)chunks.push(ops.slice(i,i+CH));
-  var p=Promise.resolve();
-  chunks.forEach(function(chunk){
-    p=p.then(function(){
-      var batch=fbDb.batch();
-      chunk.forEach(function(op){
-        var ref=fbDb.collection('products').doc(op.id);
-        if(op.type==='set')batch.set(ref,Object.assign({},op.data,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}));
-        else batch.delete(ref);
-      });
-      return batch.commit();
-    });
+  // عکسِ کوچک برای محصولاتی که عکسِ بزرگ دارن (یکی‌یکی، تا گوشی زیرِ بار نره)
+  var chain=Promise.resolve();
+  products.forEach(function(p){
+    if(!(p.img||p.img2))return;
+    chain=chain.then(function(){return new Promise(function(res){lightThumb(p.img||p.img2,function(t){p._lt=t;res();});});});
   });
-  return p;
+  return chain.then(function(){
+    var CH=20,ops=products.map(function(p){return {type:'set',p:p};})
+      .concat(toDeleteIds.map(function(id){return {type:'delete',id:id};}));
+    var chunks=[];
+    for(var i=0;i<ops.length;i+=CH)chunks.push(ops.slice(i,i+CH));
+    var pr=Promise.resolve();
+    chunks.forEach(function(chunk){
+      pr=pr.then(function(){
+        var batch=fbDb.batch();
+        chunk.forEach(function(op){
+          if(op.type==='delete'){
+            batch.delete(fbDb.collection('products').doc(op.id));
+            batch.delete(fbDb.collection('productImages').doc(op.id));
+            return;
+          }
+          var p=op.p,payload=Object.assign({},p);
+          delete payload.img;delete payload.img2;delete payload._thumb;delete payload._lt;
+          payload.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+          var pref=fbDb.collection('products').doc(p.id);
+          if(p.img||p.img2){
+            payload.thumb=p._lt||null;payload.hasImg=!!p.img;payload.hasImg2=!!p.img2;
+            batch.set(pref,payload);
+            batch.set(fbDb.collection('productImages').doc(p.id),{img:p.img||'',img2:p.img2||'',ts:Date.now()});
+          }else{
+            batch.set(pref,payload,{merge:true});
+          }
+        });
+        return batch.commit();
+      });
+    });
+    return pr;
+  });
 }
 function syncProductsToFirestore(){
   var stat=document.getElementById('SYNCSTAT');
+  if(_loading||(RVLOAD.products&&RVLOAD.products.status!=='ok')){
+    stat.textContent='⛔ محصولات هنوز کامل از سرور نیومدن؛ همگام‌سازیِ کامل ممکنه محصولاتِ سرور رو پاک کنه. صبر کن لود تموم بشه و دوباره بزن.';stat.className='stat serr';
+    return;
+  }
   stat.textContent='در حال آماده‌سازی...';stat.className='stat sload';
   if(!initFirebase()){
     stat.textContent='خطا: کتابخانه Firebase بارگذاری نشد (اینترنت رو چک کن)';
@@ -2851,7 +3413,7 @@ function syncProductsToFirestore(){
         return;
       }
       var productImgMap={};
-      products.forEach(function(p){if(p.code)productImgMap[p.code]=p.img;});
+      products.forEach(function(p){if(p.code)productImgMap[p.code]=p.img||p._thumb||null;});
       var siteData=collectSiteData(productImgMap);
       stat.textContent='در حال بررسی سرور...';
       fbDb.collection('products').get().then(function(snap){
@@ -2871,7 +3433,7 @@ function syncProductsToFirestore(){
         stat.textContent='خطا در همگام‌سازی: '+(err&&err.message?err.message:err);
         stat.className='stat serr';
       });
-    });
+    },{skipLazy:true});
   });
 }
 
@@ -3339,10 +3901,14 @@ var CATALOG_IMG_CACHE={}; // rid -> عکس کوچک‌شده مخصوص کاتا
 var EXTRA_IMAGES={}; // rid -> آرایه‌ی عکس‌های اضافه (تمام‌سایز)
 var CATALOG_EXTRA_IMG_CACHE={}; // rid -> آرایه‌ی عکس‌های اضافه کوچک‌شده مخصوص کاتالوگ
 var CATALOG_BANNER_CACHE=[null,null,null,null];
-function prepareCatalogAssets(onProgress,cb){
+function prepareCatalogAssets(onProgress,cb,opts){
+  opts=opts||{};
   var tasks=[];
   Object.keys(IMAGES).forEach(function(rid){
-    if(IMAGES[rid])tasks.push({type:'p',rid:rid});
+    var row=rvRowEl(rid);
+    var lazy=row&&row.dataset.biglazy==='1'&&row.dataset.imgdirty!=='1';
+    if(lazy&&!opts.skipLazy&&initFirebase())tasks.push({type:'pb',rid:rid});
+    else if(IMAGES[rid])tasks.push({type:'p',rid:rid});
   });
   Object.keys(EXTRA_IMAGES).forEach(function(rid){
     (EXTRA_IMAGES[rid]||[]).forEach(function(img,idx){
@@ -3350,19 +3916,37 @@ function prepareCatalogAssets(onProgress,cb){
     });
   });
   BANNERS.forEach(function(b,i){if(b)tasks.push({type:'b',idx:i});});
-  var total=tasks.length,done=0;
+  var total=tasks.length,done=0,finished=false;
   if(!total){cb();return;}
-  function tick(){done++;if(onProgress)onProgress(done,total);if(done>=total)cb();}
+  function tick(){done++;if(onProgress)onProgress(done,total);if(done>=total&&!finished){finished=true;cb();}}
+  var heavy=tasks.filter(function(t){return t.type==='pb';});
   tasks.forEach(function(t){
     if(t.type==='p'){
       resizeDataUrl(IMAGES[t.rid],640,0.85,function(small){CATALOG_IMG_CACHE[t.rid]=small;tick();});
-    } else if(t.type==='e'){
+    }else if(t.type==='e'){
       if(!CATALOG_EXTRA_IMG_CACHE[t.rid])CATALOG_EXTRA_IMG_CACHE[t.rid]=[];
       resizeDataUrl(EXTRA_IMAGES[t.rid][t.idx],300,0.72,function(small){CATALOG_EXTRA_IMG_CACHE[t.rid][t.idx]=small;tick();});
-    } else {
+    }else if(t.type==='b'){
       resizeDataUrl(BANNERS[t.idx],720,0.82,function(small){CATALOG_BANNER_CACHE[t.idx]=small;tick();});
     }
   });
+  // عکسِ بزرگِ محصولاتِ تنبل: حداکثر ۳ تا همزمان، بعد از کوچک‌سازی عکسِ بزرگ دور ریخته می‌شه
+  var idx=0;
+  function worker(){
+    if(idx>=heavy.length)return;
+    var t=heavy[idx++],prod=collectSingleProduct(t.rid);
+    function fallback(){
+      if(IMAGES[t.rid])resizeDataUrl(IMAGES[t.rid],640,0.85,function(small){CATALOG_IMG_CACHE[t.rid]=small;tick();worker();});
+      else{tick();worker();}
+    }
+    if(!prod){fallback();return;}
+    rvFetchBig(prod.id).then(function(o){
+      var src=o.img||o.img2;
+      if(!src){fallback();return;}
+      resizeDataUrl(src,640,0.85,function(small){CATALOG_IMG_CACHE[t.rid]=small;tick();worker();});
+    }).catch(function(){fallback();});
+  }
+  for(var w=0;w<3;w++)worker();
 }
 
 // ── PRELOAD ALL IMAGES FROM INDEXEDDB ──
@@ -3374,7 +3958,7 @@ function preloadAll(cb){
   rids.forEach(function(rid){
     if(IMAGES[rid]){tick();return;}
     idbGet(IMG_IDS[rid],function(d){
-      if(d){IMAGES[rid]=d;var h=document.getElementById('PIM'+rid);if(h&&h.tagName==='SPAN'){var im=document.createElement('img');im.id='PIM'+rid;im.src=d;h.replaceWith(im);}else if(h&&h.tagName==='IMG')h.src=d;}
+      if(d){rvSetRowThumb(rid,d);}
       tick();
     });
   });
@@ -3828,7 +4412,7 @@ function addBrand(tab,nm,sRows,sLogoId,sLogo){
   document.getElementById('BN'+bid).oninput=save;
   if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
   else if(sLogoId){LOGO_IDS[bid]=sLogoId;idbGet(sLogoId,function(d){if(d){LOGOS[bid]=d;var lp2=document.getElementById('LP'+bid);if(lp2){lp2.src=d;lp2.style.display='block';}}});}
-  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',tgmsgids:r.tgmsgids||'[]',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',siteimg2:r.siteimg2||'',fabrictags:r.fabrictags||'[]',patterntags:r.patterntags||'[]'});});}
+  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',tgmsgids:r.tgmsgids||'[]',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',siteimg2:r.siteimg2||'',hasimg:r.hasimg,hasimg2:r.hasimg2,biglazy:r.biglazy||'',imgsrc:r.imgsrc||'',fabrictags:r.fabrictags||'[]',patterntags:r.patterntags||'[]'});});}
   else if(!sRows){addRow(bid,tab);}
   save();
 }
@@ -3864,6 +4448,10 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   div.dataset.sizepricelist=extra.sizepricelist||'[]';
   div.dataset.siteimg=extra.siteimg||'';
   div.dataset.siteimg2=extra.siteimg2||'';
+  div.dataset.hasimg=(extra.hasimg!==undefined)?extra.hasimg:(extra.siteimg?'1':'');
+  div.dataset.hasimg2=(extra.hasimg2!==undefined)?extra.hasimg2:(extra.siteimg2?'1':'');
+  div.dataset.biglazy=extra.biglazy||'';
+  div.dataset.imgsrc=extra.imgsrc||'';
   div.dataset.fabrictags=extra.fabrictags||'[]';
   div.dataset.patterntags=extra.patterntags||'[]';
   div.dataset.extraImgIds=extra.extraImgIds||'[]';
@@ -3898,7 +4486,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
     '<button class="ddel" onclick="delR('+rid+')">x</button>';
   document.getElementById('RR'+bid).appendChild(div);
   document.getElementById('PIF'+rid).onchange=function(){loadImg(rid,this);};
-  if(imgId){idbGet(imgId,function(d){if(d){IMAGES[rid]=d;var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.id='PIM'+rid;im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}}});}
+  if(imgId){idbGet(imgId,function(d){if(d){rvSetRowThumb(rid,d);}});}
   ['TI','CD','SZ','CL','MO','PR'].forEach(function(p){var el=document.getElementById(p+rid);if(el)el.oninput=save;});
   var mzEl=document.getElementById('MO'+rid);
   if(mzEl)mzEl.addEventListener('blur',function(){var v=normalizeQty(this.value);if(v!==this.value){this.value=v;save();}});
@@ -3920,7 +4508,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   save();
 }
 function pickImg(rid){openEditor('product_'+rid,IMAGES[rid]||null);}
-function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressRatio(f,3,4,400,0.85,function(d){var id=genId();IMAGES[rid]=d;IMG_IDS[rid]=id;idbPut(id,d);var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}save();});}
+function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressRatio(f,3,4,400,0.85,function(d){var id=genId();IMAGES[rid]=d;IMG_IDS[rid]=id;idbPut(id,d);var _r=rvRowEl(rid);if(_r){_r.dataset.imgdirty='1';_r.dataset.imgsrc='';}var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}save();});}
 function togT(rid,tab){var btn=document.getElementById('TT'+rid);if(!btn)return;var seq=TSEQ[tab]||[];var i=seq.indexOf(btn.dataset.t);var nxt=seq[(i+1)%seq.length];btn.dataset.t=nxt;btn.className=TCLS[nxt];btn.textContent=TLBL[nxt];var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,tab);save();}
 function togSleeve(rid){var btn=document.getElementById('TS'+rid);if(!btn)return;var i=SLEEVE_SEQ.indexOf(btn.dataset.s);var nxt=SLEEVE_SEQ[(i+1)%SLEEVE_SEQ.length];btn.dataset.s=nxt;btn.className=SLEEVE_CLS[nxt];btn.textContent=SLEEVE_LBL[nxt];var row=document.getElementById('R'+rid);if(row)row.dataset.sleeve=nxt;save();}
 function togS(rid){var btn=document.getElementById('ST'+rid);if(!btn)return;if(btn.classList.contains('s-in')){btn.classList.replace('s-in','s-call');btn.textContent='تماس بگیرید';delete OUT_SINCE[rid];}else if(btn.classList.contains('s-call')){btn.classList.replace('s-call','s-out');btn.textContent='ناموجود';OUT_SINCE[rid]=Date.now();}else{btn.classList.replace('s-out','s-in');btn.textContent='موجود';delete OUT_SINCE[rid];}var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,row.dataset.tab);save();}
@@ -3986,6 +4574,7 @@ function accLoad(cb){
   if(!db){ACC.loadError='اتصال به فایربیس برقرار نیست';accRender();return;}
   if(ACC.loading)return;
   ACC.loading=true;ACC.loadError=null;accRender();
+  rvLoaderStart('acc',function(){ACC.loading=false;accLoad();},'حسابداری');
   var names=['accItems','accParties','accInvoices','accPayments','accCosts'];
   Promise.all(names.map(function(n){return db.collection(n).get({source:'server'});})).then(function(snaps){
     ACC.items={};ACC.parties={};ACC.invoices=[];ACC.payments=[];
@@ -4005,12 +4594,13 @@ function accLoad(cb){
     snaps[3].forEach(function(d){ACC.payments.push(Object.assign({id:d.id},d.data()));});
     var byNew=function(a,b){var da=String(a.date||''),dbb=String(b.date||'');if(da!==dbb)return da<dbb?1:-1;return (Number(b.ts)||0)-(Number(a.ts)||0);};
     ACC.invoices.sort(byNew);ACC.payments.sort(byNew);
-    ACC.loaded=true;ACC.loading=false;ACC.loadError=null;
+    ACC.loaded=true;ACC.loading=false;ACC.loadError=null;rvLoaderOk('acc');
     accRender();if(cb)cb();
     if(typeof cgStockHint==='function')cgStockHint();
-    accLoadOrders();accAutoSyncProducts();accMigrateLegacyCosts();accSyncPublicStock();
+    accLoadOrders();accAutoSyncProducts();accMigrateLegacyCosts();accSyncPublicStock();accCleanItemText();
   }).catch(function(e){
     console.error('accLoad error',e);
+    rvLoaderFail('acc',e);
     var perm=e&&(e.code==='permission-denied'||/permission/i.test(String(e.message||'')));
     ACC.loading=false;
     ACC.loadError=perm?'قوانینِ فایربیس (Rules) هنوز دسترسیِ بخشِ حسابداری رو باز نکردن. قوانینِ جدید رو تو کنسولِ فایربیس Publish کن، بعد «تلاش دوباره» بزن.':'دریافت اطلاعات از سرور ناموفق بود. اینترنت/فیلترشکن رو چک کن.';
@@ -4350,19 +4940,20 @@ function accPickCode(i){
 // ── قیمتِ زنده‌ی محصول (از تب محصولات)، به‌جای قیمتِ قدیمیِ ذخیره‌شده تو انبار ──
 function accLiveProductPrice(brand,code){
   var b=String(brand||'').trim().toLowerCase(),c=toEnDigits(String(code||'').trim());
-  var hit=allProds().filter(function(p){return toEnDigits(String(p.code||'').trim())===c&&String(p.brandName||'').trim().toLowerCase()===b;})[0];
+  var nc=normSearchText(c),nb=normSearchText(brand);
+  var hit=allProds().filter(function(p){return normSearchText(p.code)===nc&&normSearchText(p.brandName)===nb;})[0];
   return hit?accNum(hit.price):0;
 }
 
 // ── هر محصولی که ساخته/ذخیره می‌شه، خودکار تو انبار هم ساخته می‌شه (فقط وقتی مدیر پنل رو باز کرده) ──
 function accEnsureItemForProduct(prod){
   if(!accIsOwner()||!ACC.loaded||!prod)return;
-  var brand=String(prod.brand||'').trim(),code=String(prod.code||'').trim();
+  var brand=stripBidi(prod.brand).trim(),code=stripBidi(prod.code).trim();
   if(!brand||!code||code==='--')return;
   var key=accItemKey(brand,code);
   if(ACC.items[key])return;
   var db=accDb();if(!db)return;
-  var item={brand:brand,code:code,name:String(prod.title||'').trim(),sellPrice:accNum(prod.price),qty:0,ts:Date.now()};
+  var item={brand:brand,code:code,name:stripBidi(prod.title).trim(),sellPrice:accNum(prod.price),qty:0,ts:Date.now()};
   ACC.items[key]=Object.assign({id:key,avgCost:0,lastBuy:0},item);
   var ref=db.collection('accItems').doc(key);
   db.runTransaction(function(tx){
@@ -4400,6 +4991,7 @@ function accTs(o){
 function accLoadOrders(){
   var db=accDb();if(!db||!accIsOwner())return;
   ACC.ordersError=null;
+  rvLoaderStart('accOrders',function(){accLoadOrders();},'سفارش‌های حسابداری');
   Promise.all(['confirmed','done'].map(function(st){return db.collection('orders').where('status','==',st).get({source:'server'});})).then(function(snaps){
     var out=[];
     snaps.forEach(function(sn){sn.forEach(function(d){
@@ -4408,9 +5000,9 @@ function accLoadOrders(){
       out.push(o);
     });});
     out.sort(function(x,y){return accTs(y)-accTs(x);});
-    ACC.orders=out;accRenderBg();
+    ACC.orders=out;rvLoaderOk('accOrders');accRenderBg();
   }).catch(function(e){
-    console.error('accLoadOrders',e);
+    console.error('accLoadOrders',e);rvLoaderFail('accOrders',e);
     ACC.orders=[];ACC.ordersError=(e&&e.code==='permission-denied')?'قوانینِ فایربیس اجازه‌ی خواندنِ سفارش‌ها رو نمی‌ده':'دریافتِ سفارش‌ها ناموفق بود';accRenderBg();
   });
 }
@@ -4464,6 +5056,34 @@ function accPostOrder(oid){
   db.collection('accParties').add({name:o.customerName||'مشتری آنلاین',phone:o.customerPhone||'',type:'customer',note:'از سفارش آنلاین',balance:0,openingBalance:0,ts:Date.now()}).then(function(ref){
     accLoad(function(){build(ref.id);});
   }).catch(function(e){console.error(e);accSetStat('ساختِ مشتری ناموفق بود: '+(e&&e.message||e),'err');});
+}
+
+// ── پاک‌کردنِ نویسه‌های نامرئی از برند/کد/نامِ کالاهای موجود (باعثِ پیدانشدنِ جستجوی کامل می‌شدن) ──
+function accCleanItemText(){
+  if(!accIsOwner()||!ACC.loaded||ACC.cleanBusy||ACC.cleanFail)return;
+  var db=accDb();if(!db)return;
+  var dirty=[];
+  Object.keys(ACC.items).forEach(function(k){
+    var it=ACC.items[k];
+    if(BIDI_RE.test(String(it.brand||'')+String(it.code||'')+String(it.name||''))){BIDI_RE.lastIndex=0;dirty.push(k);}
+    BIDI_RE.lastIndex=0;
+  });
+  if(!dirty.length)return;
+  ACC.cleanBusy=true;
+  var chain=Promise.resolve();
+  for(var i=0;i<dirty.length;i+=400){(function(ch){
+    chain=chain.then(function(){
+      var b=db.batch();
+      ch.forEach(function(k){
+        var it=ACC.items[k];
+        var fix={brand:stripBidi(it.brand).trim(),code:stripBidi(it.code).trim(),name:stripBidi(it.name).trim()};
+        b.update(db.collection('accItems').doc(k),fix);
+        it.brand=fix.brand;it.code=fix.code;it.name=fix.name;
+      });
+      return b.commit();
+    });
+  })(dirty.slice(i,i+400));}
+  chain.then(function(){ACC.cleanBusy=false;if(ACC.view==='items')accRenderBg();}).catch(function(e){ACC.cleanBusy=false;ACC.cleanFail=true;console.error('accCleanItemText',e);});
 }
 
 // ── قیمتِ خرید فقط تو accCosts (مخصوصِ مدیر) نگه داشته می‌شه؛ دیتای قدیمیِ داخلِ سندِ کالا منتقل می‌شه ──
@@ -4636,7 +5256,7 @@ function accProductsNotInStock(){
     if(!code||code==='--'||!brand)return;
     var key=accItemKey(brand,code);
     if(ACC.items[key]||seen[key])return;
-    seen[key]=1;out.push({key:key,brand:brand,code:code,name:(p.title||'').trim(),price:accNum(p.price)});
+    seen[key]=1;out.push({key:key,brand:stripBidi(brand).trim(),code:stripBidi(code).trim(),name:stripBidi(p.title||'').trim(),price:accNum(p.price)});
   });
   return out;
 }
@@ -4698,14 +5318,14 @@ function accPickItemPhoto(input){
 }
 function accSaveItem(id){
   var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
-  var name=document.getElementById('ACC_I_NAME').value.trim(),sell=accNum(document.getElementById('ACC_I_SELL').value);
+  var name=stripBidi(document.getElementById('ACC_I_NAME').value).trim(),sell=accNum(document.getElementById('ACC_I_SELL').value);
   var photo=ACC.itemPhoto||{},b=db.batch(),key=id;
   if(id){
     var upd={name:name,sellPrice:sell};
     if(photo.changed){upd.hasImg=true;upd.thumb=photo.thumb||'';}
     b.update(db.collection('accItems').doc(id),upd);
   }else{
-    var brand=document.getElementById('ACC_I_BRAND').value.trim(),code=toEnDigits(document.getElementById('ACC_I_CODE').value.trim());
+    var brand=stripBidi(document.getElementById('ACC_I_BRAND').value).trim(),code=toEnDigits(stripBidi(document.getElementById('ACC_I_CODE').value).trim());
     if(!brand||!code){accSetStat('برند و کد رو بنویس','err');return;}
     key=accItemKey(brand,code);
     if(ACC.items[key]){accSetStat('این کالا قبلاً ثبت شده','err');return;}
@@ -5114,8 +5734,16 @@ function allProds(){
 }
 
 // ── جستجوی محصول (کد یا اسم) با پیشنهادِ زنده ──
+// نویسه‌های نامرئیِ جهت‌دهی (RLM/LRM و...) که موقعِ کپی از تلگرام/جاهای دیگه تو متن می‌چسبن
+var BIDI_RE=/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff\u061c]/g;
+function stripBidi(s){return String(s==null?'':s).replace(BIDI_RE,'');}
 function normSearchText(s){
-  return String(s||'').toLowerCase().replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\s]+/g,'');
+  return String(s==null?'':s).toLowerCase()
+    .replace(/[۰-۹]/g,function(d){return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d));})
+    .replace(/[٠-٩]/g,function(d){return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d));})
+    .replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/ة/g,'ه')
+    .replace(/[\u064b-\u065f\u0670\u0640]/g,'')
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff\u00ad\u061c\s]+/g,'');
 }
 function onProductSearchInput(q){
   var box=document.getElementById('PRODSEARCH_RESULTS');
@@ -8640,12 +9268,13 @@ function stkItemsMap(){return (ACC.loaded&&accIsOwner())?ACC.items:STK_CATALOG;}
 function stkCatalogLoad(cb){
   var db=accDb();if(!db||STK_LOADING)return;
   STK_LOADING=true;STK_ERR='';
+  rvLoaderStart('stk',function(){STK_LOADING=false;STK_ERR='';stkCatalogLoad();},'انبار (انتخاب برای محتوا)');
   db.collection('accItems').get({source:'server'}).then(function(snap){
     STK_CATALOG={};snap.forEach(function(d){var x=d.data();STK_CATALOG[d.id]={id:d.id,brand:x.brand,code:x.code,name:x.name,sellPrice:x.sellPrice,qty:x.qty,thumb:x.thumb,hasImg:x.hasImg};});
-    STK_LOADED=true;STK_LOADING=false;if(cb)cb();
+    STK_LOADED=true;STK_LOADING=false;rvLoaderOk('stk');if(cb)cb();
     if(typeof cgStockHint==='function')cgStockHint();
   }).catch(function(e){
-    console.error('stkCatalogLoad',e);STK_LOADING=false;
+    console.error('stkCatalogLoad',e);STK_LOADING=false;rvLoaderFail('stk',e);
     STK_ERR=(e&&e.code==='permission-denied')?'قوانینِ فایربیس هنوز خواندنِ انبار رو برای تیم باز نکردن':'دریافتِ انبار ناموفق بود';
     STK_ERR_AT=Date.now();
     var box=document.getElementById('STKSRCH_RES');
@@ -8729,7 +9358,7 @@ function cgFindPublished(brand,code){
   var b=String(brand||'').trim().toLowerCase(),c=toEnDigits(String(code||'').trim());
   if(!b||!c||c==='--')return null;
   return allProds().filter(function(p){
-    return toEnDigits(String(p.code||'').trim())===c&&String(p.brandName||'').trim().toLowerCase()===b;
+    return normSearchText(p.code)===normSearchText(c)&&normSearchText(p.brandName)===normSearchText(b);
   })[0]||null;
 }
 function cgPublishedChannels(p){
@@ -9033,32 +9662,47 @@ function setCgSaleType(mode){ // برای سازگاری با کد قدیمی/ب
   if(!CG_SALE_SINGLE&&!CG_SALE_MIXPKG)CG_SALE_SINGLE=true;
   updateCgSaleTypeUI();
 }
-var COLOR_HEX_MAP={
-  'سفید شیری':'#FFFDF5','سفید':'#FFFFFF','سفید استخوانی':'#F0EAD6',
-  'مشکی':'#000000','ملانژ':'#B0AAA4',
-  'قرمز':'#E53935','زرشکی':'#7B1E3A','شرابی':'#722F37','بادمجونی':'#4C2C4E',
-  'آبی':'#1E88E5','آبی آسمانی':'#87CEEB','آبی کاربنی':'#4A6FA5','آبی نفتی':'#1B4F72','آبی اطلسی':'#2E5C8A','سرمه‌ای':'#0B1F3A',
-  'زرد':'#FDD835','زرد لیمویی':'#E3F400','زرد فسفری':'#E8F500','طلایی':'#D4AF37','نباتی':'#EDE0C0',
-  'نارنجی':'#FB8C00','نارنجی تیره':'#C56000','نارنجی فسفری':'#FF6D00','هلویی':'#FFCBA4',
-  'صورتی':'#FF69B4','صورتی تیره':'#D6467C','صورتی پاستیلی':'#FFD1DC','سرخ‌آبی':'#C2185B','سرخ‌آبی تیره':'#8E1550',
-  'بنفش':'#9C27B0','یاسی':'#C8A2C8','گلبه‌ای':'#D8A7B1',
-  'سبز':'#43A047','سبز صابونی':'#A8C686','سبز زمردی':'#009B77','سبز یشمی':'#00A86B','سبز فسفری':'#7FFF00','سبز پسته‌ای':'#93C572','سبز کله‌غازی':'#4B5320','سبز نعنایی':'#AAF0D1','زیتونی':'#6B7A3A',
-  'قهوه‌ای':'#6F4E37','کرم':'#F5E6CA','نسکافه‌ای':'#A67B5B','شکلاتی':'#5C3317','قهوه‌ای خاکستری':'#7A6C5D','فیلی':'#C4B7A6',
-  'طوسی روشن':'#D3D3D3','طوسی تیره':'#696969','خاکستری':'#808080','خاکستری تیره':'#4F4F4F','موشی':'#8B8589','دلفینی':'#8E9AAF'
-};
+// ── رنگ‌ها: ۱۱ دسته؛ هر رنگ نام + کدِ تقریبیِ رنگ (فقط برای نقطه‌ی رنگیِ کنارِ اسم) ──
+var COLOR_GROUPS=[
+  {t:'🤍 سفید و کرم',c:[['سفید شیری','#FFFDF5'],['سفید','#FFFFFF'],['سفید استخوانی','#F0EAD6'],['سفید یخی','#F4F8FB'],['کرم','#F5E6CA'],['نباتی','#EDE0C0'],['نخودی','#E8D9A8'],['شامپاینی','#F7E7CE']]},
+  {t:'🍑 نود و بژ',c:[['نود روشن','#F3D9C8'],['نود','#E8C4A8'],['گوشتی','#F1C9A5'],['پوستی','#E5B99B'],['بژ','#D9C3A5'],['بژ تیره','#BFA27D'],['کاراملی','#C68E4F'],['شتری','#C19A6B'],['عسلی','#C9993A'],['خاکی','#B5A97A'],['کرم خاکی','#D8C9A3'],['فیلی','#C4B7A6']]},
+  {t:'🖤 مشکی و طوسی',c:[['مشکی','#000000'],['ملانژ','#B0AAA4'],['طوسی روشن','#D3D3D3'],['خاکستری','#808080'],['طوسی تیره','#696969'],['خاکستری تیره','#4F4F4F'],['موشی','#8B8589'],['دلفینی','#8E9AAF'],['ذغالی','#36454F'],['دودی','#5E5E5E'],['سربی','#5D6D7E'],['نقره‌ای','#C0C0C0']]},
+  {t:'❤️ قرمز',c:[['قرمز','#E53935'],['قرمز تیره','#8B0000'],['آجری','#B5483A'],['زرشکی','#7B1E3A'],['شرابی','#722F37'],['عنابی','#6B2230'],['آلبالویی','#6D1A36'],['گیلاسی','#B71C3C']]},
+  {t:'🌸 صورتی',c:[['صورتی','#FF69B4'],['صورتی روشن','#F8C8DC'],['صورتی پاستیلی','#FFD1DC'],['صورتی آدامسی','#FF9EC4'],['صورتی بلاش','#F4C2C2'],['گلبه‌ای','#D8A7B1'],['رزگلد','#B76E79'],['صورتی تیره','#D6467C'],['تمشکی','#B0305C'],['سرخ‌آبی','#C2185B'],['سرخ‌آبی تیره','#8E1550']]},
+  {t:'🧡 نارنجی و هلویی',c:[['نارنجی','#FB8C00'],['نارنجی تیره','#C56000'],['نارنجی فسفری','#FF6D00'],['نارنجی برنزه','#C77B30'],['هلویی','#FFCBA4'],['مرجانی','#FF7F6E'],['سالمونی','#FA8072']]},
+  {t:'💛 زرد و فلزی',c:[['زرد','#FDD835'],['زرد لیمویی','#E3F400'],['زرد فسفری','#E8F500'],['کره‌ای','#F5E6A8'],['خردلی','#D4A017'],['زعفرانی','#F4A300'],['طلایی','#D4AF37'],['مسی','#B87333'],['برنزی','#A0723A']]},
+  {t:'💚 سبز',c:[['سبز','#43A047'],['سبز روشن','#A5D6A7'],['سبز تیره','#1B5E20'],['سبز جنگلی','#2E5D34'],['سبز دریایی','#2E8B57'],['سبز صابونی','#A8C686'],['سبز پسته‌ای','#93C572'],['سبز نعنایی','#AAF0D1'],['سبز زمردی','#009B77'],['سبز یشمی','#00A86B'],['سبز فسفری','#7FFF00'],['سبز کله‌غازی','#4B5320'],['زیتونی','#6B7A3A'],['زیتونی تیره','#556B2F'],['سالویی','#9CAF88'],['لجنی','#6B6E3F']]},
+  {t:'💙 آبی و فیروزه‌ای',c:[['فیروزه‌ای','#30D5C8'],['سبز آبی','#008080'],['آبی','#1E88E5'],['آبی آسمانی','#87CEEB'],['آبی یخی','#CFE8F3'],['آبی بچگانه','#A7C7E7'],['آبی پاستلی','#B5D5F0'],['آبی جینی','#5B7FA6'],['آبی کاربنی','#4A6FA5'],['آبی اطلسی','#2E5C8A'],['آبی رویال','#2B50C8'],['آبی کبالت','#0047AB'],['لاجوردی','#1F3A93'],['آبی نفتی','#1B4F72'],['آبی خاکستری','#6C7A89'],['سرمه‌ای','#0B1F3A']]},
+  {t:'💜 بنفش',c:[['بنفش','#9C27B0'],['یاسی','#C8A2C8'],['یاسی تیره','#9D7FBF'],['بنفش پاستلی','#D8C3E8'],['اسطوخودوسی','#B57EDC'],['ارغوانی','#8E2A7D'],['آلویی','#6E2C5A'],['بادمجونی','#4C2C4E']]},
+  {t:'🤎 قهوه‌ای',c:[['قهوه‌ای','#6F4E37'],['قهوه‌ای روشن','#A47551'],['قهوه‌ای تیره','#4B3621'],['نسکافه‌ای','#A67B5B'],['کاپوچینویی','#A68B7B'],['موکا','#7B5B45'],['شکلاتی','#5C3317'],['قهوه‌ای خاکستری','#7A6C5D']]}
+];
+var COLOR_HEX_MAP={},COLOR_GROUP_OF={},COLOR_NORM_MAP={};
+COLOR_GROUPS.forEach(function(g){g.c.forEach(function(x){COLOR_HEX_MAP[x[0]]=x[1];COLOR_GROUP_OF[x[0]]=g.t;COLOR_NORM_MAP[normSearchText(x[0])]=x[1];});});
 var COLOR_LIST_FLAT=Object.keys(COLOR_HEX_MAP);
+function colorHexOf(name){var n=String(name==null?'':name).trim();return COLOR_HEX_MAP[n]||COLOR_NORM_MAP[normSearchText(n)]||'';}
 function colorDotHtml(hex){
-  var border=(hex.toUpperCase()==='#FFFFFF'||hex.toUpperCase()==='#FFFDF5')?'1.5px solid #d8cfc2':'1px solid rgba(0,0,0,0.15)';
-  return '<span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:'+hex+';border:'+border+';margin-left:7px;vertical-align:middle"></span>';
+  var h=String(hex||'#cccccc').replace('#','');
+  var r=parseInt(h.substr(0,2),16)||0,g=parseInt(h.substr(2,2),16)||0,b=parseInt(h.substr(4,2),16)||0;
+  var pale=(0.299*r+0.587*g+0.114*b)>215;
+  var border=pale?'1.5px solid #cdbfae':'1px solid rgba(0,0,0,0.15)';
+  return '<span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:#'+h+';border:'+border+';margin-left:7px;vertical-align:middle;flex-shrink:0"></span>';
 }
 function suggestColorList(q){
   var el=document.getElementById('CG_CL_RES');
-  q=(q||'').trim();
-  var list=q?COLOR_LIST_FLAT.filter(function(c){return c.indexOf(q)>-1;}):COLOR_LIST_FLAT;
-  if(!list.length){el.innerHTML='';el.style.display='none';return;}
-  el.innerHTML=list.map(function(c){
-    return '<div class="srch-item" onclick="pickColorSuggestion(\''+c+'\')">'+colorDotHtml(COLOR_HEX_MAP[c])+c+'</div>';
-  }).join('');
+  var nq=normSearchText(q||'');
+  var html='',n=0;
+  COLOR_GROUPS.forEach(function(g){
+    var groupHit=nq&&normSearchText(g.t.replace(/^[^\u0600-\u06FF]+/,'')).indexOf(nq)>-1;
+    var items=g.c.filter(function(x){return !nq||groupHit||normSearchText(x[0]).indexOf(nq)>-1;});
+    if(!items.length)return;
+    html+='<div class="srch-grp">'+g.t+'</div>';
+    items.forEach(function(x){
+      n++;
+      html+='<div class="srch-item" style="display:flex;align-items:center" onclick="pickColorSuggestion(this.getAttribute(\'data-n\'))" data-n="'+accEsc(x[0])+'">'+colorDotHtml(x[1])+'<span>'+accEsc(x[0])+'</span></div>';
+    });
+  });
+  if(!n){el.innerHTML='';el.style.display='none';return;}
+  el.innerHTML=html;
   el.style.display='block';
 }
 function pickColorSuggestion(name){
@@ -9088,7 +9732,7 @@ function renderCgColorListUI(){
   el.innerHTML=CG_COLORLIST_ITEMS.map(function(c,i){
     var isOut=c.stock==='out';
     return '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2cdb0;border-radius:8px;padding:8px 10px;margin-bottom:6px'+(isOut?';opacity:0.6':'')+'">'+
-      '<span style="font-weight:900;color:#3d2b1f">'+(COLOR_HEX_MAP[c.name]?colorDotHtml(COLOR_HEX_MAP[c.name]):'')+c.name+(isOut?' (ناموجود)':'')+'</span>'+
+      '<span style="font-weight:900;color:#3d2b1f">'+(colorHexOf(c.name)?colorDotHtml(colorHexOf(c.name)):'')+c.name+(isOut?' (ناموجود)':'')+'</span>'+
       '<div style="display:flex;gap:6px">'+
       '<button type="button" onclick="toggleCgColorStock('+i+')" style="background:'+(isOut?'#e8f5ee':'#fde8e8')+';color:'+(isOut?'#1a6a3a':'#c04040')+';border:1px solid '+(isOut?'#a8d8b8':'#f5b8b8')+';border-radius:6px;padding:0 10px;height:26px;cursor:pointer;font-size:0.68rem">'+(isOut?'برگردون موجود':'ناموجود کن')+'</button>'+
       '<button type="button" onclick="delCgColorItem('+i+')" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8;border-radius:6px;width:26px;height:26px;cursor:pointer">✕</button>'+
@@ -9355,12 +9999,15 @@ function buildCaptionData(){
     if(title)lines.push('');
     lines.push(_es.star+'برند '+brand+_es.star);
   }
-  var priceLine='',priceLineHtml='';
+  // قیمت: اگه هر دو (تک‌رنگ و بسته‌ی میکس) روشن باشن هر دو بلوک میان؛ بسته‌ی میکس: «عنوان/ترکیب» بالا، بعد «سایز: تعداد × قیمت»
+  var priceBlocksPlain=[],priceBlocksHtml=[];
   if(CG_SALE_SINGLE&&price){
-    priceLine=showPriceInCaption?('💰 قیمت: '+Math.round(Number(price)/1000)+'t'):'💰 قیمت: استعلام بگیرید';
-    priceLineHtml=showPriceInCaption?('💰 قیمت: <b>'+Math.round(Number(price)/1000)+'t</b>'):'💰 قیمت: <b>استعلام بگیرید</b>';
-  }else if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
-    var pkgPlainLines=['🎁 سایز و قیمت بسته (بسته میکس):'],pkgHtmlLines=['🎁 سایز و قیمت بسته (بسته میکس):'];
+    priceBlocksPlain.push(showPriceInCaption?('💰 قیمت: '+Math.round(Number(price)/1000)+'t'):'💰 قیمت: استعلام بگیرید');
+    priceBlocksHtml.push(showPriceInCaption?('💰 قیمت: <b>'+Math.round(Number(price)/1000)+'t</b>'):'💰 قیمت: <b>استعلام بگیرید</b>');
+  }
+  if(sizePriceEnabled&&CG_SIZEPRICE_LIST.length){
+    var mixTitle=(mixDesc||'').trim();
+    var pkgPlainLines=['🎁 بسته میکس'+(mixTitle?(': '+mixTitle):'')],pkgHtmlLines=['🎁 <b>بسته میکس</b>'+(mixTitle?(': '+escapeHtmlCaption(mixTitle)):'')];
     CG_SIZEPRICE_LIST.forEach(function(sp){
       var valTxt;
       if(!showPriceInCaption)valTxt='استعلام بگیرید';
@@ -9369,9 +10016,10 @@ function buildCaptionData(){
       pkgPlainLines.push(sp.size+': '+valTxt);
       pkgHtmlLines.push(escapeHtmlCaption(sp.size+': ')+'<b>'+escapeHtmlCaption(valTxt)+'</b>');
     });
-    priceLine=pkgPlainLines.join('\n');
-    priceLineHtml=pkgHtmlLines.join('\n');
+    priceBlocksPlain.push(pkgPlainLines.join('\n'));
+    priceBlocksHtml.push(pkgHtmlLines.join('\n'));
   }
+  var priceLine=priceBlocksPlain.join('\n\n'),priceLineHtml=priceBlocksHtml.join('\n\n');
 
   var specLines=[];
   if(code)specLines.push('🔖 کد: #'+code);
@@ -9380,7 +10028,8 @@ function buildCaptionData(){
     if(finalSize)specLines.push('📏 سایز: '+finalSize);
     if(minOrder)specLines.push('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
   }
-  if(mixEnabled&&mixDesc)specLines.push('🎨 '+mixDesc);
+  // ترکیب/عنوانِ بسته‌ی میکس تو بلوکِ قیمت میاد؛ فقط وقتی هیچ قیمتی برای بسته تعریف نشده اینجا نگه داشته می‌شه تا گم نشه
+  if(mixEnabled&&mixDesc&&!CG_SIZEPRICE_LIST.length)specLines.push('🎁 بسته میکس: '+mixDesc);
   if(material)specLines.push('🌿 پارچه و کش '+material);
 
   var countryMap={
@@ -9540,6 +10189,43 @@ function resolveDupChoice(choice){
 }
 var EDITING_RID=null;
 var EDIT_ORIGINAL_CODE='',EDIT_ORIGINAL_BRAND='',EDIT_ORIGINAL_TITLE='';
+function cgFetchBigForEdit(rid,tries){
+  window.CG_BIG_PENDING=true;
+  var stat=document.getElementById('CG_STAT');
+  if(stat){stat.textContent='در حال دریافتِ عکس‌های این محصول از سرور...';stat.className='stat sload';}
+  ensureRowBig(rid).then(function(){
+    if(String(EDITING_RID)!==String(rid))return;
+    var r=rvRowEl(rid);
+    if(r&&r.dataset.siteimg&&!CG_SITE_IMG){
+      CG_SITE_IMG=r.dataset.siteimg;
+      var t1=document.getElementById('CG_SITE_IMG_THUMB'),v1=document.getElementById('CG_SITE_IMG_PREVIEW');
+      if(t1)t1.src=CG_SITE_IMG;if(v1)v1.style.display='block';
+    }
+    if(r&&r.dataset.siteimg2&&!CG_SITE_IMG2){
+      CG_SITE_IMG2=r.dataset.siteimg2;
+      var t2=document.getElementById('CG_SITE_IMG_THUMB2'),v2=document.getElementById('CG_SITE_IMG_PREVIEW2');
+      if(t2)t2.src=CG_SITE_IMG2;if(v2)v2.style.display='block';
+    }
+    window.CG_BIG_PENDING=false;
+    if(stat&&stat.className.indexOf('sload')>-1){stat.textContent='';stat.className='stat';}
+  }).catch(function(e){
+    if(String(EDITING_RID)!==String(rid))return;
+    console.error('cgFetchBigForEdit',e);
+    if(tries<3){
+      if(stat){stat.textContent='دریافتِ عکس‌ها کند شد؛ دوباره تلاش می‌کنم...';stat.className='stat sload';}
+      setTimeout(function(){if(String(EDITING_RID)===String(rid))cgFetchBigForEdit(rid,tries+1);},3000);
+    }else if(stat){
+      stat.textContent='❌ عکس‌های این محصول دریافت نشد (اینترنت/فیلترشکن). تا نیومدن، «ذخیره/ارسال» قفله؛ دوباره «ویرایش» رو بزن.';stat.className='stat serr';
+    }
+  });
+}
+function cgBigBlocked(){
+  if(window.CG_BIG_PENDING&&EDITING_RID){
+    alert('عکس‌های این محصول هنوز از سرور نیومدن. چند ثانیه صبر کن و دوباره بزن (تا نیومدن، ذخیره قفله تا عکس‌ها از بین نرن).');
+    return true;
+  }
+  return false;
+}
 function loadProductForEdit(el){
   var rid=el.getAttribute('data-rid');if(!rid)return;
   var p=allProds().find(function(x){return String(x.rid)===String(rid);});
@@ -9596,6 +10282,8 @@ function loadProductForEdit(el){
   }else{
     removeCgSiteImg2();
   }
+  window.CG_BIG_PENDING=false;
+  (function(){var _r=rvRowEl(rid);if(_r&&_r.dataset.biglazy==='1')cgFetchBigForEdit(rid,0);})();
   renderCgSizePriceList();
   var _pFabricTags=[];try{_pFabricTags=JSON.parse(p.fabrictags||'[]');}catch(e){}
   CG_FABRIC_TAGS=_pFabricTags.slice();
@@ -9669,6 +10357,7 @@ function loadProductForEdit(el){
   document.getElementById('CG_TITLE').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function cancelEdit(){
+  window.CG_BIG_PENDING=false;
   EDITING_RID=null;
   document.getElementById('EDIT_BANNER').style.display='none';
   document.getElementById('SAVE_ONLY_BTN').style.display='none';
@@ -9678,6 +10367,7 @@ function cancelEdit(){
   setCgSaleType('single');
 }
 function saveEditOnly(){
+  if(cgBigBlocked())return;
   var stat=document.getElementById('CG_STAT');
   if(!EDITING_RID){stat.textContent='محصولی برای ویرایش انتخاب نشده — از دکمه‌ی «ویرایش این محصول» شروع کن';stat.className='stat serr';return;}
   var data=buildCaptionData();
@@ -9713,8 +10403,13 @@ function updateExistingProduct(rid,data){
     row.dataset.mixdesc=data.mixEnabled?(data.mixDesc||''):'';
     row.dataset.mixminorder=data.mixEnabled?(data.mixMinOrder||''):'';
     row.dataset.sizepricelist=JSON.stringify(data.sizePriceList||[]);
-    row.dataset.siteimg=data.siteImg||'';
-    row.dataset.siteimg2=data.siteImg2||'';
+    if(row.dataset.biglazy!=='1'){
+      var _hadBig=!!(row.dataset.siteimg||row.dataset.siteimg2);
+      row.dataset.siteimg=data.siteImg||'';
+      row.dataset.siteimg2=data.siteImg2||'';
+      row.dataset.hasimg=data.siteImg?'1':'';row.dataset.hasimg2=data.siteImg2?'1':'';
+      if(_hadBig&&!data.siteImg&&!data.siteImg2)row.dataset.imgcleared='1';
+    }
     row.dataset.fabrictags=JSON.stringify(data.fabricTags||[]);
     row.dataset.patterntags=JSON.stringify(data.patternTags||[]);
     if(data.manualTgLink)row.dataset.tglink=data.manualTgLink;
@@ -10103,6 +10798,7 @@ function sendToContentBackupChannel(cleanOrdered,data){
 }
 var _sendInProgress=false;
 function sendToChannels(){
+  if(cgBigBlocked())return;
   if(_sendInProgress)return;
   var stat=document.getElementById('SEND_STAT');
   if(!SEND_MEDIA.length){stat.textContent='لطفاً حداقل یک عکس یا فیلم اضافه کن';stat.className='stat serr';return;}
@@ -10474,11 +11170,12 @@ function clearTabPlaceholder(tab){
   box.querySelectorAll('.prodload-ph').forEach(function(el){el.remove();});
 }
 function clearAllPlaceholders(){TABS.forEach(clearTabPlaceholder);}
-function showProductLoadError(){
+function showProductLoadError(e){
   stopProductFetchIndicator();
+  var _info=e?rvErrInfo(e):null;
   var bar=document.getElementById('PRODLOAD_BAR'),txt=document.getElementById('PRODLOAD_TEXT'),retry=document.getElementById('PRODLOAD_RETRY');
   if(bar){bar.style.display='block';bar.style.background='#8a1f35';}
-  if(txt)txt.textContent='❌ دریافتِ محصولات ناموفق بود — اینترنت رو چک کن. (فرم‌های خالیِ پایین واقعی نیستن)';
+  if(txt)txt.textContent='❌ دریافتِ محصولات ناموفق بود — '+(_info?_info.msg:'اینترنت رو چک کن')+'. (فرم‌های خالیِ پایین واقعی نیستن)';
   if(retry)retry.style.display='inline-block';
   var cb3=document.getElementById('PRODLOAD_COMPAT');if(cb3){cb3.style.display='inline-block';cb3.textContent=fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار';}
 }
@@ -10502,9 +11199,30 @@ function hideProductLoadProgress(){
   var bar=document.getElementById('PRODLOAD_BAR');
   if(bar)bar.style.display='none';
 }
+function hydrateRowFromDoc(p){
+  var rowImgId=null;
+  if(p.thumb){rowImgId=genId();idbPut(rowImgId,p.thumb);}
+  var _hasBig=!!(p.hasImg||p.img),_hasBig2=!!(p.hasImg2||p.img2);
+  return {
+    type:p.type||'',code:p.code||'',sizes:p.sizes||'',colors:p.colors||'',
+    minO:p.minOrder||'',price:p.price||'',stock:p.stock||'in',
+    imgId:rowImgId,outSince:null,title:p.title||'',
+    material:p.material||'',country:p.country||'',
+    desc1:p.desc1||'',desc2:p.desc2||'',sleeve:p.sleeve||'',
+    tglink:p.tgLink||'',fulldesc:p.fullDesc||'',
+    colorlist:JSON.stringify(p.colorList||[]),
+    mixenabled:p.mixEnabled?'1':'',mixdesc:p.mixDesc||'',mixminorder:p.mixMinOrder||'',
+    sizepricelist:JSON.stringify(p.sizePriceList||[]),
+    fabrictags:JSON.stringify(p.fabricTags||[]),
+    tgmsgids:p.tgMsgIds||'[]',
+    siteimg:'',siteimg2:'',
+    hasimg:_hasBig?'1':'',hasimg2:_hasBig2?'1':'',biglazy:(_hasBig||_hasBig2)?'1':'',imgsrc:p.thumb?'thumb':''
+  };
+}
 function hydrateProductsFromFirestore(){
-  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;showProductLoadError();return;}
+  if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;rvLoaderFail('products',{code:'init',message:'Firebase بالا نیومد'});showProductLoadError({code:'init',message:'Firebase بالا نیومد'});return;}
   var attempt=++PRODLOAD_ATTEMPT;
+  rvLoaderStart('products',function(){retryProductLoad();},'محصولات');
   startProductFetchIndicator();
   fbDb.collection('products').get({source:'server'}).then(function(snap){
     if(attempt!==PRODLOAD_ATTEMPT)return;
@@ -10515,7 +11233,7 @@ function hydrateProductsFromFirestore(){
       clearAllPlaceholders();
       hideProductLoadProgress();
       TABS.forEach(function(t){addBrand(t);});
-      _loading=false;
+      _loading=false;rvLoaderOk('products');
       setTimeout(function(){preloadAll(function(){});checkArchive();renderVipList();},200);
       return;
     }
@@ -10526,28 +11244,19 @@ function hydrateProductsFromFirestore(){
       var brandName=p.brand||'';
       byTabBrand[p.tab]=byTabBrand[p.tab]||{};
       byTabBrand[p.tab][brandName]=byTabBrand[p.tab][brandName]||[];
-      var rowImgId=null;
-      if(p.img){rowImgId=genId();idbPut(rowImgId,p.img);}
-      byTabBrand[p.tab][brandName].push({
-        type:p.type||'',code:p.code||'',sizes:p.sizes||'',colors:p.colors||'',
-        minO:p.minOrder||'',price:p.price||'',stock:p.stock||'in',
-        imgId:rowImgId,outSince:null,title:p.title||'',
-        material:p.material||'',country:p.country||'',
-        desc1:p.desc1||'',desc2:p.desc2||'',sleeve:p.sleeve||'',
-        tglink:p.tgLink||'',fulldesc:p.fullDesc||'',
-        colorlist:JSON.stringify(p.colorList||[]),
-        mixenabled:p.mixEnabled?'1':'',mixdesc:p.mixDesc||'',mixminorder:p.mixMinOrder||'',
-        sizepricelist:JSON.stringify(p.sizePriceList||[]),
-        fabrictags:JSON.stringify(p.fabricTags||[]),
-        tgmsgids:p.tgMsgIds||'[]',
-        siteimg:p.img||null,siteimg2:p.img2||null
-      });
+      byTabBrand[p.tab][brandName].push(hydrateRowFromDoc(p));
     });
+    window.RV_HYDRATED_FS=true;
+    (function(){
+      var _leg=0;snap.forEach(function(d){var q=d.data();if(q&&(q.img||q.img2))_leg++;});
+      window.RV_LEGACY_IMG_COUNT=_leg;
+      if(_leg&&typeof accIsOwner==='function'&&accIsOwner())addNotif('🪶 '+_leg+' محصول هنوز عکسِ سنگین دارن و پنل/سایت رو کند می‌کنن. از «سایت ← سبک‌سازیِ عکس محصولات» تبدیلشون کن.');
+    })();
     var restoredCount=0;
     var tabQueue=TABS.slice();
     function processNextTab(){
       if(!tabQueue.length){
-        _loading=false;
+        _loading=false;rvLoaderOk('products');
         hideProductLoadProgress();
         setTimeout(function(){
           save();
@@ -10583,8 +11292,9 @@ function hydrateProductsFromFirestore(){
     document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){bl.remove();});
     TABS.forEach(function(t){addBrand(t);});
     _loading=false;
-    showProductLoadError();
-    addNotif('⚠️ اتصال به فایربیس برای محصولات برقرار نشد. اگه اینترنت وصله، یه‌بار صفحه رو Refresh کن.');
+    rvLoaderFail('products',e);
+    showProductLoadError(e);
+    addNotif('⚠️ دریافتِ محصولات ناموفق بود: '+rvErrInfo(e).msg+'. خودم دوباره تلاش می‌کنم.');
   });
 }
 var _loading=false;
@@ -10694,7 +11404,7 @@ window.addEventListener('message',function(e){
       document.getElementById('CG_SITE_IMG_PREVIEW2').style.display='block';
     } else if(_editorTarget&&_editorTarget.indexOf('product_')===0){
       var rid=parseInt(_editorTarget.replace('product_',''));
-      IMAGES[rid]=dataUrl;IMG_IDS[rid]=id;
+      IMAGES[rid]=dataUrl;IMG_IDS[rid]=id;(function(){var _r=rvRowEl(rid);if(_r){_r.dataset.imgdirty='1';_r.dataset.imgsrc='';}})();
       var h=document.getElementById('PIM'+rid);
       if(h){
         var im=document.createElement('img');
@@ -10777,12 +11487,14 @@ if(_cgPriceEl)_cgPriceEl.addEventListener('blur',function(){var v=expandPriceSho
 setTimeout(load,700);
 function hydrateMissingSiteImages(){
   if(typeof fbDb==='undefined'||!fbDb)return;
+  if(window.RV_HYDRATED_FS)return; // لودِ اصلی همین الان از فایربیس بوده؛ نیازی به خوندنِ دوباره نیست
   fbDb.collection('products').get().then(function(snap){
     var dataByKey={};
     snap.forEach(function(doc){
       var data=doc.data();
       if(data&&data.tab&&data.code){
-        dataByKey[data.tab+'::'+data.code]=data;
+        // فقط فیلدهای سبک نگه داشته می‌شه تا عکس‌های بزرگِ قدیمی از حافظه آزاد بشن
+        dataByKey[data.tab+'::'+data.code]={desc1:data.desc1,desc2:data.desc2,fullDesc:data.fullDesc,thumb:data.thumb||null,hasBig:!!(data.hasImg||data.img),hasBig2:!!(data.hasImg2||data.img2)};
       }
     });
     TABS.forEach(function(tab){
@@ -10791,11 +11503,14 @@ function hydrateMissingSiteImages(){
           var rid=row.id.slice(1);
           var cdEl=document.getElementById('CD'+rid);
           if(!cdEl||!cdEl.value)return;
-          var key=tab+'::'+cdEl.value;
-          var d=dataByKey[key];
+          var d=dataByKey[tab+'::'+cdEl.value];
           if(!d)return;
-          if(!row.dataset.siteimg&&d.img)row.dataset.siteimg=d.img;
-          if(!row.dataset.siteimg2&&d.img2)row.dataset.siteimg2=d.img2;
+          if(d.hasBig&&!row.dataset.siteimg&&row.dataset.imgdirty!=='1'){
+            row.dataset.hasimg='1';row.dataset.hasimg2=d.hasBig2?'1':'';row.dataset.biglazy='1';
+          }
+          if(d.thumb&&row.dataset.imgdirty!=='1'&&row.dataset.imgsrc!=='thumb'){
+            row.dataset.imgsrc='thumb';rvSetRowThumb(rid,d.thumb);
+          }
           if(d.desc1&&d.desc1.length>(row.dataset.desc1||'').length)row.dataset.desc1=d.desc1;
           if(d.desc2&&d.desc2.length>(row.dataset.desc2||'').length)row.dataset.desc2=d.desc2;
           if(d.fullDesc&&d.fullDesc.length>(row.dataset.fulldesc||'').length)row.dataset.fulldesc=d.fullDesc;
