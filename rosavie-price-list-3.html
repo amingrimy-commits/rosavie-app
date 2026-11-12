@@ -1457,10 +1457,35 @@ function rvHealAll(reason){
 }
 
 // ── شنونده‌های زنده‌ی فایربیس: با خطا نمی‌میرن، دوباره (با صبر) راه می‌افتن ──
+
+// ══════════ دفاع در برابر XSS: داده‌ای که مشتری/بازدیدکننده می‌نویسه (نظر، پیام، سفارش، پروفایل، کامنت) هنگامِ خوندن «خنثی» می‌شه ══════════
+// < و > و " و ' و ` و \ به معادلِ بی‌خطرِ ظاهراً مشابه تبدیل می‌شن؛ پس هیچ قالبِ HTMLی نمی‌تونه با این متن‌ها کد اجرا کنه (حتی اگه جایی escape فراموش شده باشه)
+var RV_UNTRUSTED={orders:1,reviews:1,supportMessages:1,customers:1,customerProfiles:1,articleComments:1,customerClub:1};
+function rvDefangStr(s){return String(s).replace(/</g,'＜').replace(/>/g,'＞').replace(/"/g,'”').replace(/'/g,'’').replace(/`/g,'ˋ').replace(/\\/g,'＼');}
+function rvDefang(v){
+  if(typeof v==='string')return rvDefangStr(v);
+  if(Array.isArray(v))return v.map(rvDefang);
+  if(v&&typeof v==='object'&&Object.getPrototypeOf(v)===Object.prototype){var o={};Object.keys(v).forEach(function(k){o[k]=rvDefang(v[k]);});return o;}
+  return v;
+}
+function rvInstallDefang(){
+  try{
+    var DS=firebase.firestore.DocumentSnapshot;
+    if(!DS||!DS.prototype||typeof DS.prototype.data!=='function'||DS.prototype.data.__rvd)return;
+    var od=DS.prototype.data;
+    var nd=function(){
+      var d=od.apply(this,arguments);
+      try{var cid=this.ref&&this.ref.parent&&this.ref.parent.id;if(d&&RV_UNTRUSTED[cid])return rvDefang(d);}catch(e){}
+      return d;
+    };
+    nd.__rvd=true;DS.prototype.data=nd;
+  }catch(e){console.warn('rvInstallDefang',e);}
+}
 function rvPathOf(ref){return String(ref&&(ref.path||(ref._n?(ref._n+(ref._i?('/'+ref._i):'')):''))||'?');}
 function rvInstallResilience(){
   if(window.__RV_RES_DONE)return;
   window.__RV_RES_DONE=true;
+  rvInstallDefang();
   try{
     var fs=firebase.firestore;
     [fs.Query&&fs.Query.prototype,fs.DocumentReference&&fs.DocumentReference.prototype].forEach(function(proto,i){
@@ -1722,6 +1747,19 @@ whenAdminReady(rvNetStart);
 // ══════════ اعلانِ «پنل به‌روز شد»: بعد از هر به‌روزرسانی یک‌بار وسطِ صفحه + بعدش تو تاریخچه‌ی اعلان‌ها ══════════
 // هر نسخه‌ی جدید که آپلود می‌شه، یه ردیف به ابتدای PANEL_RELEASES اضافه می‌شه (id باید از قبلی بزرگ‌تر باشه).
 var PANEL_RELEASES=[
+  {id:'2026-11-12',date:'2026-11-12',title:'بازرسی و رفعِ باگ‌های امنیتی و ظاهری',
+   news:[
+    'سایت: مسیرِ دسته‌بندی بالای اسمِ محصول (مثلاً «سوتین و ست ‹ سوتین — اسفنجی فنردار») با لینک به همون دسته.',
+    'سایت: دکمه‌های ریزِ سبد (+ و − و حذف و «بعداً می‌خرم») بزرگ‌تر شدن تا با انگشت راحت‌تر بزنی.',
+    'سایت: متن‌های کم‌رنگ (برند و کدِ کارت‌ها، وضعیتِ سفارش‌ها، تاریخِ اعلان) پررنگ‌تر و خواناتر شدن.'
+   ],
+   fixes:[
+    '🔒 امنیت (مهم): متنی که مشتری یا بازدیدکننده می‌نویسه (نظر، پیامِ پشتیبانی، نام و آدرس، توضیحِ سفارش) دیگه نمی‌تونه کدِ مخرب تو پنل یا سایت اجرا کنه.',
+    'قوانینِ فایربیس: ثبتِ نظر، پیامِ پشتیبانی و سفارش فقط با ساختار و اندازه‌ی درست پذیرفته می‌شه.',
+    'ترتیبِ اعدادِ سایز: «80_85_90_95» دیگه وارونه («95_90_85_80») نمایش داده نمی‌شه؛ نه تو سایت، نه تو سبد، نه تو کپشنِ تلگرام/بله/ایتا.',
+    'سایت: ردیفِ رنگ‌ها وقتی به چند خط می‌شکست، رنگِ آخر پایین و سمتِ چپ می‌افتاد؛ درست شد.',
+    'سایت: اعلانِ بدونِ زمان تاریخِ اشتباهِ ۱۳۴۸ نشون می‌داد؛ نشانِ NEW هم خیلی ریز و کم‌رنگ بود.'
+   ]},
   {id:'2026-11-11',date:'2026-11-11',title:'به‌روزرسانیِ بزرگِ پنل و سایت',
    news:[
     'انتخاب از انبار تو «تولید محتوا»: کالا رو با کد، برند یا اسم پیدا کن؛ برند، کد، عنوان و عکس خودکار پر می‌شن.',
@@ -1801,7 +1839,7 @@ function rvShowUpdateIfNeeded(){
   var rel=rvSortedReleases();if(!rel.length)return false;
   var key=rvUserKey(),seen='';
   try{seen=localStorage.getItem(key)||'';}catch(e){}
-  var list=seen?rel.filter(function(r){return r.id>seen;}).slice(0,3):rel.slice(0,1);
+  var list=seen?rel.filter(function(r){return r.id>seen;}).slice(0,3):rel.slice(0,2);
   if(!list.length)return false;
   try{localStorage.setItem(key,rel[0].id);}catch(e){}     // همین الان «دیده شد» ثبت می‌شه تا فقط یک‌بار نشون داده بشه
   list.slice().reverse().forEach(function(r){
@@ -10112,8 +10150,8 @@ function buildCaptionData(){
       if(!showPriceInCaption)valTxt='استعلام بگیرید';
       else if(sp.mode==='package')valTxt=fmtP(sp.pkgPrice);
       else valTxt=sp.pkgCount?(sp.pkgCount+' × '+fmtP(sp.price)):fmtP(sp.price);
-      pkgPlainLines.push(sp.size+': '+valTxt);
-      pkgHtmlLines.push(escapeHtmlCaption(sp.size+': ')+'<b>'+escapeHtmlCaption(valTxt)+'</b>');
+      pkgPlainLines.push(rvLtrNums(sp.size)+': '+valTxt);
+      pkgHtmlLines.push(escapeHtmlCaption(rvLtrNums(sp.size)+': ')+'<b>'+escapeHtmlCaption(valTxt)+'</b>');
     });
     priceBlocksPlain.push(pkgPlainLines.join('\n'));
     priceBlocksHtml.push(pkgHtmlLines.join('\n'));
@@ -10124,7 +10162,7 @@ function buildCaptionData(){
   if(code)specLines.push('🔖 کد: #'+code);
   if(color)specLines.push('🎨 رنگ: '+color);
   if(CG_SALE_SINGLE){
-    if(finalSize)specLines.push('📏 سایز: '+finalSize);
+    if(finalSize)specLines.push('📏 سایز: '+rvLtrNums(finalSize));
     if(minOrder)specLines.push('🛒 حداقل سفارش تک‌رنگ: '+minOrder+' عدد');
   }
   // ترکیب/عنوانِ بسته‌ی میکس تو بلوکِ قیمت میاد؛ فقط وقتی هیچ قیمتی برای بسته تعریف نشده اینجا نگه داشته می‌شه تا گم نشه
@@ -10731,6 +10769,8 @@ function removeSendMedia(idx){
   renderSendMediaList();
 }
 var SITE_BASE_URL='https://amingrimy-commits.github.io/rosavie-app/shop.html';
+// دنباله‌ی عددی با _ یا - (مثل 80_85_90_95) تو متنِ راست‌به‌چپ وارونه (95_90_85_80) نمایش داده می‌شد؛ با LRE…PDF چپ‌به‌راست نگهش می‌داریم
+function rvLtrNums(t){return String(t==null?'':t).replace(/(\d+(?:[_\-–]\d+)+)/g,'\u202A$1\u202C');}
 function escapeHtmlCaption(text){
   return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
