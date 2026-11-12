@@ -1328,6 +1328,7 @@ function initFirebase(){
 // ۳) شنونده‌های زنده‌ی فایربیس با خطا نمی‌میرن ۴) هر «در حال …» یه چرخنده‌ی متحرک می‌گیره ۵) گزارشِ قابلِ کپی برای پیدا کردنِ علتِ مشکل
 var RV_T=window.__RV_T||{};
 var RV_TICK_MS=RV_T.tick||2000,RV_PROBE_MS=RV_T.probe||3500,RV_STUCK_MS=RV_T.stuck||6000,RV_LIVE_FIRST_MS=RV_T.liveFirst||25000,RV_COMPAT_AUTO_MS=RV_T.compat||20000,RV_LOAD_TIMEOUT=RV_T.loadTimeout||45000;
+var RV_PAGE_BACKOFF=RV_T.pageBackoff||1500;
 var RV_LISTEN_FIRST_MS=RV_T.listenFirst||20000,RV_LISTEN_BACKOFF_BASE=RV_T.backoff||2000,RV_LISTEN_BACKOFF_MAX=RV_T.backoffMax||60000,RV_LISTEN_MAX_TRIES=12;
 var RVNET={state:'unknown',lat:0,hist:[],fails:0,okAt:0,started:0,live:null,liveSince:0,stuckSince:0,compatSuggested:false,alert:null,tickN:0,timer:null,ui:false,probes:0,liveWatch:false,lastChange:0};
 var RVLOAD={},RVLISTEN={list:[],failed:0},RVREAD={total:0,by:{},since:Date.now()};
@@ -1433,12 +1434,13 @@ function rvRunLoader(name,manual){
   try{l.retry();}catch(e){rvLoaderFail(name,e);}
 }
 function rvWatchdog(){
-  var now=Date.now(),online=(RVNET.state==='online'||RVNET.state==='slow');
+  var now=Date.now(),online=(RVNET.state!=='offline');
   Object.keys(RVLOAD).forEach(function(n){
     var l=RVLOAD[n];
     if(l.status==='loading'&&now-l.startedAt>RV_LOAD_TIMEOUT){l.status='failed';l.failedAt=now;l.err={kind:'net',code:'timeout',msg:'کند شد (تایم‌اوت)',raw:'timeout'};l.nextAt=now;}
     if(l.status==='failed'&&l.retry&&online&&now>=(l.nextAt||0)&&(!l.err||l.err.kind!=='quota'||now>=l.nextAt)){rvRunLoader(n,false);}
   });
+  try{rvRestSettingsOnce();}catch(e){}
   if(RVNET.state==='stuck'&&RVNET.stuckSince&&now-RVNET.stuckSince>RV_COMPAT_AUTO_MS&&!fbCompatOn()&&!RVNET.compatSuggested){
     RVNET.compatSuggested=true;
     try{localStorage.setItem(FB_COMPAT_KEY,'1');}catch(e){}
@@ -1528,6 +1530,7 @@ function rvWrapOnSnapshot(proto){
       var errH=function(err){
         entry.lastErr=rvErrInfo(err);RVLISTEN.failed++;clearTimeout(entry.wd);
         try{if(userErr)userErr(err);}catch(e){}
+        if(entry.lastErr.code==='permission-denied'){entry.permTries=(entry.permTries||0)+1;if(entry.permTries>2){entry.dead=true;return;}}
         schedule();
       };
       if(userErr)a2[fi+1]=errH;else a2.splice(fi+1,0,errH);
@@ -1572,6 +1575,7 @@ function rvLiveSnap(s){
   var fc=!!(s&&s.metadata&&s.metadata.fromCache),prev=RVNET.live;
   RVNET.live=!fc;
   if(prev!==RVNET.live)RVNET.liveSince=Date.now();
+  if(RVNET.live===true)RV_REST_PREF=false;
   rvSetState(rvDecide());
 }
 
@@ -1607,8 +1611,9 @@ function rvRender(){
     var msg='',cls='warn',spin=false,btns='<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره</button>';
     if(RVNET.alert){msg=RVNET.alert.msg;cls='err';}
     else if(s==='offline'){msg='📵 اینترنت یا فیلترشکن قطعه (یا به گوگل نمی‌رسه). هر ۲ ثانیه چک می‌کنم و وصل که شد خودم ادامه می‌دم';spin=true;}
-    else if(s==='stuck'){msg='🐢 به اینترنت وصلی، ولی اتصالِ زنده‌ی فایربیس گیر کرده (معمولاً فیلترشکن). دارم دوباره تلاش می‌کنم';spin=true;}
-    if(RVNET.compatSuggested&&s!=='online'){msg+='<br>🔧 «حالتِ سازگار» برای دفعه‌ی بعد خودکار روشن شد؛ برای اعمالِ همین الان بزن:';btns+='<button onclick="location.reload()">↻ بارگذاری مجدد</button>';}
+    else if(s==='stuck'){msg='🐢 به اینترنت وصلی، ولی اتصالِ زنده‌ی فایربیس گیر کرده (معمولاً فیلترشکن). '+(rvPreferRest()?'از مسیرِ جایگزین (درخواستِ ساده) برای محصولات و ذخیره استفاده می‌کنم':'دارم دوباره تلاش می‌کنم');spin=true;}
+    if(s==='stuck'&&fbCompatOn()&&RVNET.stuckSince&&Date.now()-RVNET.stuckSince>60000){msg+='<br>🔧 «حالتِ سازگار» روشنه و هنوز گیره؛ «حالتِ عادی» رو هم امتحان کن:';btns+='<button onclick="rvCompatToggle()">↩️ حالتِ عادی</button>';}
+    else if(RVNET.compatSuggested&&s!=='online'){msg+='<br>🔧 «حالتِ سازگار» برای دفعه‌ی بعد خودکار روشن شد؛ برای اعمالِ همین الان بزن:';btns+='<button onclick="location.reload()">↻ بارگذاری مجدد</button>';}
     else if(msg&&RVNET.alert&&RVNET.alert.kind==='net'){btns+='<button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button>';}
     if(msg){ban.className=cls;ban.innerHTML='<span'+(spin?' class="rv-spin"':'')+'>'+msg+'</span><br>'+btns;ban.style.display='block';}
     else{ban.style.display='none';ban.innerHTML='';}
@@ -1632,6 +1637,7 @@ function rvRenderPanel(){
     '<div><b>شنونده‌های زنده:</b> '+accFa(RVLISTEN.list.length)+' فعال'+(dead?(' · '+accFa(dead)+' با خطا (دوباره تلاش می‌شه)'):'')+'</div>'+
     '<div><b>خواندن از فایربیس (این نشست):</b> '+accFa(RVREAD.total)+' سند'+(rvTopReads(4).length?('<br><span style="font-weight:600;color:#7a5a38">'+rvTopReads(4).map(function(x){return accEsc(x.name)+' '+accFa(x.n);}).join(' · ')+'</span>'):'')+'</div>'+
     '<div><b>حالتِ اتصال:</b> '+(fbCompatOn()?'سازگار (long-polling)':'عادی (خودکار)')+'</div>'+
+    '<div><b>مسیرِ جایگزین (REST):</b> '+(rvPreferRest()?'<span style="color:#b8651b">فعاله</span>':'آماده‌ست')+' · '+accFa(RVNET.rest.reads)+' خواندن، '+accFa(RVNET.rest.writes)+' نوشتن'+(RVNET.rest.fail?(' · '+accFa(RVNET.rest.fail)+' خطا'):'')+'</div>'+
     '<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره‌ی همه</button><button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button><button onclick="rvCopyReport()">📋 کپیِ گزارش</button>';
 }
 function rvReportText(){
@@ -1640,6 +1646,8 @@ function rvReportText(){
     'آنلاینِ مرورگر: '+(typeof navigator!=='undefined'?navigator.onLine:'?')+' | حالتِ سازگار: '+(fbCompatOn()?'روشن':'خاموش'),
     'چک‌های اخیر: '+RVNET.hist.map(function(h){return (h.ok?'✓':'✗')+h.ms;}).join(' ')];
   Object.keys(RVLOAD).forEach(function(n){var l=RVLOAD[n];L.push('لود «'+(l.label||n)+'»: '+l.status+(l.err?(' | '+l.err.kind+' / '+l.err.code+' / '+l.err.raw):'')+' | تلاش '+l.attempts);});
+  L.push('مسیرِ جایگزین REST: '+(rvPreferRest()?'فعال':'غیرفعال')+' | خواندن '+RVNET.rest.reads+' | نوشتن '+RVNET.rest.writes+' | خطا '+RVNET.rest.fail+' | تنظیمات '+RVNET.rest.settings);
+  L.push('محصولاتِ رسیده تا الان: '+(window.PRODLOAD_COUNT||0)+' | اندازه‌ی صفحه‌ی بعدی/تلاش‌ها: '+(RV_PROD_PAGES.docs.length)+' سندِ نیمه‌کاره');
   L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
   L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
   L.push('مرورگر: '+(typeof navigator!=='undefined'?navigator.userAgent:'?'));
@@ -1754,6 +1762,17 @@ whenAdminReady(rvNetStart);
 // ══════════ اعلانِ «پنل به‌روز شد»: بعد از هر به‌روزرسانی یک‌بار وسطِ صفحه + بعدش تو تاریخچه‌ی اعلان‌ها ══════════
 // هر نسخه‌ی جدید که آپلود می‌شه، یه ردیف به ابتدای PANEL_RELEASES اضافه می‌شه (id باید از قبلی بزرگ‌تر باشه).
 var PANEL_RELEASES=[
+  {id:'2026-11-12b',date:'2026-11-12',title:'تخفیفِ تأمین‌کننده و لودِ مطمئن‌تر محصولات',
+   news:[
+    'انبار: تو فرمِ «کالای جدید» (و کالایی که هنوز قیمتِ خرید نداره) «تخفیفِ تأمین‌کننده» هست: ۲۵، ۲۰، ۱۷، ۱۵، ۱۰، ۷ و ۵٪ با یه کلیک یا درصدِ دستی؛ قیمتِ خرید از قیمتِ فروش کم می‌شه و «خریدِ خودمون» ثبت می‌شه.',
+    'محصولات حالا صفحه‌به‌صفحه (و با تلاشِ دوبارهٔ هر صفحه) دریافت می‌شن و نوار می‌گه «چندتا محصول رسید»؛ روی اینترنتِ ناپایدار خیلی مطمئن‌تره.',
+    'مسیرِ جایگزین: اگه فیلترشکن اتصالِ زندهٔ فایربیس رو ببُره ولی درخواستِ ساده رد بشه، پنل خودکار با درخواستِ معمولی (REST) محصولات و تنظیماتِ تلگرام رو می‌خونه و ذخیره/حذفِ محصول رو هم انجام می‌ده.'
+   ],
+   fixes:[
+    'وقتی اتصالِ زنده‌ی فایربیس «گیر کرده» بود، پنل لودِ محصولات رو دوباره امتحان نمی‌کرد؛ الان خودکار تلاش می‌کنه.',
+    'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
+    'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.'
+   ]},
   {id:'2026-11-12',date:'2026-11-12',title:'بازرسی و رفعِ باگ‌های امنیتی و ظاهری',
    news:[
     'سایت: مسیرِ دسته‌بندی بالای اسمِ محصول (مثلاً «سوتین و ست ‹ سوتین — اسفنجی فنردار») با لینک به همون دسته.',
@@ -1859,6 +1878,117 @@ function rvShowUpdateIfNeeded(){
   return true;
 }
 whenAdminReady(function(){setTimeout(rvShowUpdateIfNeeded,1500);});
+
+
+// ══════════ مسیرِ جایگزین (REST): وقتی اتصالِ زنده‌ی فایربیس گیر می‌کنه ولی درخواستِ ساده‌ی HTTPS رد می‌شه ══════════
+// خوندنِ محصولات/عکس‌ها/تنظیمات و ذخیره‌ی محصول با درخواستِ معمولیِ HTTPS؛ فقط وقتی «گیر کرده» یا خطای اتصال داریم استفاده می‌شه
+var RV_REST_PREF=false;
+RVNET.rest={calls:0,reads:0,writes:0,fail:0,settings:false};
+function rvRestAvailable(){try{return typeof firebaseConfig!=='undefined'&&!!firebaseConfig.projectId&&typeof fetch==='function'&&localStorage.getItem('rv_rest_off')!=='1';}catch(e){return false;}}
+function rvPreferRest(){return rvRestAvailable()&&(RV_REST_PREF||(RVNET.state==='stuck'&&!!RVNET.stuckSince&&Date.now()-RVNET.stuckSince>3000));}
+function rvRestBase(){return 'https://firestore.googleapis.com/v1/projects/'+firebaseConfig.projectId+'/databases/(default)/documents';}
+function rvRestKey(){return '?key='+encodeURIComponent(firebaseConfig.apiKey||'');}
+function rvSeg(x){return encodeURIComponent(String(x));}
+function rvFsDecode(v){
+  if(!v)return null;
+  if('stringValue' in v)return v.stringValue;
+  if('integerValue' in v)return Number(v.integerValue);
+  if('doubleValue' in v)return Number(v.doubleValue);
+  if('booleanValue' in v)return v.booleanValue;
+  if('nullValue' in v)return null;
+  if('timestampValue' in v)return v.timestampValue;
+  if('arrayValue' in v)return (v.arrayValue.values||[]).map(rvFsDecode);
+  if('mapValue' in v){var o={},f=v.mapValue.fields||{};Object.keys(f).forEach(function(k){o[k]=rvFsDecode(f[k]);});return o;}
+  if('referenceValue' in v)return v.referenceValue;
+  return null;
+}
+function rvFsEncode(v){
+  if(v===null||v===undefined)return {nullValue:null};
+  var t=typeof v;
+  if(t==='string')return {stringValue:v};
+  if(t==='boolean')return {booleanValue:v};
+  if(t==='number'){if(!isFinite(v))return {nullValue:null};return Math.floor(v)===v?{integerValue:String(v)}:{doubleValue:v};}
+  if(Array.isArray(v))return {arrayValue:{values:v.map(rvFsEncode)}};
+  if(t==='object'){var f={};Object.keys(v).forEach(function(k){if(v[k]!==undefined)f[k]=rvFsEncode(v[k]);});return {mapValue:{fields:f}};}
+  return {stringValue:String(v)};
+}
+function rvFsFields(o){var f={};Object.keys(o).forEach(function(k){if(o[k]!==undefined)f[k]=rvFsEncode(o[k]);});return f;}
+function rvRestHttp(method,url,body,needAuth,timeoutMs){
+  return Promise.resolve().then(function(){
+    if(!needAuth)return null;
+    var u=null;try{u=firebase.auth().currentUser;}catch(e){}
+    if(!u||typeof u.getIdToken!=='function')return Promise.reject({code:'unauthenticated',message:'ورود نداری'});
+    return u.getIdToken();
+  }).then(function(tok){
+    return new Promise(function(resolve,reject){
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null,done=false;
+      var to=setTimeout(function(){if(done)return;done=true;try{if(ctrl)ctrl.abort();}catch(e){}reject({code:'unavailable',message:'timeout: REST '+method});},timeoutMs||25000);
+      var h={};if(body)h['Content-Type']='application/json';if(tok)h['Authorization']='Bearer '+tok;
+      fetch(url,{method:method,headers:h,body:body?JSON.stringify(body):undefined,signal:ctrl?ctrl.signal:undefined}).then(function(r){
+        return r.json().catch(function(){return {};}).then(function(j){
+          if(done)return;done=true;clearTimeout(to);
+          if(r.ok){RVNET.rest.calls++;resolve(j);return;}
+          var st=(j&&j.error&&j.error.status)||'';
+          var code=st==='PERMISSION_DENIED'||r.status===403?'permission-denied':(st==='RESOURCE_EXHAUSTED'||r.status===429?'resource-exhausted':(st==='UNAUTHENTICATED'||r.status===401?'unauthenticated':(st==='NOT_FOUND'||r.status===404?'not-found':(r.status>=500?'unavailable':'unknown'))));
+          reject({code:code,message:(j&&j.error&&j.error.message)||('HTTP '+r.status)});
+        });
+      }).catch(function(e){if(done)return;done=true;clearTimeout(to);reject({code:'unavailable',message:String(e&&e.message||e)});});
+    });
+  });
+}
+function rvRestDoc(d){
+  var id=d.name.split('/').pop();try{id=decodeURIComponent(id);}catch(e){}
+  var obj={};Object.keys(d.fields||{}).forEach(function(k){obj[k]=rvFsDecode(d.fields[k]);});
+  return {id:id,exists:true,data:function(){return Object.assign({},obj);}};
+}
+function rvRestList(coll,token,size,timeoutMs){
+  var url=rvRestBase()+'/'+coll+rvRestKey()+'&pageSize='+size+(token?('&pageToken='+encodeURIComponent(token)):'');
+  return rvRestHttp('GET',url,null,false,timeoutMs||25000).then(function(j){return {docs:(j.documents||[]).map(rvRestDoc),next:j.nextPageToken||''};});
+}
+function rvRestGetDoc(coll,id,auth){
+  return rvRestHttp('GET',rvRestBase()+'/'+coll+'/'+rvSeg(id)+rvRestKey(),null,!!auth,20000).then(rvRestDoc,function(e){if(e&&e.code==='not-found')return null;throw e;});
+}
+function rvRestCommit(writes){
+  return rvRestHttp('POST',rvRestBase()+':commit'+rvRestKey(),{writes:writes},true,30000);
+}
+function rvRestName(coll,id){return 'projects/'+firebaseConfig.projectId+'/databases/(default)/documents/'+coll+'/'+rvSeg(id);}
+function rvRestSaveProduct(wr){
+  var fields=rvFsFields(wr.payload);
+  var w1={update:{name:rvRestName('products',wr.id),fields:fields},updateTransforms:[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}]};
+  if(wr.merge)w1.updateMask={fieldPaths:Object.keys(fields)};
+  var writes=[w1];
+  if(wr.bigDoc)writes.push({update:{name:rvRestName('productImages',wr.id),fields:rvFsFields({img:wr.bigDoc.img||'',img2:wr.bigDoc.img2||'',ts:Date.now()})}});
+  else if(wr.clear)writes.push({delete:rvRestName('productImages',wr.id)});
+  return rvRestCommit(writes).then(function(r){RVNET.rest.writes++;return r;});
+}
+function rvFetchProductsRest(attempt,onProgress,quick){
+  var docs=[],token='',maxTries=quick?1:4,tmo=quick?10000:25000;
+  function page(tries){
+    if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+    return rvRestList('products',token,20,tmo).then(function(r){
+      r.docs.forEach(function(d){docs.push(d);});
+      token=r.next;RVNET.rest.reads+=r.docs.length;
+      if(onProgress)onProgress(docs.length);
+      if(token)return page(0);
+    },function(e){
+      if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+      var info=rvErrInfo(e);
+      if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=maxTries)return Promise.reject(e);
+      return new Promise(function(res){setTimeout(res,Math.min(8000,RV_PAGE_BACKOFF*Math.pow(2,tries)));}).then(function(){return page(tries+1);});
+    });
+  }
+  return page(0).then(function(){RV_PROD_PAGES.docs=[];RV_PROD_PAGES.last=null;return {empty:docs.length===0,size:docs.length,docs:docs,forEach:function(cb){docs.forEach(cb);}};});
+}
+function rvRestSettingsOnce(){
+  if(!rvPreferRest()||!SETTINGS_FIRST_LOAD)return;
+  var now=Date.now();if(RVNET.restSettingsAt&&now-RVNET.restSettingsAt<20000)return;
+  RVNET.restSettingsAt=now;
+  rvRestGetDoc('settings','appConfig',true).then(function(d){
+    if(!d||!SETTINGS_FIRST_LOAD)return;
+    SETTINGS_FIRST_LOAD=false;RVNET.rest.settings=true;
+    applySettingsDoc({exists:true,data:d.data});
+  }).catch(function(e){console.warn('rest settings',e);});
+}
 
 // ── حالتِ اتصالِ «سازگار» (long-polling): برای اینترنت/فیلترشکن‌هایی که اتصالِ زنده‌ی فایربیس رو گیر می‌ندازن ──
 var FB_COMPAT_KEY='rv_fb_compat';
@@ -2707,6 +2837,7 @@ function refreshDoneSupportMsgs(){
 }
 function startSupportMsgListener(){
   if(!ADMIN_IS_READY){whenAdminReady(startSupportMsgListener);return;}
+  if(!accIsOwner())return;   // پیام‌های پشتیبانی فقط برای مدیره (قوانین به تیم اجازه نمی‌دن)
   if(!initFirebase()){
     var el=document.getElementById('SUPPORTMSG_LIST');
     if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
@@ -2988,6 +3119,7 @@ function saveAddSiteCustomerForm(cid){
 var CUSTOMERS2_SEEN_IDS={},CUSTOMERS2_FIRST_LOAD=true;
 function startCustomersListener(){
   if(!ADMIN_IS_READY){whenAdminReady(startCustomersListener);return;}
+  if(!accIsOwner())return;   // فهرستِ مشتری‌ها فقط برای مدیره
   if(!initFirebase()){
     var el=document.getElementById('CUSTOMERS2_LIST');
     if(el)el.innerHTML='خطا: Firebase بارگذاری نشد';
@@ -3158,20 +3290,27 @@ function rvSetRowThumb(rid,d){
   }
   btn.setAttribute('data-rid',rid);RV_ROW_IO.observe(btn);
 }
-function rvFetchBig(docId){
+function rvFetchBigSdk(docId){
   var db=fbDb;
-  function fromProduct(){
+  return withTimeout(db.collection('productImages').doc(docId).get({source:'server'}),(RVNET.state==='stuck'||RVNET.live===false)?10000:25000,'bigimg').then(function(d){
+    if(d.exists){var x=d.data();if(x&&(x.img||x.img2))return {img:x.img||'',img2:x.img2||''};}
     return withTimeout(db.collection('products').doc(docId).get({source:'server'}),25000,'bigimg-legacy').then(function(pd){
       if(pd.exists){var y=pd.data();return {img:y.img||'',img2:y.img2||''};}
       return {img:'',img2:''};
     });
-  }
-  return withTimeout(db.collection('productImages').doc(docId).get({source:'server'}),25000,'bigimg').then(function(d){
-    if(d.exists){var x=d.data();if(x&&(x.img||x.img2))return {img:x.img||'',img2:x.img2||''};}
-    return fromProduct();
-  },function(e){
-    // قوانینِ قدیمی productImages رو نمی‌خونن؛ شاید عکس داخلِ خودِ سند باشه
-    return fromProduct().then(function(o){if(o.img||o.img2)return o;throw e;},function(){throw e;});
+  });
+}
+function rvFetchBigRest(docId){
+  return rvRestGetDoc('productImages',docId,false).then(function(d){
+    if(d){var x=d.data();if(x.img||x.img2)return {img:x.img||'',img2:x.img2||''};}
+    return rvRestGetDoc('products',docId,false).then(function(p){if(p){var y=p.data();return {img:y.img||'',img2:y.img2||''};}return {img:'',img2:''};});
+  });
+}
+function rvFetchBig(docId){
+  if(rvPreferRest())return rvFetchBigRest(docId).catch(function(){return rvFetchBigSdk(docId);});
+  return rvFetchBigSdk(docId).catch(function(e){
+    if(rvErrInfo(e).kind==='net'&&rvRestAvailable()){RV_REST_PREF=true;return rvFetchBigRest(docId);}
+    throw e;
   });
 }
 function ensureRowBig(rid){
@@ -3224,7 +3363,7 @@ function lightPrepareWrite(prod,rid,cb){
   }
   finish(big,big2);
 }
-function lightCommit(wr){
+function lightCommitSdk(wr){
   function build(legacy){
     var payload=Object.assign({},wr.payload,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
     var batch=fbDb.batch();
@@ -3301,6 +3440,15 @@ function lightMigrate(){
     var _mi=rvErrInfo(e);
     lightMigStat('❌ سبک‌سازی نیمه‌کاره موند ('+LIGHTMIG.done+' محصول انجام شد): '+(_mi.kind==='perm'?'قوانینِ فایربیس هنوز Publish نشده (باید فایلِ firestore-rules.txt رو اول Publish کنی)':(e&&e.message||e))+' — بعد از رفعش دوباره «شروع» رو بزن؛ از همون‌جا ادامه می‌ده.','err');
   });
+}
+function lightCommit(wr){
+  if(rvPreferRest()){
+    return rvRestSaveProduct(wr).catch(function(e){
+      console.warn('REST save failed → SDK',e);RVNET.rest.fail++;
+      return lightCommitSdk(wr);
+    });
+  }
+  return lightCommitSdk(wr);
 }
 function autoSyncSingleProduct(rid,force,silent){
   if(!initFirebase())return;
@@ -3380,6 +3528,12 @@ function fullSyncAllProductsToFirestore(){
 }
 function autoSyncDeleteProduct(docId){
   if(!initFirebase())return;
+  if(rvPreferRest()){
+    rvRestCommit([{delete:rvRestName('products',docId)},{delete:rvRestName('productImages',docId)}]).then(function(){
+      RVNET.rest.writes++;addNotif('🗑️ محصول از سایت هم حذف شد');
+    }).catch(function(e){addNotif('❌ حذف محصول از سایت شکست خورد: '+(e&&e.message?e.message:e));console.error('REST delete',e);});
+    return;
+  }
   fbDb.collection('products').doc(docId).delete().then(function(){
     addNotif('🗑️ محصول از سایت هم حذف شد');
     try{fbDb.collection('productImages').doc(docId).delete().catch(function(){});}catch(_e){}
@@ -5460,7 +5614,14 @@ function accRenderItemView(){
   h+='<div class="g1"><span class="lbl">نام / توضیح</span><input class="fi" id="ACC_I_NAME" value="'+accEsc(it?it.name||'':'')+'"></div>';
   ACC.itemPhoto={full:null,thumb:null,changed:false};
   h+='<div class="g1"><span class="lbl">📷 عکس کالا (برای سایت و تولید محتوا)</span><div id="ACC_I_IMG_BOX" style="margin-bottom:6px">'+(it&&it.thumb?'<img src="'+it.thumb+'" style="width:90px;aspect-ratio:3/4;object-fit:cover;border-radius:10px;border:2px solid #d4a87a">':'<span style="font-size:0.68rem;color:#9a6e3a">هنوز عکسی ندارد</span>')+'</div><button type="button" class="addb" onclick="document.getElementById(\'ACC_I_IMG_FILE\').click()">+ انتخاب / تغییرِ عکس</button><input type="file" id="ACC_I_IMG_FILE" accept="image/*" style="display:none" onchange="accPickItemPhoto(this)"></div>';
-  h+='<div class="g1"><span class="lbl">قیمت فروشِ پیش‌فرض (تومان)</span><input class="fi" id="ACC_I_SELL" inputmode="numeric" value="'+(it&&it.sellPrice?accEsc(String(it.sellPrice)):'')+'" oninput="accHint(this)"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+  h+='<div class="g1"><span class="lbl">قیمت فروشِ پیش‌فرض (تومان)</span><input class="fi" id="ACC_I_SELL" inputmode="numeric" value="'+(it&&it.sellPrice?accEsc(String(it.sellPrice)):'')+'" oninput="accHint(this);accSellTyped()"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+  ACC_DISC={pct:null,manual:false};
+  // قیمتِ خرید: برای کالای جدید، و برای کالایی که هنوز قیمتِ خرید نداره (کالاهای ساخته‌شده از محصولات)
+  if(!it||!(Number(it.avgCost)>0)){
+    var dch=[25,20,17,15,10,7,5].map(function(p){return '<button type="button" class="chip" data-d="'+p+'" onclick="accApplyDisc('+p+')">'+accFa(p)+'٪</button>';}).join('');
+    h+='<div class="g1" id="ACC_DISC_BOX"><span class="lbl">🏷️ تخفیفِ تأمین‌کننده (٪ از قیمتِ فروش)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+dch+'</div><input class="fi" id="ACC_I_DISC" inputmode="decimal" placeholder="یا درصد رو دستی بنویس (مثلاً ۱۲٫۵)" oninput="accApplyDisc(this.value,true)" autocomplete="off"><div class="acc-hint" id="ACC_I_DISC_HINT" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+    h+='<div class="g1"><span class="lbl">💸 قیمتِ خرید (تومان) — خریدِ خودمون</span><input class="fi" id="ACC_I_BUY" inputmode="numeric" placeholder="با درصدِ بالا پر می‌شه یا خودت بنویس" oninput="accBuyTyped(this)" autocomplete="off"><div class="acc-hint" id="ACC_I_BUY_HINT" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
+  }
   h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveItem(\''+accEsc(id)+'\')">💾 ذخیره</button>';
   if(it){
     var q=Number(it.qty)||0;
@@ -5478,6 +5639,44 @@ function accRenderItemView(){
   h+='<button class="sbig" style="background:#999;color:#fff" onclick="accGo(\'items\')">برگشت</button>';
   return accCard(it?'':'➕ کالای جدید',h);
 }
+// ── تخفیفِ تأمین‌کننده: قیمتِ خرید = قیمتِ فروش − درصد (با کلیکِ چیپ یا درصدِ دستی) ──
+var ACC_DISC={pct:null,manual:false};
+function accPct(n){return (Number(n)||0).toLocaleString('fa-IR',{maximumFractionDigits:2});}
+function accDiscSell(){var s=document.getElementById('ACC_I_SELL');return s?accNum(s.value):0;}
+function accMarkDiscChips(pct){
+  document.querySelectorAll('#ACC_DISC_BOX .chip').forEach(function(c){c.classList.toggle('on',pct!==null&&Number(c.getAttribute('data-d'))===pct);});
+}
+function accDiscHint(msg,ok){var h=document.getElementById('ACC_I_DISC_HINT');if(h){h.textContent=msg||'';h.style.color=ok===false?'#c0304a':'#1a6a3a';}}
+function accApplyDisc(p,fromInput){
+  var dEl=document.getElementById('ACC_I_DISC'),bEl=document.getElementById('ACC_I_BUY');
+  if(!dEl||!bEl)return;
+  var raw=toEnDigits(String(p==null?'':p)).replace(/[\u066B\u060C,]/g,'.').trim();
+  if(raw===''){ACC_DISC.pct=null;accMarkDiscChips(null);accDiscHint('');return;}
+  var pct=parseFloat(raw);
+  if(isNaN(pct)||pct<0||pct>100){ACC_DISC.pct=null;accMarkDiscChips(null);accDiscHint('درصد باید یه عددِ بینِ ۰ تا ۱۰۰ باشه',false);return;}
+  pct=Math.round(pct*100)/100;
+  ACC_DISC.pct=pct;ACC_DISC.manual=false;
+  if(!fromInput)dEl.value=String(pct);
+  accMarkDiscChips(pct);
+  var sell=accDiscSell();
+  if(!sell){accDiscHint('اول «قیمت فروش» رو بزن؛ قیمتِ خرید خودکار حساب می‌شه',false);return;}
+  var buy=Math.round(sell*(100-pct)/100);
+  bEl.value=String(buy);accHint(bEl);
+  accDiscHint('قیمتِ خرید = قیمتِ فروش − '+accPct(pct)+'٪ = '+accMoney(buy),true);
+}
+function accSellTyped(){
+  if(ACC_DISC.pct!==null&&!ACC_DISC.manual)accApplyDisc(ACC_DISC.pct,true);
+}
+function accBuyTyped(inp){
+  accHint(inp);ACC_DISC.manual=true;ACC_DISC.pct=null;accMarkDiscChips(null);
+  var dEl=document.getElementById('ACC_I_DISC');if(dEl)dEl.value='';
+  var sell=accDiscSell(),buy=accNum(inp.value);
+  if(sell&&buy){
+    var eff=Math.round((1-buy/sell)*1000)/10;
+    if(eff>=0)accDiscHint('یعنی حدودِ '+accPct(eff)+'٪ زیرِ قیمتِ فروش',true);
+    else accDiscHint('⚠️ قیمتِ خرید از قیمتِ فروش بیشتره',false);
+  }else accDiscHint('');
+}
 function accPickItemPhoto(input){
   var f=input.files&&input.files[0];if(!f)return;
   compressRatio(f,3,4,700,0.88,function(full){
@@ -5493,10 +5692,12 @@ function accSaveItem(id){
   var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
   var name=stripBidi(document.getElementById('ACC_I_NAME').value).trim(),sell=accNum(document.getElementById('ACC_I_SELL').value);
   var photo=ACC.itemPhoto||{},b=db.batch(),key=id;
+  var buyEl=document.getElementById('ACC_I_BUY'),buy=buyEl?accNum(buyEl.value):0;
   if(id){
     var upd={name:name,sellPrice:sell};
     if(photo.changed){upd.hasImg=true;upd.thumb=photo.thumb||'';}
     b.update(db.collection('accItems').doc(id),upd);
+    if(buy>0)b.set(db.collection('accCosts').doc(id),{avgCost:buy,lastBuy:buy},{merge:true});
   }else{
     var brand=stripBidi(document.getElementById('ACC_I_BRAND').value).trim(),code=toEnDigits(stripBidi(document.getElementById('ACC_I_CODE').value).trim());
     if(!brand||!code){accSetStat('برند و کد رو بنویس','err');return;}
@@ -5505,6 +5706,7 @@ function accSaveItem(id){
     var doc={brand:brand,code:code,name:name,sellPrice:sell,qty:0,ts:Date.now()};
     if(photo.changed){doc.hasImg=true;doc.thumb=photo.thumb||'';}
     b.set(db.collection('accItems').doc(key),doc);
+    if(buy>0)b.set(db.collection('accCosts').doc(key),{avgCost:buy,lastBuy:buy});
   }
   if(photo.changed&&photo.full)b.set(db.collection('itemImages').doc(key),{img:photo.full,ts:Date.now()});
   b.commit().then(function(){ACC.itemPhoto={full:null,thumb:null,changed:false};ACC.view='itemView';ACC.arg=key;accReload('کالا ذخیره شد ✅');}).catch(function(e){console.error(e);accSetStat('ذخیره ناموفق بود: '+(e&&e.message||e),'err');});
@@ -7666,10 +7868,7 @@ function syncSettingsToFirestore(){
   });
 }
 var SETTINGS_FIRST_LOAD=true;
-function startSettingsListener(){
-  if(!ADMIN_IS_READY){whenAdminReady(startSettingsListener);return;}
-  if(!initFirebase())return;
-  fbDb.collection('settings').doc('appConfig').onSnapshot(function(doc){
+function applySettingsDoc(doc){
     if(!doc.exists){
       if(SETTINGS_FIRST_LOAD&&!CURRENT_ROLE){SETTINGS_FIRST_LOAD=false;syncSettingsToFirestore();}
       return;
@@ -7688,7 +7887,11 @@ function startSettingsListener(){
       syncAutoSyncCheckboxes();
     }
     SETTINGS_SYNC_APPLYING=false;
-  },function(err){console.error('settings listener error',err);});
+}
+function startSettingsListener(){
+  if(!ADMIN_IS_READY){whenAdminReady(startSettingsListener);return;}
+  if(!initFirebase())return;
+  fbDb.collection('settings').doc('appConfig').onSnapshot(applySettingsDoc,function(err){console.error('settings listener error',err);});
 }
 function syncCustomerClubToFirestore(){
   if(!initFirebase())return;
@@ -11328,8 +11531,9 @@ function tickProductFetchIndicator(){
   var secs=Math.floor((Date.now()-PRODLOAD_T0)/1000);
   var txt=document.getElementById('PRODLOAD_TEXT'),retry=document.getElementById('PRODLOAD_RETRY');
   if(!txt)return;
-  if(secs<12){txt.textContent='⏳ در حال دریافت محصولات از سرور... '+secs+' ثانیه';}
-  else{txt.textContent='🐢 اتصال کنده، هنوز منتظر سرورم... '+secs+' ثانیه';if(retry)retry.style.display='inline-block';}
+  var cnt=window.PRODLOAD_COUNT?(' · '+window.PRODLOAD_COUNT+' محصول رسید'):'';
+  if(secs<12){txt.textContent='⏳ در حال دریافت محصولات از سرور...'+cnt+' · '+secs+' ثانیه';}
+  else{txt.textContent='🐢 اتصال کنده، هنوز منتظر سرورم...'+cnt+' · '+secs+' ثانیه';if(retry)retry.style.display='inline-block';}
   var cb=document.getElementById('PRODLOAD_COMPAT');
   if(cb){cb.style.display=(secs>=20)?'inline-block':'none';cb.textContent=fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار';}
 }
@@ -11356,6 +11560,7 @@ function showProductLoadError(e){
   var cb3=document.getElementById('PRODLOAD_COMPAT');if(cb3){cb3.style.display='inline-block';cb3.textContent=fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار';}
 }
 function retryProductLoad(){
+  window.RV_PROD_RESUME=true;
   _loading=true;
   hydrateProductsFromFirestore();
 }
@@ -11374,6 +11579,61 @@ function updateProductLoadProgress(current,total){
 function hideProductLoadProgress(){
   var bar=document.getElementById('PRODLOAD_BAR');
   if(bar)bar.style.display='none';
+}
+// ── دریافتِ محصولات صفحه‌به‌صفحه: هر صفحه کوچیک و با تلاشِ دوبارهٔ جدا؛ روی اینترنتِ ناپایدار یه درخواستِ سنگین به‌جای کلِ کالکشن ──
+var RV_PROD_PAGES={docs:[],last:null,ts:0};
+function rvFetchProductsSdk(attempt,onProgress,noRest){
+  var st=RV_PROD_PAGES;
+  if(!window.RV_PROD_RESUME||Date.now()-st.ts>600000||!st.docs.length){st.docs=[];st.last=null;}
+  window.RV_PROD_RESUME=false;st.ts=Date.now();
+  var size=8;
+  function once(tries){
+    if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+    var q=fbDb.collection('products').orderBy(firebase.firestore.FieldPath.documentId()).limit(size);
+    if(st.last)q=q.startAfter(st.last);
+    var t0=Date.now(),lim=size;
+    return withTimeout(q.get({source:'server'}),(RVNET.state==='stuck'||RVNET.live===false)?8000:25000,'products-page').then(function(snap){
+      var n=snap.docs.length;
+      snap.docs.forEach(function(d){st.docs.push(d);});
+      if(n)st.last=snap.docs[n-1];
+      st.ts=Date.now();
+      if(onProgress)onProgress(st.docs.length);
+      var dt=Date.now()-t0;
+      if(dt<2500&&size<40)size=Math.min(40,size*2);else if(dt>9000&&size>4)size=Math.max(4,Math.floor(size/2));
+      if(n<lim)return;            // آخرین صفحه
+      return once(0);
+    },function(e){
+      if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+      var info=rvErrInfo(e);
+      if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=5)return Promise.reject(e);
+      if(!noRest&&info.kind==='net'&&tries>=1&&rvRestAvailable())return Promise.reject({code:'switch-rest',message:'switch to REST',cause:e});
+      size=Math.max(4,Math.floor(size/2));      // صفحه‌ی کوچک‌تر شانسِ بیشتری روی خطِ ضعیف داره
+      return new Promise(function(res){setTimeout(res,Math.min(10000,RV_PAGE_BACKOFF*Math.pow(2,tries)));}).then(function(){return once(tries+1);});
+    });
+  }
+  return once(0).then(function(){
+    var docs=st.docs.slice();st.docs=[];st.last=null;
+    return {empty:docs.length===0,size:docs.length,docs:docs,forEach:function(cb){docs.forEach(cb);}};
+  });
+}
+function rvFetchProductsPaged(attempt,onProgress){
+  if(rvPreferRest()){
+    return rvFetchProductsRest(attempt,onProgress,false).catch(function(e){
+      if(e&&e.code==='cancelled')throw e;
+      RV_REST_PREF=false;return rvFetchProductsSdk(attempt,onProgress,true);
+    });
+  }
+  return rvFetchProductsSdk(attempt,onProgress,false).catch(function(e){
+    if(e&&e.code==='switch-rest'){
+      RV_REST_PREF=true;
+      return rvFetchProductsRest(attempt,onProgress,true).catch(function(e2){
+        if(e2&&e2.code==='cancelled')throw e2;
+        RV_REST_PREF=false;window.RV_PROD_RESUME=true;     // REST هم جواب نداد: از همون صفحه با SDK ادامه بده
+        return rvFetchProductsSdk(attempt,onProgress,true);
+      });
+    }
+    throw e;
+  });
 }
 function hydrateRowFromDoc(p){
   var rowImgId=null;
@@ -11399,8 +11659,9 @@ function hydrateProductsFromFirestore(){
   if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;rvLoaderFail('products',{code:'init',message:'Firebase بالا نیومد'});showProductLoadError({code:'init',message:'Firebase بالا نیومد'});return;}
   var attempt=++PRODLOAD_ATTEMPT;
   rvLoaderStart('products',function(){retryProductLoad();},'محصولات');
+  window.PRODLOAD_COUNT=0;
   startProductFetchIndicator();
-  fbDb.collection('products').get({source:'server'}).then(function(snap){
+  rvFetchProductsPaged(attempt,function(n){window.PRODLOAD_COUNT=n;tickProductFetchIndicator();}).then(function(snap){
     if(attempt!==PRODLOAD_ATTEMPT)return;
     stopProductFetchIndicator();
     document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){bl.remove();});
