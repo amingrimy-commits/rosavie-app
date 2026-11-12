@@ -1441,6 +1441,7 @@ function rvWatchdog(){
     if(l.status==='failed'&&l.retry&&online&&now>=(l.nextAt||0)&&(!l.err||l.err.kind!=='quota'||now>=l.nextAt)){rvRunLoader(n,false);}
   });
   try{rvRestSettingsOnce();}catch(e){}
+  try{if(rvPreferRest()&&!RVNET.restTestAt)rvRestSelfTest();}catch(e){}
   if(RVNET.state==='stuck'&&RVNET.stuckSince&&now-RVNET.stuckSince>RV_COMPAT_AUTO_MS&&!fbCompatOn()&&!RVNET.compatSuggested){
     RVNET.compatSuggested=true;
     try{localStorage.setItem(FB_COMPAT_KEY,'1');}catch(e){}
@@ -1586,7 +1587,7 @@ var RV_CSS=".rv-loading::before,.rv-spin::before{content:'';display:inline-block
 "#RV_TOPBAR::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,#b0517a,transparent);animation:rvbar 1.1s ease-in-out infinite}@keyframes rvbar{0%{left:-40%}100%{left:100%}}"+
 "#RVNET_PILL{position:fixed;bottom:12px;left:10px;z-index:100000;display:flex;align-items:center;gap:6px;background:rgba(30,20,15,.82);color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);direction:rtl}"+
 ".rv-dot{width:9px;height:9px;border-radius:50%;background:#9aa;display:inline-block}.rv-st-online .rv-dot{background:#2ecc71}.rv-st-slow .rv-dot{background:#f1c40f;animation:rvpulse 1s infinite}.rv-st-stuck .rv-dot,.rv-st-offline .rv-dot{background:#e74c3c;animation:rvpulse .7s infinite}@keyframes rvpulse{50%{opacity:.35}}"+
-"#RVNET_BANNER{position:fixed;top:0;left:0;right:0;z-index:100000;padding:9px 12px;font:700 12px/1.8 sans-serif;color:#fff;direction:rtl;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}#RVNET_BANNER.warn{background:#b8651b}#RVNET_BANNER.err{background:#8a1f35}"+
+"#RVNET_BANNER{position:sticky;top:0;left:0;right:0;z-index:100000;padding:9px 12px;font:700 12px/1.8 sans-serif;color:#fff;direction:rtl;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}#RVNET_BANNER.warn{background:#b8651b}#RVNET_BANNER.err{background:#8a1f35}"+
 "#RVNET_BANNER button{margin:4px 3px 0;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:4px 10px;font:700 11px sans-serif;cursor:pointer}"+
 "#RVNET_PANEL{position:fixed;bottom:44px;left:10px;z-index:100000;width:min(330px,92vw);background:#fff;color:#3d2b1f;border:2px solid #d4a87a;border-radius:12px;padding:10px 12px;font:600 12px/1.9 sans-serif;direction:rtl;box-shadow:0 4px 18px rgba(0,0,0,.35);max-height:70vh;overflow:auto}"+
 "#RVNET_PANEL button{margin:3px 2px;background:#3d2b1f;color:#fff;border:none;border-radius:8px;padding:6px 10px;font:700 11px sans-serif;cursor:pointer}";
@@ -1596,7 +1597,7 @@ function rvEnsureUI(){
   RVNET.ui=true;
   var st=document.createElement('style');st.id='RVNET_CSS';st.textContent=RV_CSS;document.head.appendChild(st);
   var top=document.createElement('div');top.id='RV_TOPBAR';document.body.appendChild(top);
-  var ban=document.createElement('div');ban.id='RVNET_BANNER';ban.style.display='none';document.body.appendChild(ban);
+  var ban=document.createElement('div');ban.id='RVNET_BANNER';ban.style.display='none';document.body.insertBefore(ban,document.body.firstChild);
   var pill=document.createElement('div');pill.id='RVNET_PILL';pill.innerHTML='<span class="rv-dot"></span><span id="RVNET_PILL_T"></span>';pill.onclick=rvTogglePanel;document.body.appendChild(pill);
   var pan=document.createElement('div');pan.id='RVNET_PANEL';pan.style.display='none';document.body.appendChild(pan);
   var nl=document.getElementById('NOTIF_LIST');if(nl)nl.setAttribute('data-rv-noload','1');
@@ -1637,8 +1638,8 @@ function rvRenderPanel(){
     '<div><b>شنونده‌های زنده:</b> '+accFa(RVLISTEN.list.length)+' فعال'+(dead?(' · '+accFa(dead)+' با خطا (دوباره تلاش می‌شه)'):'')+'</div>'+
     '<div><b>خواندن از فایربیس (این نشست):</b> '+accFa(RVREAD.total)+' سند'+(rvTopReads(4).length?('<br><span style="font-weight:600;color:#7a5a38">'+rvTopReads(4).map(function(x){return accEsc(x.name)+' '+accFa(x.n);}).join(' · ')+'</span>'):'')+'</div>'+
     '<div><b>حالتِ اتصال:</b> '+(fbCompatOn()?'سازگار (long-polling)':'عادی (خودکار)')+'</div>'+
-    '<div><b>مسیرِ جایگزین (REST):</b> '+(rvPreferRest()?'<span style="color:#b8651b">فعاله</span>':'آماده‌ست')+' · '+accFa(RVNET.rest.reads)+' خواندن، '+accFa(RVNET.rest.writes)+' نوشتن'+(RVNET.rest.fail?(' · '+accFa(RVNET.rest.fail)+' خطا'):'')+'</div>'+
-    '<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره‌ی همه</button><button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button><button onclick="rvCopyReport()">📋 کپیِ گزارش</button>';
+    '<div><b>مسیرِ جایگزین (REST):</b> '+(rvPreferRest()?'<span style="color:#b8651b">فعاله</span>':'آماده‌ست')+' · '+accFa(RVNET.rest.reads)+' خواندن، '+accFa(RVNET.rest.writes)+' نوشتن'+(RVNET.rest.fail?(' · '+accFa(RVNET.rest.fail)+' خطا'):'')+'<br><span style="font-weight:600;color:#7a5a38">درخواست‌ها: '+accFa(RVNET.rest.tries)+(RVNET.rest.last?(' · آخرین خطا: '+accEsc(RVNET.rest.last.what+' ← '+RVNET.rest.last.code+' '+RVNET.rest.last.msg)):'')+'</span>'+(RVNET.rest.test?('<br>'+RVNET.rest.test.lines.map(accEsc).join('<br>')+(RVNET.rest.test.running?'<br><span class="rv-spin">در حال آزمایش...</span>':'')):'')+'</div>'+
+    '<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره‌ی همه</button><button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button><button onclick="rvRestSelfTest()">🧪 آزمایشِ REST</button><button onclick="rvCopyReport()">📋 کپیِ گزارش</button>';
 }
 function rvReportText(){
   var L=['گزارشِ اتصالِ پنل رُزاوی','زمان: '+new Date().toLocaleString('fa-IR'),
@@ -1646,7 +1647,10 @@ function rvReportText(){
     'آنلاینِ مرورگر: '+(typeof navigator!=='undefined'?navigator.onLine:'?')+' | حالتِ سازگار: '+(fbCompatOn()?'روشن':'خاموش'),
     'چک‌های اخیر: '+RVNET.hist.map(function(h){return (h.ok?'✓':'✗')+h.ms;}).join(' ')];
   Object.keys(RVLOAD).forEach(function(n){var l=RVLOAD[n];L.push('لود «'+(l.label||n)+'»: '+l.status+(l.err?(' | '+l.err.kind+' / '+l.err.code+' / '+l.err.raw):'')+' | تلاش '+l.attempts);});
-  L.push('مسیرِ جایگزین REST: '+(rvPreferRest()?'فعال':'غیرفعال')+' | خواندن '+RVNET.rest.reads+' | نوشتن '+RVNET.rest.writes+' | خطا '+RVNET.rest.fail+' | تنظیمات '+RVNET.rest.settings);
+  L.push('مسیرِ جایگزین REST: '+(rvPreferRest()?'فعال':'غیرفعال')+' | درخواست '+RVNET.rest.tries+' | خواندن '+RVNET.rest.reads+' | نوشتن '+RVNET.rest.writes+' | خطا '+RVNET.rest.fail+' | تنظیمات '+RVNET.rest.settings);
+  if(RVNET.rest.last)L.push('آخرین خطای REST: '+RVNET.rest.last.what+' ← '+RVNET.rest.last.code+' | '+RVNET.rest.last.msg+' | '+RVNET.rest.last.ms+'ms');
+  if(RVNET.rest.lastOk)L.push('آخرین موفقیتِ REST: '+RVNET.rest.lastOk.what+' | '+RVNET.rest.lastOk.ms+'ms');
+  if(RVNET.rest.test)L.push('آزمایشِ REST: '+RVNET.rest.test.lines.join(' || '));
   L.push('محصولاتِ رسیده تا الان: '+(window.PRODLOAD_COUNT||0)+' | اندازه‌ی صفحه‌ی بعدی/تلاش‌ها: '+(RV_PROD_PAGES.docs.length)+' سندِ نیمه‌کاره');
   L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
   L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
@@ -1771,7 +1775,9 @@ var PANEL_RELEASES=[
    fixes:[
     'وقتی اتصالِ زنده‌ی فایربیس «گیر کرده» بود، پنل لودِ محصولات رو دوباره امتحان نمی‌کرد؛ الان خودکار تلاش می‌کنه.',
     'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
-    'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.'
+    'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
+    'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
+    'نگینِ پایین: دکمه‌ی «🧪 آزمایشِ REST» و گزارشِ دقیقِ خطای مسیرِ جایگزین (برای پیدا کردنِ علتِ لود نشدن).'
    ]},
   {id:'2026-11-12',date:'2026-11-12',title:'بازرسی و رفعِ باگ‌های امنیتی و ظاهری',
    news:[
@@ -1883,7 +1889,7 @@ whenAdminReady(function(){setTimeout(rvShowUpdateIfNeeded,1500);});
 // ══════════ مسیرِ جایگزین (REST): وقتی اتصالِ زنده‌ی فایربیس گیر می‌کنه ولی درخواستِ ساده‌ی HTTPS رد می‌شه ══════════
 // خوندنِ محصولات/عکس‌ها/تنظیمات و ذخیره‌ی محصول با درخواستِ معمولیِ HTTPS؛ فقط وقتی «گیر کرده» یا خطای اتصال داریم استفاده می‌شه
 var RV_REST_PREF=false;
-RVNET.rest={calls:0,reads:0,writes:0,fail:0,settings:false};
+RVNET.rest={calls:0,reads:0,writes:0,fail:0,settings:false,tries:0,last:null,lastOk:null,test:null};
 function rvRestAvailable(){try{return typeof firebaseConfig!=='undefined'&&!!firebaseConfig.projectId&&typeof fetch==='function'&&localStorage.getItem('rv_rest_off')!=='1';}catch(e){return false;}}
 function rvPreferRest(){return rvRestAvailable()&&(RV_REST_PREF||(RVNET.state==='stuck'&&!!RVNET.stuckSince&&Date.now()-RVNET.stuckSince>3000));}
 function rvRestBase(){return 'https://firestore.googleapis.com/v1/projects/'+firebaseConfig.projectId+'/databases/(default)/documents';}
@@ -1913,7 +1919,12 @@ function rvFsEncode(v){
   return {stringValue:String(v)};
 }
 function rvFsFields(o){var f={};Object.keys(o).forEach(function(k){if(o[k]!==undefined)f[k]=rvFsEncode(o[k]);});return f;}
+function rvRestShort(url){return String(url).replace(/^https:\/\/firestore\.googleapis\.com\/v1\/projects\/[^/]+\/databases\/\(default\)\/documents/,'').replace(/key=[^&]*&?/,'').slice(0,60);}
 function rvRestHttp(method,url,body,needAuth,timeoutMs){
+  var t0=Date.now();RVNET.rest.tries++;
+  return rvRestHttp0(method,url,body,needAuth,timeoutMs).then(function(r){RVNET.rest.lastOk={what:method+' '+rvRestShort(url),ms:Date.now()-t0,at:Date.now()};return r;},function(e){RVNET.rest.last={what:method+' '+rvRestShort(url),code:e&&e.code,msg:String(e&&e.message||e).slice(0,110),ms:Date.now()-t0,at:Date.now()};throw e;});
+}
+function rvRestHttp0(method,url,body,needAuth,timeoutMs){
   return Promise.resolve().then(function(){
     if(!needAuth)return null;
     var u=null;try{u=firebase.auth().currentUser;}catch(e){}
@@ -1962,11 +1973,13 @@ function rvRestSaveProduct(wr){
   return rvRestCommit(writes).then(function(r){RVNET.rest.writes++;return r;});
 }
 function rvFetchProductsRest(attempt,onProgress,quick){
-  var docs=[],token='',maxTries=quick?1:4,tmo=quick?10000:25000;
+  var docs=[],token='',maxTries=quick?1:4,tmo=quick?15000:30000,size=5;
   function page(tries){
     if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
-    return rvRestList('products',token,20,tmo).then(function(r){
+    var t0=Date.now();
+    return rvRestList('products',token,size,tmo).then(function(r){
       r.docs.forEach(function(d){docs.push(d);});
+      var dt=Date.now()-t0;if(dt<4000&&size<40)size=Math.min(40,size*2);else if(dt>12000&&size>2)size=Math.max(2,Math.floor(size/2));
       token=r.next;RVNET.rest.reads+=r.docs.length;
       if(onProgress)onProgress(docs.length);
       if(token)return page(0);
@@ -1974,10 +1987,27 @@ function rvFetchProductsRest(attempt,onProgress,quick){
       if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
       var info=rvErrInfo(e);
       if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=maxTries)return Promise.reject(e);
+      size=Math.max(2,Math.floor(size/2));
       return new Promise(function(res){setTimeout(res,Math.min(8000,RV_PAGE_BACKOFF*Math.pow(2,tries)));}).then(function(){return page(tries+1);});
     });
   }
   return page(0).then(function(){RV_PROD_PAGES.docs=[];RV_PROD_PAGES.last=null;return {empty:docs.length===0,size:docs.length,docs:docs,forEach:function(cb){docs.forEach(cb);}};});
+}
+// آزمایشِ مسیرِ REST: دقیقاً می‌گه درخواستِ ساده می‌رسه یا نه (و اگه نه، خطای دقیقِ مرورگر)
+function rvRestSelfTest(){
+  if(!rvRestAvailable())return Promise.resolve();
+  var T=RVNET.rest.test={at:Date.now(),lines:[],running:true};RVNET.restTestAt=Date.now();
+  function done(){T.running=false;rvRender();}
+  var t0=Date.now();
+  return rvRestList('products','',1,15000).then(function(r){
+    T.lines.push('✓ خواندنِ محصولات (عمومی): '+(Date.now()-t0)+'ms، '+r.docs.length+' سند');
+  },function(e){T.lines.push('✗ خواندنِ محصولات: '+(e&&e.code)+' — '+String(e&&e.message||e).slice(0,90));}).then(function(){
+    var t1=Date.now();
+    return rvRestHttp('GET',rvRestBase()+'/settings/appConfig'+rvRestKey(),null,false,15000).then(function(){T.lines.push('✓ تنظیمات بدونِ ورود');},function(e){
+      if(e&&e.code==='permission-denied')T.lines.push('✓ سرورِ REST جواب می‌ده (بدونِ ورود ۴۰۳ می‌ده؛ درست است) '+(Date.now()-t1)+'ms');
+      else T.lines.push('✗ سرورِ REST: '+(e&&e.code)+' — '+String(e&&e.message||e).slice(0,90));
+    });
+  }).then(done,done);
 }
 function rvRestSettingsOnce(){
   if(!rvPreferRest()||!SETTINGS_FIRST_LOAD)return;
