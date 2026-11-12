@@ -1008,10 +1008,14 @@ function shopNorm(d,docId){
   if(!d)return d;
   if(!d.id&&docId)d.id=docId;
   if(d.thumb){
-    d.__thumb=d.thumb;d.__hasBig=!!(d.hasImg||d.hasImg2);
-    var c=BIG_CACHE[d.id];
-    if(c){d.img=c.img||d.thumb;d.img2=c.img2||null;d.__bigLoaded=true;}
-    else{d.img=d.thumb;d.img2=null;}
+    d.__thumb=d.thumb;
+    if(d.img){d.__hasBig=false;d.__bigLoaded=true;}   // عکسِ بزرگ داخلِ خودِ سند هست (قدیمی/ذخیره‌ی جایگزین): همون می‌مونه
+    else{
+      d.__hasBig=!!(d.hasImg||d.hasImg2);
+      var c=BIG_CACHE[d.id];
+      if(c){d.img=c.img||d.thumb;d.img2=c.img2||null;d.__bigLoaded=true;}
+      else{d.img=d.thumb;d.img2=null;}
+    }
   }
   return d;
 }
