@@ -1637,6 +1637,7 @@ function rvRenderPanel(){
   pan.innerHTML='<b>وضعیتِ اتصال:</b> '+(RV_LABEL[RVNET.state]||RVNET.state)+' · تأخیر '+accFa(RVNET.lat)+' میلی‌ثانیه<br><b>لودها:</b>'+ls+
     '<div><b>شنونده‌های زنده:</b> '+accFa(RVLISTEN.list.length)+' فعال'+(dead?(' · '+accFa(dead)+' با خطا (دوباره تلاش می‌شه)'):'')+'</div>'+
     '<div><b>خواندن از فایربیس (این نشست):</b> '+accFa(RVREAD.total)+' سند'+(rvTopReads(4).length?('<br><span style="font-weight:600;color:#7a5a38">'+rvTopReads(4).map(function(x){return accEsc(x.name)+' '+accFa(x.n);}).join(' · ')+'</span>'):'')+'</div>'+
+    '<div><b>آی‌پیِ خروجی:</b> '+(RVNET.ip&&RVNET.ip.ip?accEsc(RVNET.ip.ip+(RVNET.ip.loc?(' ('+RVNET.ip.loc+')'):'')):(RVNET.ip&&RVNET.ip.pending?'در حال بررسی...':'نامشخص'))+'</div>'+
     '<div><b>حالتِ اتصال:</b> '+(fbCompatOn()?'سازگار (long-polling)':'عادی (خودکار)')+'</div>'+
     '<div><b>مسیرِ جایگزین (REST):</b> '+(rvPreferRest()?'<span style="color:#b8651b">فعاله</span>':'آماده‌ست')+' · '+accFa(RVNET.rest.reads)+' خواندن، '+accFa(RVNET.rest.writes)+' نوشتن'+(RVNET.rest.fail?(' · '+accFa(RVNET.rest.fail)+' خطا'):'')+'<br><span style="font-weight:600;color:#7a5a38">درخواست‌ها: '+accFa(RVNET.rest.tries)+(RVNET.rest.last?(' · آخرین خطا: '+accEsc(RVNET.rest.last.what+' ← '+RVNET.rest.last.code+' '+RVNET.rest.last.msg)):'')+'</span>'+(RVNET.rest.test?('<br>'+RVNET.rest.test.lines.map(accEsc).join('<br>')+(RVNET.rest.test.running?'<br><span class="rv-spin">در حال آزمایش...</span>':'')):'')+'</div>'+
     '<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره‌ی همه</button><button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button><button onclick="rvRestSelfTest()">🧪 آزمایشِ REST</button><button onclick="rvCopyReport()">📋 کپیِ گزارش</button>';
@@ -1654,6 +1655,7 @@ function rvReportText(){
   L.push('محصولاتِ رسیده تا الان: '+(window.PRODLOAD_COUNT||0)+' | اندازه‌ی صفحه‌ی بعدی/تلاش‌ها: '+(RV_PROD_PAGES.docs.length)+' سندِ نیمه‌کاره');
   L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
   L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
+  L.push('آی‌پیِ خروجی (فیلترشکن): '+(RVNET.ip&&RVNET.ip.ip?(RVNET.ip.ip+(RVNET.ip.loc?(' | کشور '+RVNET.ip.loc):'')+(RVNET.ip.colo?(' | نقطه '+RVNET.ip.colo):'')):(RVNET.ip&&RVNET.ip.pending?'در حال بررسی':'نامشخص (سرویس‌های آی‌پی هم نرسیدن)')));
   L.push('مرورگر: '+(typeof navigator!=='undefined'?navigator.userAgent:'?'));
   return L.join('\n');
 }
@@ -1751,6 +1753,7 @@ function rvNetStart(){
   if(RVNET.started)return;
   RVNET.started=Date.now();
   rvEnsureUI();rvStartObserver();rvStartLiveWatch();
+  try{rvFetchIp();}catch(e){}
   rvTick();
   setTimeout(rvCheckRules,2500);
   RVNET.timer=setInterval(rvTick,RV_TICK_MS);
@@ -1777,7 +1780,9 @@ var PANEL_RELEASES=[
     'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
-    'نگینِ پایین: دکمه‌ی «🧪 آزمایشِ REST» و گزارشِ دقیقِ خطای مسیرِ جایگزین (برای پیدا کردنِ علتِ لود نشدن).'
+    'نگینِ پایین: دکمه‌ی «🧪 آزمایشِ REST» و گزارشِ دقیقِ خطای مسیرِ جایگزین (برای پیدا کردنِ علتِ لود نشدن).',
+    'گزارشِ اتصال حالا آی‌پی و کشورِ خروجیِ فیلترشکن رو هم می‌نویسه تا بشه دو گوشی رو مقایسه کرد.',
+    'کپشن: کشورِ تولید فقط با ایموجیِ پرچم نوشته می‌شه (🇨🇳 🇹🇷 🇪🇺)؛ فقط برای جنسِ ایرانی «🇮🇷 تولید ایران» میاد.'
    ]},
   {id:'2026-11-12',date:'2026-11-12',title:'بازرسی و رفعِ باگ‌های امنیتی و ظاهری',
    news:[
@@ -1992,6 +1997,28 @@ function rvFetchProductsRest(attempt,onProgress,quick){
     });
   }
   return page(0).then(function(){RV_PROD_PAGES.docs=[];RV_PROD_PAGES.last=null;return {empty:docs.length===0,size:docs.length,docs:docs,forEach:function(cb){docs.forEach(cb);}};});
+}
+// آی‌پی و کشورِ خروجیِ فیلترشکن (برای مقایسه‌ی دو گوشی تو گزارش)
+function rvTimedFetch(url,ms){
+  return new Promise(function(resolve,reject){
+    var ctrl=(typeof AbortController!=='undefined')?new AbortController():null,done=false;
+    var to=setTimeout(function(){if(done)return;done=true;try{if(ctrl)ctrl.abort();}catch(e){}reject(new Error('timeout'));},ms);
+    fetch(url,{cache:'no-store',signal:ctrl?ctrl.signal:undefined}).then(function(r){if(done)return;done=true;clearTimeout(to);resolve(r);},function(e){if(done)return;done=true;clearTimeout(to);reject(e);});
+  });
+}
+function rvFetchIp(){
+  RVNET.ip={pending:true};
+  function viaTrace(){
+    return rvTimedFetch('https://www.cloudflare.com/cdn-cgi/trace',4000).then(function(r){return r.text();}).then(function(t){
+      var m={};t.split('\n').forEach(function(l){var i=l.indexOf('=');if(i>0)m[l.slice(0,i)]=l.slice(i+1).trim();});
+      if(!m.ip)throw new Error('no ip');
+      return {ip:m.ip,loc:m.loc||'',colo:m.colo||''};
+    });
+  }
+  function viaIpify(){
+    return rvTimedFetch('https://api.ipify.org?format=json',4000).then(function(r){return r.json();}).then(function(j){if(!j||!j.ip)throw new Error('no ip');return {ip:j.ip,loc:'',colo:''};});
+  }
+  return viaTrace().catch(viaIpify).then(function(x){RVNET.ip=x;},function(){RVNET.ip={err:true};}).then(function(){rvRender();});
 }
 // آزمایشِ مسیرِ REST: دقیقاً می‌گه درخواستِ ساده می‌رسه یا نه (و اگه نه، خطای دقیقِ مرورگر)
 function rvRestSelfTest(){
@@ -10438,11 +10465,12 @@ function buildCaptionData(){
   if(mixEnabled&&mixDesc&&!CG_SIZEPRICE_LIST.length)specLines.push('🎁 بسته میکس: '+mixDesc);
   if(material)specLines.push('🌿 پارچه و کش '+material);
 
+  // فقط جنسِ ایرانی «تولید ایران» می‌نویسه؛ برای بقیه‌ی کشورها فقط ایموجیِ پرچم
   var countryMap={
     iran:'🇮🇷 تولید ایران',
-    turkey:'🇹🇷 تولید ترکیه',
-    china:'🇨🇳 تولید چین',
-    europe:'🇪🇺 سفارش اروپا'
+    turkey:'🇹🇷',
+    china:'🇨🇳',
+    europe:'🇪🇺'
   };
   if(CG_COUNTRY&&countryMap[CG_COUNTRY])specLines.push(countryMap[CG_COUNTRY]);
 
