@@ -293,7 +293,7 @@ input[type=file]{display:none}
 .jcal-day.today{border:1.5px solid #d4a87a}
 .jcal-day.sel{background:#3d2b1f;color:#f9f0e8}
 .jcal-today{width:100%;margin-top:8px;padding:7px;border-radius:7px;border:1.5px dashed #d4a87a;background:none;color:#9a6e3a;font-family:'Vazirmatn',sans-serif;font-size:0.72rem;cursor:pointer}
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#3d2b1f;color:#eddfc9;padding:10px 18px;border-radius:20px;font-size:0.78rem;font-weight:700;z-index:99999;box-shadow:0 6px 20px rgba(0,0,0,0.3);max-width:88vw;text-align:center}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#3d2b1f;color:#eddfc9;padding:10px 18px;border-radius:20px;font-size:0.78rem;font-weight:700;z-index:99999;box-shadow:0 6px 20px rgba(0,0,0,0.3);width:max-content;max-width:88vw;text-align:center;line-height:1.8}
 .srch-res{max-height:300px;overflow-y:auto;border:1px solid #e2cdb0;border-radius:8px;margin-top:6px;display:none}
 .srch-item{padding:10px 12px;border-bottom:1px dashed #eddfc9;cursor:pointer;display:flex;align-items:center;gap:8px}
 .srch-item:hover{background:#f9f0e8}
@@ -303,6 +303,9 @@ input[type=file]{display:none}
 .srch-item-name{font-size:0.78rem;font-weight:700;color:#3d2b1f}
 .srch-item-price{font-size:0.7rem;color:#9a6e3a}
 @media(max-width:640px){.g2{grid-template-columns:1fr}.pbtns{grid-template-columns:1fr}}
+.acc-br-row{display:flex;align-items:center;gap:10px;padding:8px;border:1.5px solid #e2cdb0;border-radius:12px;margin-bottom:6px;cursor:pointer;background:#fff}
+.acc-br-logo{border-radius:10px;object-fit:contain;background:#fff;border:1px solid #e2cdb0;flex-shrink:0}
+.acc-br-ph{display:inline-block;border-radius:10px;background:#3d2b1f;color:#fff;text-align:center;font-weight:900;flex-shrink:0}
 .srch-grp{position:sticky;top:0;background:#f3e9db;color:#7a5a38;font-size:0.7rem;font-weight:900;padding:5px 10px;border-bottom:1px solid #e2cdb0;z-index:1}
 </style>
 </head>
@@ -749,8 +752,9 @@ input[type=file]{display:none}
     <div class="g1"><span class="lbl">۱. عنوان محصول</span><input class="fi" type="text" id="CG_TITLE" placeholder="مثال: ست نخی مرلین شورت گنی"></div>
     <div class="g1">
       <span class="lbl">۲. برند محصول</span>
-      <input class="fi" type="text" id="CG_BRAND" placeholder="مثال: Fitan | فیتن" oninput="suggestBrands(this.value);cgStockHint()">
+      <input class="fi" type="text" id="CG_BRAND" placeholder="مثال: Fitan | فیتن" oninput="suggestBrands(this.value);cgStockHint()" onfocus="cgBrandEnsureRegistry()" onchange="cgBrandCheck()" autocomplete="off">
       <div class="srch-res" id="CG_BRAND_RES"></div>
+      <div class="acc-hint" id="CG_BRAND_NOTE" style="font-size:0.7rem;min-height:14px;line-height:1.8"></div>
     </div>
     <div class="g2">
       <div><span class="lbl">۳. کد</span><input class="fi" type="text" id="CG_CODE" placeholder="مثال: 7236" oninput="cgStockHint()"></div>
@@ -1329,6 +1333,7 @@ function initFirebase(){
 var RV_T=window.__RV_T||{};
 var RV_TICK_MS=RV_T.tick||2000,RV_PROBE_MS=RV_T.probe||3500,RV_STUCK_MS=RV_T.stuck||6000,RV_LIVE_FIRST_MS=RV_T.liveFirst||25000,RV_COMPAT_AUTO_MS=RV_T.compat||20000,RV_LOAD_TIMEOUT=RV_T.loadTimeout||45000;
 var RV_PAGE_BACKOFF=RV_T.pageBackoff||1500;
+var RV_SDK_ABORT_MS=RV_T.sdkAbort||5000;
 var RV_LISTEN_FIRST_MS=RV_T.listenFirst||20000,RV_LISTEN_BACKOFF_BASE=RV_T.backoff||2000,RV_LISTEN_BACKOFF_MAX=RV_T.backoffMax||60000,RV_LISTEN_MAX_TRIES=12;
 var RVNET={state:'unknown',lat:0,hist:[],fails:0,okAt:0,started:0,live:null,liveSince:0,stuckSince:0,compatSuggested:false,alert:null,tickN:0,timer:null,ui:false,probes:0,liveWatch:false,lastChange:0};
 var RVLOAD={},RVLISTEN={list:[],failed:0},RVREAD={total:0,by:{},since:Date.now()};
@@ -1771,8 +1776,13 @@ whenAdminReady(rvNetStart);
 var PANEL_RELEASES=[
   {id:'2026-11-12b',date:'2026-11-12',title:'تخفیفِ تأمین‌کننده و لودِ مطمئن‌تر محصولات',
    news:[
+    'مرجوعی با برگشت به انبار: تو صفحه‌ی هر فاکتورِ فروش «↩️ ثبتِ مرجوعی» رو بزن؛ تعدادِ برگشتی (تا سقفِ فروخته منهای قبلاً-برگشته)، برگشت به انبار برای هر قلم، و پرداختِ نقدی به مشتری. موجودی، فروش، سود و حسابِ مشتری خودکار اصلاح می‌شه.',
+    'ادغامِ برندها (تبِ برندها ← «🔗 ادغام»): برندی که به چند شکل نوشته شده رو داخلِ برندِ اصلی ادغام کن؛ کالا، موجودی، قیمتِ خرید، عکس، فاکتورها و محصولات منتقل می‌شن (با پیش‌نمایش و پشتیبان) و اسمِ قدیمی از این به بعد خودکار به برندِ اصلی تبدیل می‌شه.',
+    'تولید محتوا: پیشنهادِ برند از فهرستِ برندها (با لوگو) میاد و هر چی بنویسی (مثلاً «فیتن» یا «fitan») اگه معادلِ یه برندِ فهرست باشه خودکار به شکلِ رسمیِ «Fitan | فیتن» برمی‌گرده؛ برندِ ناشناخته هشدارِ ملایم می‌گیره.',
+    'تبِ «🏷️ برندها» تو حسابداری: فهرستِ یکدستِ برندها با لوگو و «تخفیفِ پیش‌فرض» (مثلاً فیتن ۱۰٪). تو فرمِ کالای جدید برند از همین فهرست انتخاب می‌شه (نه دستی) و تخفیفِ پیش‌فرضِ برند خودکار اعمال می‌شه؛ تو خودِ کالا هم قابلِ تغییره.',
     'انبار: تو فرمِ «کالای جدید» (و کالایی که هنوز قیمتِ خرید نداره) «تخفیفِ تأمین‌کننده» هست: ۲۵، ۲۰، ۱۷، ۱۵، ۱۰، ۷ و ۵٪ با یه کلیک یا درصدِ دستی؛ قیمتِ خرید از قیمتِ فروش کم می‌شه و «خریدِ خودمون» ثبت می‌شه.',
     'محصولات حالا صفحه‌به‌صفحه (و با تلاشِ دوبارهٔ هر صفحه) دریافت می‌شن و نوار می‌گه «چندتا محصول رسید»؛ روی اینترنتِ ناپایدار خیلی مطمئن‌تره.',
+    'مرجوعی: قیمتِ واحد قفل و دقیقاً قیمتِ همون فاکتورِ فروشه (حتی اگه قیمتِ امروزِ کالا عوض شده)؛ قیمتِ امروز فقط برای اطلاع نشون داده می‌شه. فقط با «✏️ تغییرِ قیمت» می‌شه عوضش کرد.',
     'مسیرِ جایگزین: اگه فیلترشکن اتصالِ زندهٔ فایربیس رو ببُره ولی درخواستِ ساده رد بشه، پنل خودکار با درخواستِ معمولی (REST) محصولات و تنظیماتِ تلگرام رو می‌خونه و ذخیره/حذفِ محصول رو هم انجام می‌ده.'
    ],
    fixes:[
@@ -1780,6 +1790,7 @@ var PANEL_RELEASES=[
     'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
+    'لودِ محصولات: اگه اتصالِ زنده‌ی فایربیس تأیید نشه، بعد از ۵ ثانیه بدونِ معطلی از مسیرِ جایگزین (REST) خونده می‌شه (قبلاً تا ۴۰ ثانیه منتظرِ روشِ معمولی می‌موند).',
     'نگینِ پایین: دکمه‌ی «🧪 آزمایشِ REST» و گزارشِ دقیقِ خطای مسیرِ جایگزین (برای پیدا کردنِ علتِ لود نشدن).',
     'گزارشِ اتصال حالا آی‌پی و کشورِ خروجیِ فیلترشکن رو هم می‌نویسه تا بشه دو گوشی رو مقایسه کرد.',
     'کپشن: کشورِ تولید فقط با ایموجیِ پرچم نوشته می‌شه (🇨🇳 🇹🇷 🇪🇺)؛ فقط برای جنسِ ایرانی «🇮🇷 تولید ایران» میاد.'
@@ -1925,9 +1936,9 @@ function rvFsEncode(v){
 }
 function rvFsFields(o){var f={};Object.keys(o).forEach(function(k){if(o[k]!==undefined)f[k]=rvFsEncode(o[k]);});return f;}
 function rvRestShort(url){return String(url).replace(/^https:\/\/firestore\.googleapis\.com\/v1\/projects\/[^/]+\/databases\/\(default\)\/documents/,'').replace(/key=[^&]*&?/,'').slice(0,60);}
-function rvRestHttp(method,url,body,needAuth,timeoutMs){
+function rvRestHttp(method,url,body,needAuth,timeoutMs,quiet403){
   var t0=Date.now();RVNET.rest.tries++;
-  return rvRestHttp0(method,url,body,needAuth,timeoutMs).then(function(r){RVNET.rest.lastOk={what:method+' '+rvRestShort(url),ms:Date.now()-t0,at:Date.now()};return r;},function(e){RVNET.rest.last={what:method+' '+rvRestShort(url),code:e&&e.code,msg:String(e&&e.message||e).slice(0,110),ms:Date.now()-t0,at:Date.now()};throw e;});
+  return rvRestHttp0(method,url,body,needAuth,timeoutMs).then(function(r){RVNET.rest.lastOk={what:method+' '+rvRestShort(url),ms:Date.now()-t0,at:Date.now()};return r;},function(e){if(quiet403&&e&&e.code==='permission-denied')throw e;RVNET.rest.last={what:method+' '+rvRestShort(url),code:e&&e.code,msg:String(e&&e.message||e).slice(0,110),ms:Date.now()-t0,at:Date.now()};throw e;});
 }
 function rvRestHttp0(method,url,body,needAuth,timeoutMs){
   return Promise.resolve().then(function(){
@@ -2030,7 +2041,7 @@ function rvRestSelfTest(){
     T.lines.push('✓ خواندنِ محصولات (عمومی): '+(Date.now()-t0)+'ms، '+r.docs.length+' سند');
   },function(e){T.lines.push('✗ خواندنِ محصولات: '+(e&&e.code)+' — '+String(e&&e.message||e).slice(0,90));}).then(function(){
     var t1=Date.now();
-    return rvRestHttp('GET',rvRestBase()+'/settings/appConfig'+rvRestKey(),null,false,15000).then(function(){T.lines.push('✓ تنظیمات بدونِ ورود');},function(e){
+    return rvRestHttp('GET',rvRestBase()+'/settings/appConfig'+rvRestKey(),null,false,15000,true).then(function(){T.lines.push('✓ تنظیمات بدونِ ورود');},function(e){
       if(e&&e.code==='permission-denied')T.lines.push('✓ سرورِ REST جواب می‌ده (بدونِ ورود ۴۰۳ می‌ده؛ درست است) '+(Date.now()-t1)+'ms');
       else T.lines.push('✗ سرورِ REST: '+(e&&e.code)+' — '+String(e&&e.message||e).slice(0,90));
     });
@@ -4817,7 +4828,7 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   var sC='sbtn '+(stock==='out'?'s-out':stock==='call'?'s-call':'s-in');
   var sT=stock==='out'?'ناموجود':stock==='call'?'تماس بگیرید':'موجود';
   var rcls=isT5?'t5-row':(hasT?'wt-row':'nt-row');
-  var typeCell=hasT?'<button class="'+TCLS[type]+'" id="TT'+rid+'" data-t="'+type+'" onclick="togT('+rid+',\''+tab+'\')">'+TLBL[type]+'</button>':'';
+  var typeCell=hasT?'<button class="'+(TCLS[type]||'tbtn')+'" id="TT'+rid+'" data-t="'+(TLBL[type]?type:'')+'" onclick="togT('+rid+',\''+tab+'\')">'+(TLBL[type]||'نوع؟')+'</button>':'';
   var sleeveVal=extra.sleeve||SLEEVE_SEQ[0];
   var sleeveCell=(tab==='p9')?'<button class="'+SLEEVE_CLS[sleeveVal]+'" id="TS'+rid+'" data-s="'+sleeveVal+'" onclick="togSleeve('+rid+')">'+SLEEVE_LBL[sleeveVal]+'</button>':'';
   var titleCell=isT5?('<input class="fi" type="text" placeholder="عنوان محصول..." value="'+title+'" id="TI'+rid+'">'):('<input type="hidden" value="'+title+'" id="TI'+rid+'">');
@@ -4921,7 +4932,7 @@ function getBrands(tab){
 // قرارداد مانده‌ی طرف‌حساب (balance): مثبت = او به ما بدهکاره (طلبِ ما)، منفی = ما به او بدهکاریم
 // موجودی بر اساس «برند + کد محصول» و میانگینِ متحرکِ قیمتِ خرید
 // ═══════════════════════════════════════════════════════════════
-var ACC={items:{},parties:{},invoices:[],payments:[],loaded:false,loading:false,loadError:null,view:'home',arg:null,draft:null,range:'month',invFilter:'all',itemQuery:'',itemList:[],sugg:{},saving:false};
+var ACC={items:{},brands:{},brandDisc:{},aliasMap:{},brandsLoaded:false,brandsErr:'',parties:{},invoices:[],payments:[],loaded:false,loading:false,loadError:null,view:'home',arg:null,draft:null,range:'month',invFilter:'all',itemQuery:'',itemList:[],sugg:{},saving:false};
 var ACC_METHODS={cash:'نقد',card:'کارت',cheque:'چک',transfer:'حواله'};
 
 function accDb(){return initFirebase()?fbDb:null;}
@@ -4935,8 +4946,16 @@ function accNum(v){
 function accMoney(n){return Math.round(Number(n)||0).toLocaleString('fa-IR')+' تومان';}
 function accFa(n){return Math.round(Number(n)||0).toLocaleString('fa-IR');}
 function accTodayIso(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
-function accItemKey(brand,code){
+// نامِ مستعارِ برند (برندِ ادغام‌شده) → اسمِ رسمی؛ تا هر جا که کلیدِ کالا ساخته می‌شه (محصولات، سفارش‌ها، ...) خودکار به برندِ اصلی برسه
+function accAliasResolve(name){
+  var m=ACC.aliasMap&&ACC.aliasMap[normSearchText(name)];
+  return m||String(name==null?'':name);
+}
+function accItemKeyRaw(brand,code){
   return sanitizeDocId(toEnDigits(String(brand||'').trim()))+'__'+sanitizeDocId(toEnDigits(String(code||'').trim()));
+}
+function accItemKey(brand,code){
+  return sanitizeDocId(toEnDigits(String(accAliasResolve(brand)||'').trim()))+'__'+sanitizeDocId(toEnDigits(String(code||'').trim()));
 }
 function accSetStat(msg,type){
   var el=document.getElementById('ACC_STAT');if(!el)return;
@@ -4959,8 +4978,8 @@ function accLoad(cb){
   if(ACC.loading)return;
   ACC.loading=true;ACC.loadError=null;accRender();
   rvLoaderStart('acc',function(){ACC.loading=false;accLoad();},'حسابداری');
-  var names=['accItems','accParties','accInvoices','accPayments','accCosts'];
-  Promise.all(names.map(function(n){return db.collection(n).get({source:'server'});})).then(function(snaps){
+  var names=['accItems','accParties','accInvoices','accPayments','accCosts','accBrands','accBrandDisc'];
+  Promise.all(names.map(function(n){var q=db.collection(n).get({source:'server'});return (n==='accBrands'||n==='accBrandDisc')?q.then(function(s){return s;},function(e){ACC.brandLoadErr=e;return null;}):q;})).then(function(snaps){
     ACC.items={};ACC.parties={};ACC.invoices=[];ACC.payments=[];
     var costs={},legacy=[];
     snaps[4].forEach(function(d){costs[d.id]=d.data();});
@@ -4973,6 +4992,8 @@ function accLoad(cb){
       ACC.items[d.id]=it;
     });
     ACC.legacyCosts=legacy;
+    if(snaps[5]&&snaps[6]){accApplyBrands(snaps[5],snaps[6]);rvLoaderOk('accBrands');}
+    else if(snaps[5]===null||snaps[6]===null){ACC.brandsLoaded=false;ACC.brandsErr=(ACC.brandLoadErr&&ACC.brandLoadErr.code==='permission-denied')?'rules':'net';}
     snaps[1].forEach(function(d){ACC.parties[d.id]=Object.assign({id:d.id},d.data());});
     snaps[2].forEach(function(d){ACC.invoices.push(Object.assign({id:d.id},d.data()));});
     snaps[3].forEach(function(d){ACC.payments.push(Object.assign({id:d.id},d.data()));});
@@ -4981,7 +5002,7 @@ function accLoad(cb){
     ACC.loaded=true;ACC.loading=false;ACC.loadError=null;rvLoaderOk('acc');
     accRender();if(cb)cb();
     if(typeof cgStockHint==='function')cgStockHint();
-    accLoadOrders();accAutoSyncProducts();accMigrateLegacyCosts();accSyncPublicStock();accCleanItemText();
+    accLoadOrders();accAutoSyncProducts();accMigrateLegacyCosts();accSyncPublicStock();accCleanItemText();accLoadBrands();
   }).catch(function(e){
     console.error('accLoad error',e);
     rvLoaderFail('acc',e);
@@ -5011,7 +5032,7 @@ function accRangeStart(range){
 var ACC_RANGE_LABELS={today:'امروز',week:'۷ روز اخیر',month:'این ماهِ شمسی',all:'همه'};
 function accReport(range){
   var from=accRangeStart(range);
-  var r={sales:0,cost:0,profit:0,count:0,purchases:0,pcount:0,opening:0,unknown:false,top:[]};
+  var r={sales:0,cost:0,profit:0,count:0,purchases:0,pcount:0,opening:0,unknown:false,top:[],returns:0,rcount:0};
   var top={};
   ACC.invoices.forEach(function(v){
     if(v.status==='cancelled')return;
@@ -5023,6 +5044,13 @@ function accReport(range){
         var k=l.key;
         if(!top[k])top[k]={key:k,code:l.code,name:l.name,brand:l.brand,qty:0,sales:0};
         top[k].qty+=Number(l.qty)||0;top[k].sales+=(Number(l.qty)||0)*(Number(l.price)||0);
+      });
+    }else if(v.type==='sreturn'){
+      r.rcount++;r.returns+=Number(v.total)||0;r.sales-=Number(v.total)||0;r.cost-=Number(v.costTotal)||0;r.profit+=Number(v.profit)||0;
+      (v.lines||[]).forEach(function(l){
+        var k=l.key;
+        if(!top[k])top[k]={key:k,code:l.code,name:l.name,brand:l.brand,qty:0,sales:0};
+        top[k].qty-=Number(l.qty)||0;top[k].sales-=(Number(l.qty)||0)*(Number(l.price)||0);
       });
     }else if(v.type==='purchase'){
       if(v.internal)r.opening+=Number(v.total)||0;
@@ -5058,13 +5086,13 @@ function accDateDisp(iso){return isoToJalaliDisp(iso);}
 function accRender(){
   var body=document.getElementById('ACC_BODY'),nav=document.getElementById('ACC_NAV');
   if(!body||!nav)return;
-  var tabs=[['home','🏠 خلاصه'],['inv','🧾 فاکتورها'],['items','📦 انبار'],['parties','👥 طرف‌حساب‌ها'],['report','📊 گزارش']];
+  var tabs=[['home','🏠 خلاصه'],['inv','🧾 فاکتورها'],['items','📦 انبار'],['brands','🏷️ برندها'],['parties','👥 طرف‌حساب‌ها'],['report','📊 گزارش']];
   var cur=ACC.view;
-  var navKey={invNew:'inv',invView:'inv',itemView:'items',partyView:'parties',partyEdit:'parties',payNew:'parties'}[cur]||cur;
+  var navKey={invNew:'inv',invView:'inv',itemView:'items',brandView:'brands',brandMerge:'brands',retNew:'inv',partyView:'parties',partyEdit:'parties',payNew:'parties'}[cur]||cur;
   nav.innerHTML=tabs.map(function(t){return '<button type="button" class="chip'+(t[0]===navKey?' on':'')+'" onclick="accGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
   if(ACC.loading&&!ACC.loaded){body.innerHTML='<div class="nores">⏳ در حال دریافت اطلاعات حسابداری از سرور...</div>';return;}
   if(ACC.loadError&&!ACC.loaded){body.innerHTML='<div class="nores" style="color:#c0304a">'+accEsc(ACC.loadError)+'<br><br><button class="sbig stg" style="width:auto;padding:9px 18px" onclick="accLoad()">🔄 تلاش دوباره</button></div>';return;}
-  var fn={home:accRenderHome,inv:accRenderInvoices,invNew:accRenderInvForm,invView:accRenderInvView,items:accRenderItems,itemView:accRenderItemView,parties:accRenderParties,partyView:accRenderPartyView,partyEdit:accRenderPartyEdit,payNew:accRenderPayForm,report:accRenderReport}[cur];
+  var fn={home:accRenderHome,inv:accRenderInvoices,invNew:accRenderInvForm,invView:accRenderInvView,items:accRenderItems,itemView:accRenderItemView,brands:accRenderBrands,brandView:accRenderBrandView,retNew:accRenderReturnForm,brandMerge:accRenderBrandMerge,parties:accRenderParties,partyView:accRenderPartyView,partyEdit:accRenderPartyEdit,payNew:accRenderPayForm,report:accRenderReport}[cur];
   body.innerHTML=fn?fn():'';
   if(cur==='invNew')accRenderLines();
 }
@@ -5165,7 +5193,7 @@ function accPartyLedger(pid){
   ACC.invoices.forEach(function(v){
     if(v.partyId!==pid||v.type==='adjust'||v.internal)return;
     var eff=v.type==='sale'?Number(v.total)||0:-(Number(v.total)||0);
-    rows.push({date:v.date,ts:Number(v.ts)||0,text:(v.type==='sale'?'فاکتور فروش ':'فاکتور خرید ')+accFa(v.number),eff:eff,cancelled:v.status==='cancelled',ref:['invView',v.id]});
+    rows.push({date:v.date,ts:Number(v.ts)||0,text:(v.type==='sale'?'فاکتور فروش ':(v.type==='sreturn'?'مرجوعی فروش ':'فاکتور خرید '))+accFa(v.number),eff:eff,cancelled:v.status==='cancelled',ref:['invView',v.id]});
   });
   ACC.payments.forEach(function(m){
     if(m.partyId!==pid)return;
@@ -5255,6 +5283,7 @@ var ACC_BRAND_SUGG=[],ACC_CODE_SUGG=[];
 function accAllBrandNames(){
   var names=[],seen={};
   function add(n){n=String(n==null?'':n).trim();if(n&&!seen[n]){seen[n]=1;names.push(n);}}
+  Object.keys(ACC.brands||{}).forEach(function(k){add(ACC.brands[k].name);});
   document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){var bn=document.getElementById('BN'+bl.id.slice(1));if(bn)add(bn.value);});
   Object.keys(ACC.items).forEach(function(k){add(ACC.items[k].brand);});
   return names;
@@ -5283,6 +5312,384 @@ function accSuggestBrands(q){
   if(!res.length){el.innerHTML='';el.style.display='none';return;}
   el.innerHTML=res.map(function(b,i){return '<div class="srch-item" onclick="accPickBrand('+i+')">🏷️ '+accEsc(b)+'</div>';}).join('');
   el.style.display='block';
+}
+// ══════════ برندها: فهرستِ یکدست (اسم، لوگو، تخفیفِ پیش‌فرضِ تأمین‌کننده) ══════════
+// accBrands/{key}: {name,logo}  (تیم می‌تونه بخونه) | accBrandDisc/{key}: {pct}  (فقط مدیر؛ چون قیمتِ خریدِ ما رو لو می‌ده)
+var ACC_BDISC={pct:null};
+function accBrandKey(name){return sanitizeDocId(normSearchText(toEnDigits(String(name==null?'':name).trim())));}
+function accBrandByName(name){
+  var nn=normSearchText(name);if(!nn)return null;
+  var ks=Object.keys(ACC.brands||{});
+  for(var i=0;i<ks.length;i++){if(normSearchText(ACC.brands[ks[i]].name)===nn)return ACC.brands[ks[i]];}
+  for(var j=0;j<ks.length;j++){if((ACC.brands[ks[j]].aliases||[]).indexOf(nn)>-1)return ACC.brands[ks[j]];}
+  return null;
+}
+function accBrandItemCount(name){
+  var nn=normSearchText(name),n=0;
+  Object.keys(ACC.items).forEach(function(k){if(normSearchText(ACC.items[k].brand)===nn)n++;});
+  return n;
+}
+function accApplyBrands(s0,s1){
+  ACC.brands={};ACC.brandDisc={};ACC.aliasMap={};
+  s0.forEach(function(d){ACC.brands[d.id]=Object.assign({id:d.id},d.data());});
+  Object.keys(ACC.brands).forEach(function(k){(ACC.brands[k].aliases||[]).forEach(function(al){if(al)ACC.aliasMap[al]=ACC.brands[k].name;});});
+  s1.forEach(function(d){var p=Number((d.data()||{}).pct);if(p>=0&&p<=100)ACC.brandDisc[d.id]=p;});
+  ACC.brandsLoaded=true;ACC.brandsErr='';
+}
+function accLoadBrands(cb){
+  var db=accDb();if(!db)return;
+  rvLoaderStart('accBrands',function(){accLoadBrands();},'برندهای انبار');
+  Promise.all(['accBrands','accBrandDisc'].map(function(n){return db.collection(n).get({source:'server'});})).then(function(s){
+    accApplyBrands(s[0],s[1]);rvLoaderOk('accBrands');
+    if(cb)cb();
+    if(ACC.view==='brands'||ACC.view==='itemView')accRenderBg();
+  }).catch(function(e){
+    console.error('accLoadBrands',e);rvLoaderFail('accBrands',e);
+    ACC.brandsLoaded=false;
+    ACC.brandsErr=(e&&e.code==='permission-denied')?'rules':'net';
+    if(ACC.view==='brands'||ACC.view==='itemView')accRenderBg();
+  });
+}
+function accBrandLogoHtml(b,size){
+  size=size||40;
+  if(b&&b.logo)return '<img class="acc-br-logo" style="width:'+size+'px;height:'+size+'px" src="'+accEsc(b.logo)+'" alt="">';
+  var ch=b&&b.name?String(b.name).trim().charAt(0).toUpperCase():'?';
+  return '<span class="acc-br-ph" style="width:'+size+'px;height:'+size+'px;line-height:'+size+'px">'+accEsc(ch)+'</span>';
+}
+function accBrandRowHtml(b,onclick){
+  var dp=ACC.brandDisc[b.id],cnt=accBrandItemCount(b.name);
+  return '<div class="acc-br-row" data-n="'+accEsc(normSearchText(b.name))+'" onclick="'+onclick+'">'+accBrandLogoHtml(b,40)+
+    '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+accEsc(b.name)+'</div>'+
+    '<div style="font-size:0.66rem;color:#7a5a38">'+(dp!=null?('<b style="color:#1a6a3a">تخفیفِ پیش‌فرض: '+accPct(dp)+'٪</b> · '):'بدونِ تخفیفِ پیش‌فرض · ')+accFa(cnt)+' کالا</div></div></div>';
+}
+function accFilterBrands(q){
+  var nq=normSearchText(q);
+  document.querySelectorAll('#ACC_BR_LIST .acc-br-row').forEach(function(r){r.style.display=(!nq||r.getAttribute('data-n').indexOf(nq)>-1)?'flex':'none';});
+}
+function accRenderBrands(){
+  var h='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="sbig" style="background:#2a9d5c;color:#fff;margin:0" onclick="ACC.brandDraftName=\'\';accGo(\'brandView\',\'\')">➕ برندِ جدید</button></div>';
+  if(ACC.brandsErr==='rules')h+='<div class="nores" style="color:#c0304a;text-align:right;line-height:1.9">🔒 قوانینِ فایربیس هنوز برندها رو باز نکردن. قوانینِ جدید (فایلِ firestore-rules.txt) رو تو کنسولِ فایربیس Publish کن، بعد «تلاش دوباره».<br><button class="sbig stg" style="width:auto;padding:8px 16px;margin-top:6px" onclick="accLoadBrands()">🔄 تلاش دوباره</button></div>';
+  else if(ACC.brandsErr==='net')h+='<div class="nores" style="color:#c0304a">دریافتِ برندها ناموفق بود. <button class="sbig stg" style="width:auto;padding:6px 14px" onclick="accLoadBrands()">🔄 تلاش دوباره</button></div>';
+  else if(!ACC.brandsLoaded)h+='<div class="nores">⏳ در حال دریافتِ برندها...</div>';
+  var list=Object.keys(ACC.brands).map(function(k){return ACC.brands[k];}).sort(function(x,y){return String(x.name).localeCompare(String(y.name),'fa');});
+  if(ACC.brandsLoaded){
+    if(list.length)h+='<input class="fi" id="ACC_BR_Q" placeholder="🔎 جستجوی برند..." oninput="accFilterBrands(this.value)" autocomplete="off" style="margin-bottom:8px"><div id="ACC_BR_LIST">'+list.map(function(b){return accBrandRowHtml(b,'accGo(\'brandView\',\''+accEsc(b.id)+'\')');}).join('')+'</div>';
+    else h+='<div class="nores">هنوز برندی ثبت نکردی. با «➕ برندِ جدید» شروع کن، یا از پایین برندهای موجود رو یک‌جا ثبت کن.</div>';
+    // برندهایی که تو کالاها/محصولات هست ولی تو فهرست نیست
+    var un=[];accAllBrandNames().forEach(function(n){var rb=accBrandByName(n);if(!rb||normSearchText(rb.name)!==normSearchText(n))un.push(n);});
+    if(un.length){
+      var rows=un.map(function(n,i){var half=!!accBrandByName(n);return '<div class="acc-br-row" style="cursor:default;flex-wrap:wrap"><span class="acc-br-ph" style="width:34px;height:34px;line-height:34px;background:#f1e3cf;color:#9a6e3a">'+accEsc(String(n).trim().charAt(0).toUpperCase())+'</span><div style="flex:1 1 60%;min-width:0"><div style="font-weight:800;font-size:0.78rem;word-break:break-word">'+accEsc(n)+'</div><div style="font-size:0.64rem;color:'+(half?'#c0702a':'#7a5a38')+'">'+(half?'⚠️ ادغامِ نیمه\u200cکاره؛ ادامه بده · ':'')+accFa(accBrandItemCount(n))+' کالا</div></div><div style="display:flex;gap:6px;flex:1 1 100%;justify-content:flex-end">'+(half?'':'<button class="sbig stg" style="width:auto;margin:0;padding:8px 14px" onclick="accRegisterBrandFrom('+i+')">➕ ثبت</button>')+'<button class="sbig stg" style="width:auto;margin:0;padding:8px 14px" onclick="accOpenMerge('+i+')">🔗 ادغام</button></div></div>';}).join('');
+      ACC.unregBrands=un;
+      h+=accCard('⚠️ برندهای ثبت‌نشده ('+accFa(un.length)+')','<div style="font-size:0.7rem;color:#7a5a38;margin-bottom:8px;line-height:1.8">این اسم‌ها تو کالاها یا محصولاتِ پنل هست ولی تو فهرستِ برندها نیست. اگه یه برند به چند شکل نوشته شده (مثلاً «Fitan» و «فیتن»)، فقط یکیش رو ثبت کن.</div>'+rows+'<button class="sbig" style="background:#c0702a;color:#fff;margin-top:6px" onclick="accRegisterAllBrands()">➕ ثبتِ همه (بدونِ لوگو و تخفیف)</button>','margin-top:12px');
+    }
+  }
+  return h;
+}
+// ══════════ ادغامِ برندها: برندِ مبدأ (مثلاً «فیتن») داخلِ برندِ اصلی (مثلاً «Fitan | فیتن») ══════════
+// هر کالا با یه تراکنشِ جدا منتقل می‌شه (کلید، موجودی، قیمتِ خرید، عکس، موجودیِ عمومی)؛ اگه وسطِ کار قطع بشه دوباره زدن امنه (موجودی دوبار جمع نمی‌شه)
+function accMergeNames(){
+  var names=[],seen={};
+  Object.keys(ACC.brands).forEach(function(k){var n=ACC.brands[k].name;seen[normSearchText(n)]=1;names.push({n:n,reg:true,id:k});});
+  accAllBrandNames().forEach(function(n){var nn=normSearchText(n);if(seen[nn])return;seen[nn]=1;names.push({n:n,reg:false,half:!!accBrandByName(n)});});
+  return names;
+}
+function accMergePlan(srcName,tgt){
+  var ns=normSearchText(srcName),plan={items:[],invoices:[],blocks:[],rowIds:[],conflicts:0,qty:0};
+  Object.keys(ACC.items).forEach(function(k){
+    var it=ACC.items[k];if(normSearchText(it.brand)!==ns)return;
+    var nk=accItemKey(tgt.name,it.code);
+    plan.items.push({oldKey:k,newKey:nk,code:it.code,qty:Number(it.qty)||0,conflict:nk!==k&&!!ACC.items[nk]});
+    plan.qty+=Number(it.qty)||0;
+  });
+  plan.conflicts=plan.items.filter(function(m){return m.conflict;}).length;
+  var map={};plan.items.forEach(function(m){map[m.oldKey]=m.newKey;});
+  ACC.invoices.forEach(function(v){
+    var t=false,lines=(v.lines||[]).map(function(l){
+      // هم از روی کلیدِ کالاهایی که الان منتقل می‌شن، هم از روی خودِ ردیف (برندِ مبدأ + کد)؛ تا ادامه‌ی یه ادغامِ نیمه‌کاره هم ردیف‌های قبلاً-منتقل‌شده رو درست کنه
+      var hit=map[l.key]||((normSearchText(l.brand)===ns&&l.code)?accItemKey(tgt.name,l.code):null);
+      if(hit&&(hit!==l.key||normSearchText(l.brand)!==normSearchText(tgt.name))){t=true;return Object.assign({},l,{key:hit,brand:tgt.name});}
+      return l;
+    });
+    if(t)plan.invoices.push({id:v.id,lines:lines});
+  });
+  document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){
+    var bid=bl.id.slice(1),bn=document.getElementById('BN'+bid);
+    if(!bn||normSearchText(bn.value)!==ns)return;
+    var rows=bl.querySelectorAll(':scope .wt-row,:scope .nt-row,:scope .t5-row');
+    plan.blocks.push({bid:bid,n:rows.length});
+    rows.forEach(function(r){var pr=collectSingleProduct(r.id.slice(1));if(pr&&pr.id&&pr.code)plan.rowIds.push(pr.id);});
+  });
+  return plan;
+}
+function accMergeSel(){
+  var sEl=document.getElementById('ACC_M_SRC'),tEl=document.getElementById('ACC_M_TGT');
+  var si=sEl?sEl.value:'',tid=tEl?tEl.value:'';
+  var src=(si!==''&&ACC.mergeNames)?ACC.mergeNames[Number(si)]:null,tgt=tid?ACC.brands[tid]:null;
+  return {src:src,tgt:tgt};
+}
+function accRenderBrandMerge(){
+  var names=accMergeNames();ACC.mergeNames=names;
+  var regs=Object.keys(ACC.brands).map(function(k){return ACC.brands[k];}).sort(function(x,y){return String(x.name).localeCompare(String(y.name),'fa');});
+  var preSrc=-1;if(ACC.mergeSrc){for(var i=0;i<names.length;i++){if(normSearchText(names[i].n)===normSearchText(ACC.mergeSrc)){preSrc=i;break;}}}
+  var h='<div style="font-weight:900;font-size:0.9rem;margin-bottom:6px">🔗 ادغامِ برندها</div>';
+  h+='<div style="font-size:0.72rem;color:#7a5a38;line-height:1.9;margin-bottom:10px">برندی که به چند شکل نوشته شده (مثلاً «فیتن» و «Fitan | فیتن») رو داخلِ برندِ اصلی ادغام کن. کالاها، موجودی، قیمتِ خرید، عکس، فاکتورها و محصولاتِ تبِ محصولات با هم منتقل می‌شن و از این به بعد اسمِ قدیمی خودکار به برندِ اصلی تبدیل می‌شه.</div>';
+  if(!ACC.loaded)return h+'<div class="nores">اول صبر کن حسابداری کامل لود بشه.</div>';
+  if(!regs.length)return h+'<div class="nores">اول برندِ اصلی رو تو فهرست ثبت کن (تبِ «🏷️ برندها»).<br><button class="sbig stg" style="width:auto;padding:8px 16px;margin-top:8px" onclick="accGo(\'brands\')">← برندها</button></div>';
+  h+='<div class="g1"><span class="lbl">برندی که باید حذف و داخلِ اصلی ادغام بشه (مبدأ)</span><select class="fi" id="ACC_M_SRC" onchange="accMergePreview()"><option value="">— انتخاب کن —</option>'+names.map(function(x,i){return '<option value="'+i+'"'+(i===preSrc?' selected':'')+'>'+accEsc(x.n)+(x.reg?' ✓ (ثبت‌شده)':'')+' — '+accFa(accBrandItemCount(x.n))+' کالا</option>';}).join('')+'</select></div>';
+  h+='<div class="g1"><span class="lbl">برندِ اصلی که می‌مونه (مقصد)</span><select class="fi" id="ACC_M_TGT" onchange="accMergePreview()"><option value="">— انتخاب کن —</option>'+regs.map(function(b){return '<option value="'+accEsc(b.id)+'"'+(b.id===ACC.mergeTarget?' selected':'')+'>'+accEsc(b.name)+'</option>';}).join('')+'</select></div>';
+  h+='<div id="ACC_M_PREVIEW"></div>';
+  h+='<button class="sbig stg" onclick="accGo(\'brands\')">← بازگشت</button>';
+  return h;
+}
+function accMergePreview(){
+  var box=document.getElementById('ACC_M_PREVIEW');if(!box)return;
+  var s=accMergeSel();
+  if(!s.src||!s.tgt){box.innerHTML='';return;}
+  if(normSearchText(s.src.n)===normSearchText(s.tgt.name)){box.innerHTML='<div class="acc-hint" style="color:#c0304a">مبدأ و مقصد یکیه.</div>';return;}
+  var p=accMergePlan(s.src.n,s.tgt);
+  var h='<div class="card" style="margin:8px 0;background:#fff8ee"><div style="font-size:0.78rem;line-height:2">';
+  h+='«<b>'+accEsc(s.src.n)+'</b>» ← «<b>'+accEsc(s.tgt.name)+'</b>»<br>';
+  h+='📦 <b>'+accFa(p.items.length)+'</b> کالا منتقل می‌شه (مجموعِ موجودی '+accFa(p.qty)+')';
+  if(p.conflicts)h+='<br><span style="color:#c0702a">⚠️ '+accFa(p.conflicts)+' کالا از قبل با همون کد تو «'+accEsc(s.tgt.name)+'» هست؛ موجودی‌ها جمع و قیمتِ خرید «وزنی» (میانگینِ موزون) می‌شه: '+p.items.filter(function(m){return m.conflict;}).map(function(m){return accEsc(m.code);}).join('، ')+'</span>';
+  h+='<br>🧾 ردیفِ <b>'+accFa(p.invoices.length)+'</b> فاکتور اصلاح می‌شه';
+  h+='<br>🏷️ <b>'+accFa(p.rowIds.length)+'</b> محصولِ تبِ محصولات (تو '+accFa(p.blocks.length)+' بلوکِ برند) برندشون «'+accEsc(s.tgt.name)+'» می‌شه';
+  h+='<br>🔁 از این به بعد «'+accEsc(s.src.n)+'» خودکار به «'+accEsc(s.tgt.name)+'» تبدیل می‌شه (پنل، سفارش‌ها و تولید محتوا)';
+  if(s.src.reg)h+='<br><span style="color:#c0702a">⚠️ «'+accEsc(s.src.n)+'» از فهرستِ برندها حذف می‌شه (لوگو و تخفیفِ پیش‌فرضش هم؛ تخفیفِ «'+accEsc(s.tgt.name)+'» می‌مونه).</span>';
+  h+='</div></div>';
+  h+='<button class="sbig stg" onclick="accMergeBackup()">📥 دانلودِ پشتیبان (کالاها و فاکتورهای درگیر)</button>';
+  h+='<label style="display:flex;gap:8px;align-items:flex-start;font-size:0.74rem;margin:8px 0;line-height:1.8"><input type="checkbox" id="ACC_M_OK" onchange="document.getElementById(\'ACC_M_GO\').disabled=!this.checked" style="margin-top:4px"> پشتیبان گرفتم و می‌خوام ادغام کنم (این کار برنمی‌گرده)</label>';
+  h+='<button class="sbig" id="ACC_M_GO" disabled style="background:#c0702a;color:#fff;opacity:1" onclick="accMergeRun()">🔗 ادغام کن</button>';
+  box.innerHTML=h;
+}
+function accMergeBackupData(srcName,tgt){
+  var plan=accMergePlan(srcName,tgt),ks={};plan.items.forEach(function(m){ks[m.oldKey]=1;ks[m.newKey]=1;});
+  var items={};Object.keys(ks).forEach(function(k){if(ACC.items[k])items[k]=ACC.items[k];});
+  var inv=ACC.invoices.filter(function(v){return plan.invoices.some(function(x){return x.id===v.id;});});
+  return {kind:'rozavie-brand-merge-backup',at:new Date().toISOString(),from:srcName,to:tgt.name,items:items,invoices:inv,brands:ACC.brands,brandDisc:ACC.brandDisc};
+}
+function accMergeBackup(){
+  var s=accMergeSel();if(!s.src||!s.tgt)return;
+  var data=accMergeBackupData(s.src.n,s.tgt);
+  try{
+    var blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='rozavie-merge-backup-'+accTodayIso()+'.json';document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1500);
+    accSetStat('پشتیبان دانلود شد ✅');
+  }catch(e){accSetStat('دانلود ناموفق بود','err');}
+}
+function accMoveItem(db,m,tgtName){
+  var C=function(n,id){return db.collection(n).doc(id);};
+  return db.runTransaction(function(tx){
+    return Promise.all([tx.get(C('accItems',m.oldKey)),tx.get(C('accItems',m.newKey)),tx.get(C('accCosts',m.oldKey)),tx.get(C('accCosts',m.newKey)),tx.get(C('itemImages',m.oldKey)),tx.get(C('itemImages',m.newKey))]).then(function(s){
+      if(!s[0].exists)return 'gone';
+      var o=s[0].data(),n=s[1].exists?s[1].data():null;
+      var oc=s[2].exists?s[2].data():{avgCost:o.avgCost,lastBuy:o.lastBuy};
+      var nc=s[3].exists?s[3].data():(n?{avgCost:n.avgCost,lastBuy:n.lastBuy}:null);
+      if(!n){
+        var cp=Object.assign({},o,{brand:tgtName,ts:o.ts||Date.now()});delete cp.avgCost;delete cp.lastBuy;
+        tx.set(C('accItems',m.newKey),cp);
+        if(s[2].exists||Number(o.avgCost)||Number(o.lastBuy))tx.set(C('accCosts',m.newKey),{avgCost:Number(oc.avgCost)||0,lastBuy:Number(oc.lastBuy)||0});
+        if(s[4].exists)tx.set(C('itemImages',m.newKey),s[4].data());
+      }else{
+        var qa=Number(n.qty)||0,qb=Number(o.qty)||0,aA=Number((nc||{}).avgCost)||0,aB=Number(oc.avgCost)||0,avg;
+        if(qa>0&&qb>0&&aA>0&&aB>0)avg=Math.round((qa*aA+qb*aB)/(qa+qb));
+        else if(qa>0&&qb<=0)avg=aA||aB;
+        else if(qb>0&&qa<=0)avg=aB||aA;
+        else avg=aA||aB;
+        var upd={qty:qa+qb};
+        if(!(Number(n.sellPrice)>0)&&Number(o.sellPrice)>0)upd.sellPrice=o.sellPrice;
+        if(!n.name&&o.name)upd.name=o.name;
+        if(!n.hasImg&&o.hasImg){upd.hasImg=true;upd.thumb=o.thumb||'';}
+        tx.update(C('accItems',m.newKey),upd);
+        tx.set(C('accCosts',m.newKey),{avgCost:avg,lastBuy:Number((nc||{}).lastBuy)||Number(oc.lastBuy)||0});
+        if(!s[5].exists&&s[4].exists)tx.set(C('itemImages',m.newKey),s[4].data());
+      }
+      tx.delete(C('accItems',m.oldKey));tx.delete(C('accCosts',m.oldKey));tx.delete(C('itemImages',m.oldKey));tx.delete(C('stockPublic',m.oldKey));
+      return 'ok';
+    });
+  });
+}
+function accMergeRun(){
+  var db=accDb();if(!db||ACC.mergeBusy)return;
+  var s=accMergeSel();if(!s.src||!s.tgt){accSetStat('مبدأ و مقصد رو انتخاب کن','err');return;}
+  var ok=document.getElementById('ACC_M_OK');if(!ok||!ok.checked){accSetStat('اول تیکِ «پشتیبان گرفتم» رو بزن','err');return;}
+  if(normSearchText(s.src.n)===normSearchText(s.tgt.name)){accSetStat('مبدأ و مقصد یکیه','err');return;}
+  if(typeof rvPreferRest==='function'&&rvPreferRest()){accSetStat('اتصالِ زنده‌ی فایربیس باید سالم باشه تا ادغام انجام بشه (الان از مسیرِ جایگزین استفاده می‌شه)','err');return;}
+  var src=s.src,tgt=s.tgt,plan=accMergePlan(src.n,tgt),ns=normSearchText(src.n);
+  ACC.mergeBusy=true;
+  var stat={moved:0,merged:0,invoices:0,products:0,fail:0};
+  var srcReg=src.reg?ACC.brands[src.id]:null;
+  // ۱) نامِ مستعار (افزایشی و امن)
+  var al=(tgt.aliases||[]).slice(),an=(tgt.aliasNames||[]).slice();
+  function addAl(x){if(x&&al.indexOf(x)<0)al.push(x);}
+  addAl(ns);if(srcReg)(srcReg.aliases||[]).forEach(addAl);
+  if(an.indexOf(src.n)<0)an.push(src.n);if(srcReg)(srcReg.aliasNames||[]).forEach(function(x){if(an.indexOf(x)<0)an.push(x);});
+  accSetStat('در حال ادغام... (ثبتِ نامِ مستعار)');
+  var chain=db.collection('accBrands').doc(tgt.id).set({aliases:al,aliasNames:an},{merge:true}).then(function(){tgt.aliases=al;tgt.aliasNames=an;al.forEach(function(x){ACC.aliasMap[x]=tgt.name;});});
+  // ۲) هر کالا با یه تراکنشِ جدا
+  plan.items.forEach(function(m,i){
+    chain=chain.then(function(){
+      accSetStat('در حال ادغام... (کالا '+accFa(i+1)+' از '+accFa(plan.items.length)+')');
+      return accMoveItem(db,m,tgt.name).then(function(r){if(r==='ok'){stat.moved++;if(m.conflict)stat.merged++;}});
+    });
+  });
+  // ۳) ردیفِ فاکتورها
+  chain=chain.then(function(){
+    var ch=[];for(var i=0;i<plan.invoices.length;i+=400)ch.push(plan.invoices.slice(i,i+400));
+    var p=Promise.resolve();
+    ch.forEach(function(c){p=p.then(function(){
+      accSetStat('در حال ادغام... (فاکتورها)');
+      var b=db.batch();c.forEach(function(x){b.update(db.collection('accInvoices').doc(x.id),{lines:x.lines});});
+      return b.commit().then(function(){stat.invoices+=c.length;});
+    });});
+    return p;
+  });
+  // ۴) محصولاتِ تبِ محصولات (نامِ بلوک + سندِ فایربیس)
+  chain=chain.then(function(){
+    accSetStat('در حال ادغام... (محصولات)');
+    plan.blocks.forEach(function(bk){var bn=document.getElementById('BN'+bk.bid);if(bn)bn.value=tgt.name;});
+    try{if(plan.blocks.length)save();}catch(e){}
+    var p=Promise.resolve();
+    plan.rowIds.forEach(function(id){p=p.then(function(){return db.collection('products').doc(id).update({brand:tgt.name}).then(function(){stat.products++;},function(e){if(!(e&&e.code==='not-found'))stat.fail++;});});});
+    return p;
+  });
+  // ۵) حذفِ برندِ مبدأ از فهرست (آخر از همه)
+  chain=chain.then(function(){
+    if(!srcReg)return;
+    var b=db.batch();b.delete(db.collection('accBrands').doc(srcReg.id));b.delete(db.collection('accBrandDisc').doc(srcReg.id));return b.commit();
+  });
+  chain.then(function(){
+    ACC.mergeBusy=false;ACC.view='brands';ACC.arg=null;ACC.mergeSrc='';ACC.mergeTarget='';ACC.pubBusy=false;ACC.pubFail=false;
+    var msg='✅ ادغام انجام شد: '+accFa(stat.moved)+' کالا'+(stat.merged?(' ('+accFa(stat.merged)+' تا با کالای هم‌کد جمع شد)'):'')+'، '+accFa(stat.invoices)+' فاکتور، '+accFa(stat.products)+' محصول'+(stat.fail?(' — '+accFa(stat.fail)+' محصول به‌روز نشد؛ دوباره ادغام بزن'):'');
+    accLoad(function(){accLoadBrands(function(){accSyncPublicStock();ACC.view='brands';accRender();accSetStat(msg,stat.fail?'err':'ok');});});
+  }).catch(function(e){
+    ACC.mergeBusy=false;console.error('accMergeRun',e);
+    accSetStat('ادغام نیمه‌کاره موند ('+accFa(stat.moved)+' کالا منتقل شد): '+(e&&e.message||e)+' — دوباره «ادغام کن» رو بزن؛ از همون‌جا ادامه می‌ده و موجودی دوبار جمع نمی‌شه.','err');
+    accLoad();
+  });
+}
+function accOpenMerge(i){var n=(ACC.unregBrands||[])[i];if(n===undefined)return;ACC.mergeSrc=n;ACC.mergeTarget='';accGo('brandMerge','');setTimeout(accMergePreview,0);}
+function accRegisterBrandFrom(i){var n=(ACC.unregBrands||[])[i];if(n===undefined)return;ACC.brandDraftName=n;accGo('brandView','');}
+function accRegisterAllBrands(){
+  var db=accDb();if(!db)return;
+  var un=ACC.unregBrands||[];if(!un.length)return;
+  if(!confirm(accFa(un.length)+' برند یک‌جا ثبت بشه؟ (اسم‌ها همون‌طور که الان نوشته شدن؛ لوگو و تخفیف بعداً قابلِ تنظیمه)'))return;
+  var b=db.batch(),seen={};
+  un.forEach(function(n){var k=accBrandKey(n);if(seen[k]||ACC.brands[k])return;seen[k]=1;b.set(db.collection('accBrands').doc(k),{name:String(n).trim(),logo:'',ts:Date.now()});});
+  b.commit().then(function(){accLoadBrands(function(){accSetStat(accFa(un.length)+' برند ثبت شد ✅');});}).catch(function(e){console.error(e);accSetStat('ثبتِ برندها ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accRenderBrandView(){
+  var id=ACC.arg||'',b=id?ACC.brands[id]:null;
+  var cnt=b?accBrandItemCount(b.name):0,locked=!!(b&&cnt>0);
+  ACC.brandLogo={data:b?(b.logo||''):'',changed:false};
+  var dp=b?ACC.brandDisc[id]:null;ACC_BDISC={pct:(dp==null?null:dp)};
+  var nameVal=b?b.name:(ACC.brandDraftName||'');
+  var h='<div style="font-weight:900;font-size:0.9rem;margin-bottom:8px">'+(b?'✏️ ویرایشِ برند':'➕ برندِ جدید')+'</div>';
+  h+='<div class="g1"><span class="lbl">اسمِ برند (همون شکلی که تو کالاها و کپشن‌ها می‌نویسی؛ مثلاً Fitan | فیتن)</span><input class="fi" id="ACC_B_NAME" value="'+accEsc(nameVal)+'"'+(locked?' readonly style="opacity:.7"':'')+' autocomplete="off">'+(locked?'<div class="acc-hint" style="color:#c0702a">اسمِ این برند قفله چون '+accFa(cnt)+' کالا با همین اسم ثبت شده (کلیدِ کالاها به اسمِ برند وابسته‌ست). لوگو و تخفیف رو می‌تونی عوض کنی.</div>':'')+'</div>';
+  h+='<div class="g1"><span class="lbl">🖼️ لوگوی برند</span><div id="ACC_B_LOGO_BOX" style="margin-bottom:6px">'+(b&&b.logo?'<img class="acc-br-logo" style="width:72px;height:72px" src="'+accEsc(b.logo)+'" alt="">':'<span style="font-size:0.7rem;color:#9a6e3a">هنوز لوگویی نداره</span>')+'</div><label class="sbig stg" style="display:block;text-align:center;cursor:pointer;margin:0">+ انتخاب / تغییرِ لوگو<input type="file" accept="image/*" style="display:none" onchange="accPickBrandLogo(this)"></label></div>';
+  var ch=[25,20,17,15,10,7,5].map(function(p){return '<button type="button" class="chip'+(ACC_BDISC.pct===p?' on':'')+'" data-bd="'+p+'" onclick="accBrandDiscSet('+p+')">'+accFa(p)+'٪</button>';}).join('');
+  h+='<div class="g1" id="ACC_BDISC_BOX"><span class="lbl">🏷️ تخفیفِ پیش‌فرضِ این تأمین‌کننده (٪ از قیمتِ فروش)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+ch+'<button type="button" class="chip'+(ACC_BDISC.pct===null?' on':'')+'" data-bd="none" onclick="accBrandDiscSet(\'\')">بدونِ پیش‌فرض</button></div><input class="fi" id="ACC_B_DISC" inputmode="decimal" placeholder="یا درصد رو دستی بنویس (مثلاً ۱۲٫۵)" value="'+(ACC_BDISC.pct!==null&&[25,20,17,15,10,7,5].indexOf(ACC_BDISC.pct)<0?accEsc(String(ACC_BDISC.pct)):'')+'" oninput="accBrandDiscSet(this.value,true)" autocomplete="off"><div class="acc-hint" id="ACC_B_DISC_HINT" style="font-size:0.68rem;color:#1a6a3a;min-height:14px">'+(ACC_BDISC.pct!==null?('تخفیفِ پیش‌فرض: '+accPct(ACC_BDISC.pct)+'٪'):'')+'</div><div style="font-size:0.66rem;color:#9a6e3a">وقتی کالای جدیدی از این برند ثبت کنی، قیمتِ خرید خودکار با همین درصد از قیمتِ فروش حساب می‌شه؛ تو خودِ کالا هم می‌تونی عوضش کنی.</div></div>';
+  h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveBrand(\''+accEsc(id)+'\')">💾 ذخیره</button>';
+  if(b)h+='<button class="sbig stg" onclick="ACC.mergeSrc=\'\';ACC.mergeTarget=\''+accEsc(id)+'\';accGo(\'brandMerge\',\'\')">🔗 ادغامِ یه برندِ دیگه تو این برند</button><button class="sbig" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8" onclick="accDeleteBrand(\''+accEsc(id)+'\')">🗑️ حذف از فهرست</button>';
+  h+='<button class="sbig stg" onclick="accGo(\'brands\')">← بازگشت</button>';
+  return h;
+}
+function accLogoResize(dataUrl,maxW,cb){
+  var img=new Image();
+  img.onload=function(){
+    var w=img.width,h=img.height,s=Math.min(1,maxW/Math.max(w,h)),ow=Math.max(1,Math.round(w*s)),oh=Math.max(1,Math.round(h*s));
+    var cv=document.createElement('canvas');cv.width=ow;cv.height=oh;var g=cv.getContext('2d');
+    g.fillStyle='#ffffff';g.fillRect(0,0,ow,oh);g.drawImage(img,0,0,ow,oh);
+    cb(cv.toDataURL('image/jpeg',0.85));
+  };
+  img.onerror=function(){cb(null);};
+  img.src=dataUrl;
+}
+function accPickBrandLogo(input){
+  var f=input.files&&input.files[0];if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){accLogoResize(fr.result,200,function(d){
+    if(!d){accSetStat('عکس خونده نشد','err');return;}
+    ACC.brandLogo={data:d,changed:true};
+    var box=document.getElementById('ACC_B_LOGO_BOX');
+    if(box)box.innerHTML='<img class="acc-br-logo" style="width:72px;height:72px;border:2px solid #2a9d5c" src="'+d+'" alt=""> <span style="font-size:0.68rem;color:#1a6a3a">لوگو انتخاب شد؛ «ذخیره» رو بزن</span>';
+  });};
+  fr.readAsDataURL(f);input.value='';
+}
+function accBrandDiscSet(p,fromInput){
+  var dEl=document.getElementById('ACC_B_DISC'),hint=document.getElementById('ACC_B_DISC_HINT');
+  var raw=toEnDigits(String(p==null?'':p)).replace(/[\u066B\u060C,]/g,'.').trim();
+  function mark(v){document.querySelectorAll('#ACC_BDISC_BOX .chip').forEach(function(c){var bd=c.getAttribute('data-bd');c.classList.toggle('on',v===null?bd==='none':(Number(bd)===v));});}
+  if(raw===''){ACC_BDISC.pct=null;mark(null);if(!fromInput&&dEl)dEl.value='';if(hint){hint.textContent='';hint.style.color='#1a6a3a';}return;}
+  var pct=parseFloat(raw);
+  if(isNaN(pct)||pct<0||pct>100){ACC_BDISC.pct=null;mark(undefined);if(hint){hint.textContent='درصد باید یه عددِ بینِ ۰ تا ۱۰۰ باشه';hint.style.color='#c0304a';}return;}
+  pct=Math.round(pct*100)/100;ACC_BDISC.pct=pct;
+  if(!fromInput&&dEl)dEl.value=([25,20,17,15,10,7,5].indexOf(pct)<0?String(pct):'');
+  mark(pct);if(hint){hint.textContent='تخفیفِ پیش‌فرض: '+accPct(pct)+'٪';hint.style.color='#1a6a3a';}
+}
+function accSaveBrand(id){
+  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  var name=stripBidi(document.getElementById('ACC_B_NAME').value).replace(/\s+/g,' ').trim();
+  if(!name){accSetStat('اسمِ برند رو بنویس','err');return;}
+  var key=accBrandKey(name);
+  if(!id&&ACC.brands[key]){accSetStat('این برند (با همین اسم یا شکلِ مشابه) قبلاً ثبت شده: «'+ACC.brands[key].name+'»','err');return;}
+  if(id&&key!==id&&ACC.brands[key]){accSetStat('اسمِ جدید با برندِ «'+ACC.brands[key].name+'» یکیه','err');return;}
+  var old=id?ACC.brands[id]:null,b=db.batch();
+  var logo=ACC.brandLogo&&ACC.brandLogo.changed?(ACC.brandLogo.data||''):(old?old.logo||'':'');
+  var doc={name:name,logo:logo,ts:old&&old.ts?old.ts:Date.now()};
+  if(id&&key!==id){b.delete(db.collection('accBrands').doc(id));b.delete(db.collection('accBrandDisc').doc(id));}
+  b.set(db.collection('accBrands').doc(key),doc);
+  if(ACC_BDISC.pct!==null)b.set(db.collection('accBrandDisc').doc(key),{pct:ACC_BDISC.pct});
+  else b.delete(db.collection('accBrandDisc').doc(key));
+  b.commit().then(function(){
+    accLoadBrands(function(){
+      if(ACC.returnToItem){ACC.returnToItem=false;ACC.preBrand=name;ACC.view='itemView';ACC.arg='';accRender();accSetStat('برند ثبت شد ✅');}
+      else{ACC.view='brands';ACC.arg=null;accRender();accSetStat('برند ذخیره شد ✅');}
+    });
+  }).catch(function(e){console.error(e);accSetStat('ذخیره ناموفق بود: '+(e&&e.message||e),'err');});
+}
+function accDeleteBrand(id){
+  var db=accDb();if(!db)return;var b=ACC.brands[id];if(!b)return;
+  var n=accBrandItemCount(b.name);
+  if(!confirm('برندِ «'+b.name+'» از فهرست حذف بشه؟'+(n?('\n'+n+' کالا با این برند همون‌طور که هست می‌مونن (فقط از فهرست انتخاب برداشته می‌شه).'):'')))return;
+  var bt=db.batch();bt.delete(db.collection('accBrands').doc(id));bt.delete(db.collection('accBrandDisc').doc(id));
+  bt.commit().then(function(){accLoadBrands(function(){ACC.view='brands';ACC.arg=null;accRender();accSetStat('برند حذف شد');});}).catch(function(e){console.error(e);accSetStat('حذف ناموفق بود: '+(e&&e.message||e),'err');});
+}
+// ── انتخابگرِ برند تو فرمِ کالا ──
+function accBrandPickerMode(){return ACC.brandsLoaded&&Object.keys(ACC.brands).length>0;}
+function accBrandPickList(q){
+  var el=document.getElementById('ACC_I_BRAND_RES');if(!el)return;
+  var nq=normSearchText(q||'');
+  var list=Object.keys(ACC.brands).map(function(k){return ACC.brands[k];}).filter(function(b){return !nq||normSearchText(b.name).indexOf(nq)>-1;}).sort(function(x,y){return String(x.name).localeCompare(String(y.name),'fa');});
+  if(!list.length){el.innerHTML='<div class="srch-item" style="color:#c0702a">برندی با این اسم تو فهرست نیست. <a style="text-decoration:underline" onclick="accNewBrandFromItem()">➕ برندِ جدید ثبت کن</a></div>';el.style.display='block';return;}
+  el.innerHTML=list.map(function(b){var dp=ACC.brandDisc[b.id];return '<div class="srch-item" style="display:flex;align-items:center;gap:8px" onclick="accSelectBrand(\''+accEsc(b.id)+'\')">'+accBrandLogoHtml(b,28)+'<span style="flex:1">'+accEsc(b.name)+'</span>'+(dp!=null?('<span style="font-size:0.62rem;color:#1a6a3a;font-weight:800">'+accPct(dp)+'٪</span>'):'')+'</div>';}).join('');
+  el.style.display='block';
+}
+function accNewBrandFromItem(){
+  var q=document.getElementById('ACC_I_BRAND_Q');ACC.brandDraftName=q?q.value.trim():'';ACC.returnToItem=true;accGo('brandView','');
+}
+function accClearBrand(){
+  var h=document.getElementById('ACC_I_BRAND'),sel=document.getElementById('ACC_I_BRAND_SEL'),q=document.getElementById('ACC_I_BRAND_Q');
+  if(h)h.value='';if(sel)sel.innerHTML='';if(q){q.style.display='';q.value='';q.focus();}
+  var note=document.getElementById('ACC_I_BRAND_NOTE');if(note)note.textContent='';
+  if(ACC_DISC.fromBrand&&!ACC_DISC.manual){accApplyDisc('',true);var be=document.getElementById('ACC_I_BUY');if(be){be.value='';accHint(be);}}
+  accSuggestCodes();
+}
+function accSelectBrand(key){
+  var b=ACC.brands[key];if(!b)return;
+  var h=document.getElementById('ACC_I_BRAND'),sel=document.getElementById('ACC_I_BRAND_SEL'),q=document.getElementById('ACC_I_BRAND_Q'),res=document.getElementById('ACC_I_BRAND_RES'),note=document.getElementById('ACC_I_BRAND_NOTE');
+  if(h)h.value=b.name;
+  if(sel)sel.innerHTML='<div class="acc-br-row" style="cursor:default;border-color:#2a9d5c">'+accBrandLogoHtml(b,34)+'<div style="flex:1;font-weight:900;font-size:0.82rem">'+accEsc(b.name)+'</div><button type="button" class="chip" style="margin:0" onclick="accClearBrand()">تغییر</button></div>';
+  if(q){q.style.display='none';}
+  if(res){res.innerHTML='';res.style.display='none';}
+  var dp=ACC.brandDisc[key];
+  if(dp!=null&&!ACC_DISC.manual){accApplyDisc(dp,false,true);if(note)note.textContent='🏷️ تخفیفِ پیش‌فرضِ «'+b.name+'»: '+accPct(dp)+'٪ اعمال شد (می‌تونی عوضش کنی)';}
+  else if(dp==null){
+    if(ACC_DISC.fromBrand&&!ACC_DISC.manual){accApplyDisc('',true);var be=document.getElementById('ACC_I_BUY');if(be){be.value='';accHint(be);}}
+    if(note)note.textContent='';
+  }
+  accSuggestCodes();
+  var c=document.getElementById('ACC_I_CODE');if(c)c.focus();
 }
 function accPickBrand(i){
   var n=ACC_BRAND_SUGG[i];if(n===undefined)return;
@@ -5335,9 +5742,9 @@ function accEnsureItemForProduct(prod){
   var brand=stripBidi(prod.brand).trim(),code=stripBidi(prod.code).trim();
   if(!brand||!code||code==='--')return;
   var key=accItemKey(brand,code);
-  if(ACC.items[key])return;
+  if(ACC.items[key]||ACC.items[accItemKeyRaw(brand,code)])return;
   var db=accDb();if(!db)return;
-  var item={brand:brand,code:code,name:stripBidi(prod.title).trim(),sellPrice:accNum(prod.price),qty:0,ts:Date.now()};
+  var item={brand:stripBidi(accAliasResolve(brand)).trim(),code:code,name:stripBidi(prod.title).trim(),sellPrice:accNum(prod.price),qty:0,ts:Date.now()};
   ACC.items[key]=Object.assign({id:key,avgCost:0,lastBuy:0},item);
   var ref=db.collection('accItems').doc(key);
   db.runTransaction(function(tx){
@@ -5639,8 +6046,8 @@ function accProductsNotInStock(){
     var code=String(p.code||'').trim(),brand=String(p.brandName||'').trim();
     if(!code||code==='--'||!brand)return;
     var key=accItemKey(brand,code);
-    if(ACC.items[key]||seen[key])return;
-    seen[key]=1;out.push({key:key,brand:stripBidi(brand).trim(),code:stripBidi(code).trim(),name:stripBidi(p.title||'').trim(),price:accNum(p.price)});
+    if(ACC.items[key]||ACC.items[accItemKeyRaw(brand,code)]||seen[key])return;
+    seen[key]=1;out.push({key:key,brand:stripBidi(accAliasResolve(brand)).trim(),code:stripBidi(code).trim(),name:stripBidi(p.title||'').trim(),price:accNum(p.price)});
   });
   return out;
 }
@@ -5663,16 +6070,21 @@ function accRenderItemView(){
   var id=ACC.arg||'',it=id?ACC.items[id]:null;
   var h='';
   if(!it){
-    h+='<div class="g1"><span class="lbl">برند</span><input class="fi" id="ACC_I_BRAND" placeholder="اسمِ برند رو بنویس؛ برندهای ثبت‌شده پیشنهاد می‌شن" oninput="accSuggestBrands(this.value);accSuggestCodes()" autocomplete="off"><div class="srch-res" id="ACC_I_BRAND_RES"></div></div>';
+    if(accBrandPickerMode()){
+      h+='<div class="g1"><span class="lbl">برند (از فهرستِ برندها انتخاب کن)</span><input type="hidden" id="ACC_I_BRAND" value=""><input class="fi" id="ACC_I_BRAND_Q" placeholder="🔎 جستجوی برند..." oninput="accBrandPickList(this.value)" onfocus="accBrandPickList(this.value)" autocomplete="off"><div class="srch-res" id="ACC_I_BRAND_RES" style="max-height:220px;overflow:auto"></div><div id="ACC_I_BRAND_SEL"></div><div class="acc-hint" id="ACC_I_BRAND_NOTE" style="color:#1a6a3a;font-size:0.68rem;min-height:14px"></div><a style="font-size:0.7rem;color:#9a6e3a;text-decoration:underline;cursor:pointer" onclick="accNewBrandFromItem()">➕ برندِ جدید تو فهرست ثبت کن</a></div>';
+    }else{
+      h+='<div class="g1"><span class="lbl">برند</span>'+(ACC.brandsLoaded?'<div class="acc-hint" style="color:#c0702a">فهرستِ برندها خالیه؛ اول از تبِ «🏷️ برندها» برندهات رو ثبت کن تا از فهرست انتخاب بشه. فعلاً می‌تونی دستی بنویسی.</div>':(ACC.brandsErr?'<div class="acc-hint" style="color:#c0304a">فهرستِ برندها لود نشد (قوانینِ جدید Publish نشدن یا اینترنت)؛ فعلاً دستی بنویس.</div>':''))+'<input class="fi" id="ACC_I_BRAND" placeholder="اسمِ برند رو بنویس؛ برندهای ثبت‌شده پیشنهاد می‌شن" oninput="accSuggestBrands(this.value);accSuggestCodes()" autocomplete="off"><div class="srch-res" id="ACC_I_BRAND_RES"></div></div>';
+    }
     h+='<div class="g1"><span class="lbl">کد</span><input class="fi" id="ACC_I_CODE" placeholder="کد یا اسمِ محصول؛ محصولاتِ ثبت‌شده پیشنهاد می‌شن" oninput="accSuggestCodes()" autocomplete="off"><div class="srch-res" id="ACC_I_CODE_RES"></div></div>';
   }else{
-    h+='<div style="font-weight:900;font-size:0.9rem;margin-bottom:6px">کد '+accEsc(it.code)+' — '+accEsc(it.brand)+'</div>';
+    var _rb=accBrandByName(it.brand);
+    h+='<div style="display:flex;align-items:center;gap:8px;font-weight:900;font-size:0.9rem;margin-bottom:6px">'+(_rb?accBrandLogoHtml(_rb,30):'')+'<span>کد '+accEsc(it.code)+' — '+accEsc(it.brand)+'</span></div>';
   }
   h+='<div class="g1"><span class="lbl">نام / توضیح</span><input class="fi" id="ACC_I_NAME" value="'+accEsc(it?it.name||'':'')+'"></div>';
   ACC.itemPhoto={full:null,thumb:null,changed:false};
   h+='<div class="g1"><span class="lbl">📷 عکس کالا (برای سایت و تولید محتوا)</span><div id="ACC_I_IMG_BOX" style="margin-bottom:6px">'+(it&&it.thumb?'<img src="'+it.thumb+'" style="width:90px;aspect-ratio:3/4;object-fit:cover;border-radius:10px;border:2px solid #d4a87a">':'<span style="font-size:0.68rem;color:#9a6e3a">هنوز عکسی ندارد</span>')+'</div><button type="button" class="addb" onclick="document.getElementById(\'ACC_I_IMG_FILE\').click()">+ انتخاب / تغییرِ عکس</button><input type="file" id="ACC_I_IMG_FILE" accept="image/*" style="display:none" onchange="accPickItemPhoto(this)"></div>';
   h+='<div class="g1"><span class="lbl">قیمت فروشِ پیش‌فرض (تومان)</span><input class="fi" id="ACC_I_SELL" inputmode="numeric" value="'+(it&&it.sellPrice?accEsc(String(it.sellPrice)):'')+'" oninput="accHint(this);accSellTyped()"><div class="acc-hint" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
-  ACC_DISC={pct:null,manual:false};
+  ACC_DISC={pct:null,manual:false,fromBrand:false};
   // قیمتِ خرید: برای کالای جدید، و برای کالایی که هنوز قیمتِ خرید نداره (کالاهای ساخته‌شده از محصولات)
   if(!it||!(Number(it.avgCost)>0)){
     var dch=[25,20,17,15,10,7,5].map(function(p){return '<button type="button" class="chip" data-d="'+p+'" onclick="accApplyDisc('+p+')">'+accFa(p)+'٪</button>';}).join('');
@@ -5680,6 +6092,10 @@ function accRenderItemView(){
     h+='<div class="g1"><span class="lbl">💸 قیمتِ خرید (تومان) — خریدِ خودمون</span><input class="fi" id="ACC_I_BUY" inputmode="numeric" placeholder="با درصدِ بالا پر می‌شه یا خودت بنویس" oninput="accBuyTyped(this)" autocomplete="off"><div class="acc-hint" id="ACC_I_BUY_HINT" style="font-size:0.68rem;color:#9a6e3a;min-height:14px"></div></div>';
   }
   h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveItem(\''+accEsc(id)+'\')">💾 ذخیره</button>';
+  setTimeout(function(){
+    if(!it&&ACC.preBrand){var pb=accBrandByName(ACC.preBrand);ACC.preBrand='';if(pb&&accBrandPickerMode()&&document.getElementById('ACC_I_BRAND'))accSelectBrand(pb.id);}
+    if(it&&document.getElementById('ACC_DISC_BOX')){var rb=accBrandByName(it.brand);if(rb&&ACC.brandDisc[rb.id]!=null){accApplyDisc(ACC.brandDisc[rb.id],false,true);var bn=document.getElementById('ACC_I_DISC_HINT');if(bn)bn.textContent='🏷️ تخفیفِ پیش‌فرضِ «'+rb.name+'»: '+accPct(ACC.brandDisc[rb.id])+'٪ (می‌تونی عوضش کنی)؛ با «ذخیره» به‌عنوانِ قیمتِ خرید ثبت می‌شه';}}
+  },0);
   if(it){
     var q=Number(it.qty)||0;
     var adj='<div style="font-size:0.72rem;color:#9a6e3a;margin-bottom:6px">موجودیِ فعلی: <b style="color:'+(q<0?'#c0304a':'inherit')+'">'+accFa(q)+'</b> — میانگینِ قیمتِ خرید: <b>'+(Number(it.avgCost)?accMoney(it.avgCost):'—')+'</b> — آخرین خرید: '+(Number(it.lastBuy)?accMoney(it.lastBuy):'—')+'</div>';
@@ -5688,25 +6104,26 @@ function accRenderItemView(){
     h+=accCard('⚖️ تعدیل موجودی',adj,'margin-top:10px');
     var hist=ACC.invoices.filter(function(v){return (v.lines||[]).some(function(l){return l.key===id;});}).slice(0,15).map(function(v){
       var l=v.lines.filter(function(x){return x.key===id;})[0];
-      var lbl=v.type==='sale'?'فروش':(v.type==='purchase'?'خرید':'تعدیل');
+      var lbl=v.type==='sale'?'فروش':(v.type==='purchase'?'خرید':(v.type==='sreturn'?'مرجوعی':'تعدیل'));
       return '<tr'+(v.status==='cancelled'?' style="text-decoration:line-through;opacity:.55"':'')+' onclick="accGo(\'invView\',\''+accEsc(v.id)+'\')" style="cursor:pointer"><td>'+accDateDisp(v.date)+'</td><td>'+lbl+'</td><td>'+accFa(l.qty)+'</td><td>'+accFa(l.price)+'</td></tr>';
     }).join('');
     h+=accCard('تاریخچه',hist?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.7rem;text-align:center"><thead><tr style="color:#9a6e3a"><th>تاریخ</th><th>نوع</th><th>تعداد</th><th>قیمت</th></tr></thead><tbody>'+hist+'</tbody></table></div>':'<div style="font-size:0.72rem;color:#9a6e3a">هنوز گردشی نیست</div>');
   }
-  h+='<button class="sbig" style="background:#999;color:#fff" onclick="accGo(\'items\')">برگشت</button>';
+  h+='<button class="sbig stg" onclick="accGo(\'items\')">← بازگشت</button>';
   return accCard(it?'':'➕ کالای جدید',h);
 }
 // ── تخفیفِ تأمین‌کننده: قیمتِ خرید = قیمتِ فروش − درصد (با کلیکِ چیپ یا درصدِ دستی) ──
-var ACC_DISC={pct:null,manual:false};
+var ACC_DISC={pct:null,manual:false,fromBrand:false};
 function accPct(n){return (Number(n)||0).toLocaleString('fa-IR',{maximumFractionDigits:2});}
 function accDiscSell(){var s=document.getElementById('ACC_I_SELL');return s?accNum(s.value):0;}
 function accMarkDiscChips(pct){
   document.querySelectorAll('#ACC_DISC_BOX .chip').forEach(function(c){c.classList.toggle('on',pct!==null&&Number(c.getAttribute('data-d'))===pct);});
 }
 function accDiscHint(msg,ok){var h=document.getElementById('ACC_I_DISC_HINT');if(h){h.textContent=msg||'';h.style.color=ok===false?'#c0304a':'#1a6a3a';}}
-function accApplyDisc(p,fromInput){
+function accApplyDisc(p,fromInput,byBrand){
   var dEl=document.getElementById('ACC_I_DISC'),bEl=document.getElementById('ACC_I_BUY');
   if(!dEl||!bEl)return;
+  ACC_DISC.fromBrand=!!byBrand;
   var raw=toEnDigits(String(p==null?'':p)).replace(/[\u066B\u060C,]/g,'.').trim();
   if(raw===''){ACC_DISC.pct=null;accMarkDiscChips(null);accDiscHint('');return;}
   var pct=parseFloat(raw);
@@ -5725,7 +6142,7 @@ function accSellTyped(){
   if(ACC_DISC.pct!==null&&!ACC_DISC.manual)accApplyDisc(ACC_DISC.pct,true);
 }
 function accBuyTyped(inp){
-  accHint(inp);ACC_DISC.manual=true;ACC_DISC.pct=null;accMarkDiscChips(null);
+  accHint(inp);ACC_DISC.manual=true;ACC_DISC.fromBrand=false;ACC_DISC.pct=null;accMarkDiscChips(null);
   var dEl=document.getElementById('ACC_I_DISC');if(dEl)dEl.value='';
   var sell=accDiscSell(),buy=accNum(inp.value);
   if(sell&&buy){
@@ -5757,7 +6174,7 @@ function accSaveItem(id){
     if(buy>0)b.set(db.collection('accCosts').doc(id),{avgCost:buy,lastBuy:buy},{merge:true});
   }else{
     var brand=stripBidi(document.getElementById('ACC_I_BRAND').value).trim(),code=toEnDigits(stripBidi(document.getElementById('ACC_I_CODE').value).trim());
-    if(!brand||!code){accSetStat('برند و کد رو بنویس','err');return;}
+    if(!brand||!code){accSetStat(accBrandPickerMode()?'برند رو از فهرست انتخاب کن و کد رو بنویس':'برند و کد رو بنویس','err');return;}
     key=accItemKey(brand,code);
     if(ACC.items[key]){accSetStat('این کالا قبلاً ثبت شده','err');return;}
     var doc={brand:brand,code:code,name:name,sellPrice:sell,qty:0,ts:Date.now()};
@@ -5794,12 +6211,12 @@ function accAdjustStock(id){
 // ── فاکتورها: فهرست ──
 function accRenderInvoices(){
   var f=ACC.invFilter;
-  var chips=[['all','همه'],['sale','فروش'],['purchase','خرید'],['adjust','تعدیل']].map(function(c){return '<button type="button" class="chip'+(f===c[0]?' on':'')+'" onclick="ACC.invFilter=\''+c[0]+'\';accRender()">'+c[1]+'</button>';}).join('');
+  var chips=[['all','همه'],['sale','فروش'],['purchase','خرید'],['sreturn','مرجوعی'],['adjust','تعدیل']].map(function(c){return '<button type="button" class="chip'+(f===c[0]?' on':'')+'" onclick="ACC.invFilter=\''+c[0]+'\';accRender()">'+c[1]+'</button>';}).join('');
   var h='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="sbig" style="background:#2a9d5c;color:#fff;margin:0" onclick="accNewInvoice(\'sale\')">➕ فروش</button><button class="sbig" style="background:#c0702a;color:#fff;margin:0" onclick="accNewInvoice(\'purchase\')">➕ خرید</button></div><div style="margin-bottom:8px">'+chips+'</div>';
   var list=ACC.invoices.filter(function(v){return f==='all'||v.type===f;});
   if(!list.length)return h+'<div class="nores">فاکتوری ثبت نشده</div>';
   h+=list.slice(0,60).map(function(v){
-    var lbl=v.type==='sale'?'<span style="color:#1a6a3a">فروش</span>':(v.type==='purchase'?'<span style="color:#c0702a">خرید</span>':'<span style="color:#666">تعدیل</span>');
+    var lbl=v.type==='sale'?'<span style="color:#1a6a3a">فروش</span>':(v.type==='purchase'?'<span style="color:#c0702a">خرید</span>':(v.type==='sreturn'?'<span style="color:#c0304a">↩️ مرجوعی</span>':'<span style="color:#666">تعدیل</span>'));
     var cx=v.status==='cancelled';
     return '<div class="card" style="margin-bottom:6px;padding:9px 10px;cursor:pointer;'+(cx?'opacity:.55;':'')+'" onclick="accGo(\'invView\',\''+accEsc(v.id)+'\')"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:900;font-size:0.8rem;'+(cx?'text-decoration:line-through':'')+'">'+(v.orderNo?'🛒 ':'')+(v.internal?'🏠 ':'')+lbl+' '+accFa(v.number)+(v.partyName?' — '+accEsc(v.partyName):'')+(cx?' (ابطال‌شده)':'')+'</div><div style="font-size:0.66rem;color:#9a6e3a">'+accDateDisp(v.date)+' | '+accFa((v.lines||[]).length)+' ردیف</div></div><div style="font-weight:900;font-size:0.82rem">'+(v.type==='adjust'?'':accMoney(v.total))+'</div></div></div>';
   }).join('');
@@ -6051,28 +6468,174 @@ function accSaveInvoice(){
   });
 }
 
+// ══════════ مرجوعیِ فروش: برگشتِ کالا از مشتری (با برگشت به انبار) ══════════
+// فاکتورِ جدیدی از نوعِ sreturn که به فاکتورِ فروشِ اصلی وصله؛ موجودی (قلم‌هایی که «برگشت به انبار» دارن) برمی‌گرده، فروش و سود کم می‌شه و مانده‌ی مشتری اصلاح می‌شه
+function accRetInfo(v){
+  var by={},order=[],sub=Number(v.subtotal)||0,ratio=sub>0?(Number(v.total)||0)/sub:1;
+  (v.lines||[]).forEach(function(l){
+    if(!by[l.key]){by[l.key]={key:l.key,brand:l.brand,code:l.code,name:l.name,sold:0,price:Math.round((Number(l.price)||0)*ratio),orig:Number(l.price)||0,cost:Number(l.cost)||0};order.push(l.key);}
+    by[l.key].sold+=Number(l.qty)||0;
+  });
+  var rm=v.returned||{};
+  return order.map(function(k){var x=by[k];x.done=Number(rm[k])||0;x.left=Math.max(0,x.sold-x.done);return x;});
+}
+function accOpenReturn(id){
+  var v=ACC.invoices.filter(function(x){return x.id===id;})[0];
+  if(!v||v.type!=='sale'||v.status==='cancelled')return;
+  ACC.retDraft={refId:id};accGo('retNew',id);
+}
+function accRenderReturnForm(){
+  var v=ACC.invoices.filter(function(x){return x.id===(ACC.arg||(ACC.retDraft||{}).refId);})[0];
+  if(!v)return '<div class="nores">فاکتور پیدا نشد</div>';
+  var info=accRetInfo(v);
+  var h='<div style="font-size:0.74rem;line-height:2;margin-bottom:8px">مرجوعی از <b>فاکتور فروش '+accFa(v.number)+'</b> — مشتری: <b>'+accEsc(v.partyName||'')+'</b> — تاریخ: '+accDateDisp(v.date)+'</div>';
+  h+='<div class="acc-hint" style="color:#1a6a3a;margin-bottom:6px;font-size:0.72rem;line-height:1.9;font-weight:700">🔒 مرجوعی همیشه با قیمتِ همون فاکتورِ فروش حساب می‌شه، نه قیمتِ امروزِ کالا (حتی اگه گرون‌تر یا ارزون‌تر شده باشه). قیمت قفله و فقط با «✏️ تغییرِ قیمت» عوض می‌شه.</div>';
+  if(Number(v.discount)>0)h+='<div class="acc-hint" style="color:#7a5a38;margin-bottom:6px;font-size:0.7rem;line-height:1.8">قیمت‌ها با احتسابِ سهمِ تخفیفِ کلِ فاکتور حساب شده.</div>';
+  if(!info.some(function(x){return x.left>0;}))return h+'<div class="nores">همه‌ی کالاهای این فاکتور قبلاً برگشت خورده.</div><button class="sbig stg" onclick="accGo(\'invView\',\''+accEsc(v.id)+'\')">← بازگشت</button>';
+  info.forEach(function(x,i){
+    h+='<div class="card" style="margin-bottom:8px;padding:10px"><div style="font-weight:900;font-size:0.82rem">'+accEsc(x.code)+(x.name?' — '+accEsc(x.name):'')+'</div><div style="font-size:0.68rem;color:#7a5a38;margin:2px 0 6px">'+accEsc(x.brand||'')+' · فروخته: <b>'+accFa(x.sold)+'</b> · قبلاً برگشته: <b>'+accFa(x.done)+'</b> · قابل برگشت: <b>'+accFa(x.left)+'</b></div>';
+    if(x.left>0){
+      h+='<div class="g2"><div><span class="lbl">تعدادِ مرجوعی</span><input class="fi" id="ACC_R_Q'+i+'" inputmode="numeric" placeholder="۰" oninput="accRetCalc()"></div><div><span class="lbl">قیمتِ واحد طبقِ فاکتور (تومان)</span><input class="fi" id="ACC_R_P'+i+'" inputmode="numeric" value="'+x.price+'" readonly style="background:#f3e9de" oninput="accRetCalc()"><a style="font-size:0.66rem;color:#9a6e3a;text-decoration:underline;cursor:pointer" onclick="accRetUnlock('+i+')">✏️ تغییرِ قیمت</a></div></div>';
+      var _now=Number((ACC.items[x.key]||{}).sellPrice)||0;
+      if(_now>0&&_now!==x.orig)h+='<div class="acc-hint" style="font-size:0.66rem;color:#7a5a38;line-height:1.8">قیمتِ امروزِ کالا '+accMoney(_now)+' است؛ ولی مرجوعی با قیمتِ روزِ فاکتور ('+accMoney(x.orig)+(x.price!==x.orig?'، با سهمِ تخفیف '+accMoney(x.price):'')+') حساب می‌شه.</div>';
+      h+='<label style="display:flex;gap:8px;align-items:center;font-size:0.72rem;margin-top:6px"><input type="checkbox" id="ACC_R_S'+i+'" checked onchange="accRetCalc()"> برگشت به انبار (اگه کالا خراب/معیوبه تیک رو بردار)</label>';
+    }else h+='<div style="font-size:0.7rem;color:#9a6e3a">کاملاً برگشت خورده</div>';
+    h+='</div>';
+  });
+  h+='<div id="ACC_R_SUM" class="card" style="background:#fff8ee;margin:8px 0;font-size:0.78rem;line-height:2"></div>';
+  h+='<div class="g2"><div><span class="lbl">پرداختِ نقدی به مشتری (اختیاری)</span><input class="fi" id="ACC_R_PAY" inputmode="numeric" placeholder="۰" oninput="accRetCalc()"></div><div><span class="lbl">روش</span><select class="fi" id="ACC_R_M"><option value="cash">نقد</option><option value="card">کارت‌به‌کارت</option></select></div></div>';
+  h+='<div class="g2"><div><span class="lbl">تاریخ</span><input class="fi" id="ACC_R_D" type="date" value="'+accTodayIso()+'"></div><div><span class="lbl">توضیح</span><input class="fi" id="ACC_R_N" placeholder="دلیلِ مرجوعی" autocomplete="off"></div></div>';
+  h+='<button class="sbig" id="ACC_R_SAVE" style="background:#c0304a;color:#fff" onclick="accSaveReturn()">↩️ ثبتِ مرجوعی</button><button class="sbig stg" onclick="accGo(\'invView\',\''+accEsc(v.id)+'\')">← بازگشت</button>';
+  setTimeout(accRetCalc,0);
+  return accCard('↩️ مرجوعی فروش',h);
+}
+function accRetUnlock(i){var e=document.getElementById('ACC_R_P'+i);if(!e)return;e.readOnly=false;e.style.background='#fff';e.focus();accSetStat('قیمتِ این کالا از فاکتورِ اصلی باز شد؛ مطمئن باش می‌خوای عوضش کنی');}
+function accRetRead(){
+  var v=ACC.invoices.filter(function(x){return x.id===(ACC.arg||(ACC.retDraft||{}).refId);})[0];
+  if(!v)return null;
+  var info=accRetInfo(v),lines=[],total=0,costBack=0,err='';
+  info.forEach(function(x,i){
+    var qe=document.getElementById('ACC_R_Q'+i);if(!qe)return;
+    var q=accNum(qe.value),p=accNum(document.getElementById('ACC_R_P'+i).value),rs=document.getElementById('ACC_R_S'+i).checked;
+    if(!q)return;
+    if(!(q>0)||Math.floor(q)!==q){err='تعدادِ کد '+x.code+' باید عددِ صحیح باشه';return;}
+    if(q>x.left){err='کد '+x.code+': بیشتر از قابل‌برگشت ('+accFa(x.left)+') نمی‌شه';return;}
+    if(!(p>0)){err='قیمتِ واحدِ کد '+x.code+' رو وارد کن';return;}
+    lines.push({key:x.key,brand:x.brand,code:x.code,name:x.name,qty:q,price:p,cost:x.cost,restock:rs});
+    total+=q*p;if(rs)costBack+=x.cost*q;
+  });
+  return {inv:v,lines:lines,total:total,costBack:costBack,err:err};
+}
+function accRetCalc(){
+  var box=document.getElementById('ACC_R_SUM');if(!box)return;
+  var r=accRetRead();if(!r)return;
+  var pay=accNum((document.getElementById('ACC_R_PAY')||{}).value);
+  if(!r.lines.length){box.innerHTML='<span style="color:#9a6e3a">تعدادِ مرجوعی رو بنویس.</span>'+(r.err?'<br><span style="color:#c0304a">'+accEsc(r.err)+'</span>':'');return;}
+  var profit=-(r.total-r.costBack),dmg=r.lines.filter(function(l){return !l.restock;}).length;
+  box.innerHTML='جمعِ مرجوعی: <b>'+accMoney(r.total)+'</b><br>اثر روی بدهیِ مشتری: <b style="color:#1a6a3a">−'+accMoney(r.total-pay)+'</b>'+(pay?(' (بعد از پرداختِ '+accMoney(pay)+')'):'')+'<br>اثر روی سود: <b style="color:#c0304a">'+accMoney(profit)+'</b>'+(dmg?' ⚠️ '+accFa(dmg)+' قلم به انبار برنمی‌گرده؛ هزینه‌اش ضرر حساب می‌شه':'')+(pay>r.total?'<br><span style="color:#c0304a">پرداخت از جمعِ مرجوعی بیشتره</span>':'')+(r.err?'<br><span style="color:#c0304a">'+accEsc(r.err)+'</span>':'');
+}
+function accSaveReturn(){
+  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  if(ACC.saving)return;
+  var r=accRetRead();if(!r){accSetStat('فاکتور پیدا نشد','err');return;}
+  if(r.err){accSetStat(r.err,'err');return;}
+  if(!r.lines.length){accSetStat('تعدادِ مرجوعی رو وارد کن','err');return;}
+  var pay=accNum(document.getElementById('ACC_R_PAY').value);
+  if(pay>r.total){accSetStat('پرداختِ نقدی از جمعِ مرجوعی بیشتره','err');return;}
+  var method=document.getElementById('ACC_R_M').value,date=document.getElementById('ACC_R_D').value||accTodayIso(),note=stripBidi(document.getElementById('ACC_R_N').value).trim();
+  var orig=r.inv,lines=r.lines,total=r.total;
+  ACC.saving=true;
+  var btn=document.getElementById('ACC_R_SAVE');if(btn){btn.disabled=true;btn.textContent='⏳ در حال ثبت...';}
+  var cRef=db.collection('accMeta').doc('counters'),pRef=db.collection('accParties').doc(orig.partyId),oRef=db.collection('accInvoices').doc(orig.id),vRef=db.collection('accInvoices').doc();
+  var payRef=pay>0?db.collection('accPayments').doc():null;
+  var keys=[];lines.forEach(function(l){if(keys.indexOf(l.key)<0)keys.push(l.key);});
+  var iRefs=keys.map(function(k){return db.collection('accItems').doc(k);}),kRefs=keys.map(function(k){return db.collection('accCosts').doc(k);});
+  db.runTransaction(function(tx){
+    return Promise.all([tx.get(cRef),tx.get(pRef),tx.get(oRef)].concat(iRefs.map(function(x){return tx.get(x);})).concat(kRefs.map(function(x){return tx.get(x);}))).then(function(s){
+      if(!s[2].exists)throw new Error('فاکتورِ اصلی پیدا نشد');
+      var od=s[2].data();
+      if(od.type!=='sale'||od.status==='cancelled')throw new Error('فاکتورِ اصلی ابطال شده یا فروش نیست');
+      if(!s[1].exists)throw new Error('طرف‌حسابِ فاکتور پیدا نشد');
+      // سقفِ برگشت از روی خودِ دیتابیس (اگه همزمان کس دیگه‌ای مرجوعی زده باشه)
+      var sold={},rm=Object.assign({},od.returned||{}),need={};
+      (od.lines||[]).forEach(function(l){sold[l.key]=(sold[l.key]||0)+(Number(l.qty)||0);});
+      lines.forEach(function(l){need[l.key]=(need[l.key]||0)+l.qty;});
+      Object.keys(need).forEach(function(k){
+        var can=(sold[k]||0)-(Number(rm[k])||0);
+        if(need[k]>can)throw new Error('مرجوعیِ کد '+((ACC.items[k]||{}).code||k)+' بیشتر از قابل‌برگشته (الان '+can+' عدد قابل برگشته)');
+      });
+      var cnt=s[0].exists?(s[0].data()||{}):{},num=(Number(cnt.sreturn)||0)+1;
+      var party=s[1].data(),st={};
+      keys.forEach(function(k,ix){
+        var sn=s[3+ix],cs=s[3+keys.length+ix];
+        var base0=sn.exists?sn.data():{brand:'',code:'',name:'',sellPrice:0,qty:0};
+        var m=Object.assign({},base0);
+        if(cs.exists){m.avgCost=Number(cs.data().avgCost)||0;m.lastBuy=Number(cs.data().lastBuy)||0;}else{m.avgCost=Number(m.avgCost)||0;m.lastBuy=Number(m.lastBuy)||0;}
+        st[k]={data:m,exists:sn.exists,touched:false};
+      });
+      var costBack=0,final=[];
+      lines.forEach(function(l){
+        var it=st[l.key].data,qty=Number(it.qty)||0,avg=Number(it.avgCost)||0;
+        var origLine=(od.lines||[]).filter(function(x){return x.key===l.key;})[0]||{};
+        var cost=Number(origLine.cost)||0;if(!(cost>0))cost=avg>0?avg:(Number(it.lastBuy)||0);
+        if(l.restock){
+          if(!st[l.key].exists){it.brand=l.brand;it.code=l.code;it.name=l.name||'';it.ts=Date.now();}
+          if(cost>0)it.avgCost=qty>0?Math.round((qty*avg+l.qty*cost)/(qty+l.qty)):cost;
+          it.qty=qty+l.qty;st[l.key].touched=true;costBack+=cost*l.qty;
+        }
+        final.push({key:l.key,brand:l.brand,code:l.code,name:l.name,qty:l.qty,price:l.price,cost:cost,restock:l.restock});
+        rm[l.key]=(Number(rm[l.key])||0)+l.qty;
+      });
+      var inv={type:'sreturn',number:num,date:date,partyId:orig.partyId,partyName:party.name,lines:final,subtotal:total,discount:0,total:total,paid:pay,payMethod:pay>0?method:'',note:note,status:'active',costTotal:costBack,profit:-(total-costBack),refId:orig.id,refNumber:od.number,ts:Date.now()};
+      keys.forEach(function(k){
+        if(!st[k].touched)return;
+        var dd=Object.assign({},st[k].data),av=Number(dd.avgCost)||0,lb=Number(dd.lastBuy)||0;delete dd.avgCost;delete dd.lastBuy;
+        tx.set(db.collection('accItems').doc(k),dd);tx.set(db.collection('accCosts').doc(k),{avgCost:av,lastBuy:lb});
+        var pl=accPublicLeft(dd.qty),pr=db.collection('stockPublic').doc(k);
+        if(pl!==null)tx.set(pr,{left:pl,ts:Date.now()});else tx.delete(pr);
+      });
+      tx.update(pRef,{balance:(Number(party.balance)||0)-total+pay});
+      var c2=Object.assign({},cnt);c2.sreturn=num;tx.set(cRef,c2);
+      tx.set(vRef,inv);
+      tx.update(oRef,{returned:rm,returnedTotal:(Number(od.returnedTotal)||0)+total});
+      if(payRef)tx.set(payRef,{date:date,partyId:orig.partyId,partyName:party.name,direction:'out',method:method,amount:pay,note:'استردادِ مرجوعی '+num,invoiceId:vRef.id,status:'active',ts:Date.now()});
+    });
+  }).then(function(){
+    ACC.saving=false;ACC.retDraft=null;ACC.view='invView';ACC.arg=vRef.id;
+    accReload('مرجوعی ثبت شد ✅');
+  }).catch(function(e){
+    ACC.saving=false;console.error('accSaveReturn',e);
+    var b=document.getElementById('ACC_R_SAVE');if(b){b.disabled=false;b.textContent='↩️ ثبتِ مرجوعی';}
+    accSetStat('ثبتِ مرجوعی ناموفق بود: '+(e&&e.message||e),'err');
+  });
+}
+
 // ── نمایش و ابطالِ فاکتور ──
 function accRenderInvView(){
   var v=ACC.invoices.filter(function(x){return x.id===ACC.arg;})[0];
   if(!v)return '<div class="nores">فاکتور پیدا نشد</div>';
-  var sale=v.type==='sale',adj=v.type==='adjust',cx=v.status==='cancelled';
-  var title=(adj?'تعدیل موجودی ':(sale?'فاکتور فروش ':'فاکتور خرید '))+accFa(v.number);
+  var sale=v.type==='sale',adj=v.type==='adjust',ret=v.type==='sreturn',cx=v.status==='cancelled';
+  var title=(adj?'تعدیل موجودی ':(ret?'مرجوعی فروش ':(sale?'فاکتور فروش ':'فاکتور خرید ')))+accFa(v.number);
   var h=(cx?'<div style="background:#fde8e8;color:#8b2020;border-radius:8px;padding:6px 10px;font-size:0.74rem;margin-bottom:8px">❌ این فاکتور ابطال شده</div>':'');
   if(v.orderNo)h+='<div style="background:#fff4e0;border-radius:8px;padding:5px 10px;font-size:0.72rem;margin-bottom:6px">🛒 از سفارشِ آنلاین <b>'+accEsc(v.orderNo)+'</b></div>';
   if(v.internal)h+='<div style="background:#eaf6ee;border-radius:8px;padding:5px 10px;font-size:0.72rem;margin-bottom:6px">🏠 خرید خودمون — شارژِ اولیه؛ بدهی برای کسی ایجاد نمی‌کنه</div>';
-  h+='<div style="font-size:0.74rem;line-height:2">تاریخ: <b>'+accDateDisp(v.date)+'</b>'+(v.partyName?' | '+(sale?'مشتری':'تأمین‌کننده')+': <b>'+accEsc(v.partyName)+'</b>':'')+'</div>';
+  h+='<div style="font-size:0.74rem;line-height:2">تاریخ: <b>'+accDateDisp(v.date)+'</b>'+(v.partyName?' | '+(sale||ret?'مشتری':'تأمین‌کننده')+': <b>'+accEsc(v.partyName)+'</b>':'')+'</div>';
+  if(ret&&v.refId)h+='<div style="background:#fdeeee;border-radius:8px;padding:5px 10px;font-size:0.72rem;margin:6px 0;cursor:pointer" onclick="accGo(\'invView\',\''+accEsc(v.refId)+'\')">↩️ برگشت از فاکتور فروش <b>'+accFa(v.refNumber)+'</b> (برای دیدنِ فاکتورِ اصلی بزن)</div>';
+  if(sale&&Number(v.returnedTotal)>0)h+='<div style="background:#fdeeee;border-radius:8px;padding:5px 10px;font-size:0.72rem;margin:6px 0">↩️ مرجوعی تا الان: <b>'+accMoney(v.returnedTotal)+'</b> — مبلغِ فاکتور بعد از مرجوعی: <b>'+accMoney((Number(v.total)||0)-(Number(v.returnedTotal)||0))+'</b></div>';
   var rows=(v.lines||[]).map(function(l){
-    return '<tr><td style="text-align:right">'+accEsc(l.code)+(l.name?' — '+accEsc(l.name):'')+'</td><td>'+accFa(l.qty)+'</td>'+(adj?'':'<td>'+accFa(l.price)+'</td><td>'+accFa((Number(l.qty)||0)*(Number(l.price)||0))+'</td>')+'</tr>';
+    return '<tr><td style="text-align:right">'+accEsc(l.code)+(l.name?' — '+accEsc(l.name):'')+(ret&&l.restock===false?' <span style="color:#c0304a;font-size:0.64rem">⚠️ برنگشته به انبار</span>':'')+'</td><td>'+accFa(l.qty)+'</td>'+(adj?'':'<td>'+accFa(l.price)+'</td><td>'+accFa((Number(l.qty)||0)*(Number(l.price)||0))+'</td>')+'</tr>';
   }).join('');
   h+='<div style="overflow-x:auto;margin:6px 0"><table style="width:100%;border-collapse:collapse;font-size:0.72rem;text-align:center"><thead><tr style="color:#9a6e3a"><th style="text-align:right">کالا</th><th>'+(adj?'تغییر':'تعداد')+'</th>'+(adj?'':'<th>قیمت</th><th>جمع</th>')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
   if(!adj){
     h+='<div style="font-size:0.78rem;line-height:2;background:rgba(212,168,122,0.15);border-radius:10px;padding:10px">جمعِ ردیف‌ها: <b>'+accMoney(v.subtotal)+'</b>'+(Number(v.discount)?'<br>تخفیف: <b>'+accMoney(v.discount)+'</b>':'')+'<br>مبلغِ نهایی: <b>'+accMoney(v.total)+'</b>'+(Number(v.paid)?'<br>'+(sale?'دریافتِ همزمان':'پرداختِ همزمان')+': <b>'+accMoney(v.paid)+'</b> ('+(ACC_METHODS[v.payMethod]||'')+')':'');
+    if(ret&&!cx)h+='<br><span style="color:#c0304a">اثر روی سود: <b>'+accMoney(v.profit)+'</b> (هزینه‌ی کالاهای برگشتی به انبار: '+accMoney(v.costTotal)+')</span>';
     if(sale&&!cx)h+='<br><span style="color:'+(v.profit>=0?'#1a6a3a':'#c0304a')+'">سودِ این فاکتور: <b>'+accMoney(v.profit)+'</b>'+(v.costUnknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخص بود)':'')+'</span>';
     h+='</div>';
   }
   if(v.note)h+='<div style="font-size:0.72rem;color:#9a6e3a;margin-top:6px">'+accEsc(v.note)+'</div>';
   h+='<div style="margin-top:10px">';
   if(v.partyId)h+='<button class="chip" onclick="accGo(\'partyView\',\''+accEsc(v.partyId)+'\')">👤 کارت حساب</button>';
+  if(sale&&!cx&&!v.internal&&v.partyId)h+='<button class="chip" style="color:#a24b73;font-weight:800" onclick="accOpenReturn(\''+accEsc(v.id)+'\')">↩️ ثبتِ مرجوعی</button>';
   if(!cx&&!adj)h+='<button class="chip" style="color:#c0304a" onclick="accCancelInvoice(\''+accEsc(v.id)+'\')">❌ ابطالِ فاکتور</button>';
   h+='<button class="chip" onclick="accGo(\'inv\')">برگشت</button></div>';
   if(!cx&&!adj)h+='<div style="font-size:0.66rem;color:#9a6e3a;margin-top:8px">ابطال، موجودی و مانده‌ی طرف‌حساب رو برمی‌گردونه. دریافت/پرداخت‌های ثبت‌شده جدا هستن و باید جداگانه ابطال بشن.</div>';
@@ -6086,14 +6649,16 @@ function accCancelInvoice(id){
   var vRef=db.collection('accInvoices').doc(id),pRef=db.collection('accParties').doc(v.partyId);
   var keys=[];(v.lines||[]).forEach(function(l){if(keys.indexOf(l.key)<0)keys.push(l.key);});
   var iRefs=keys.map(function(k){return db.collection('accItems').doc(k);});
+  var oRef=(v.type==='sreturn'&&v.refId)?db.collection('accInvoices').doc(v.refId):null;
   db.runTransaction(function(tx){
-    return Promise.all([tx.get(vRef),tx.get(pRef)].concat(iRefs.map(function(r){return tx.get(r);}))).then(function(s){
+    return Promise.all([tx.get(vRef),tx.get(pRef)].concat(iRefs.map(function(r){return tx.get(r);})).concat(oRef?[tx.get(oRef)]:[])).then(function(s){
       if(!s[0].exists||s[0].data().status==='cancelled')throw new Error('قبلاً ابطال شده');
-      var inv=s[0].data(),sale=inv.type==='sale',st={};
+      var inv=s[0].data(),sale=inv.type==='sale',isRet=inv.type==='sreturn',st={};
+      if(sale&&Number(inv.returnedTotal)>0)throw new Error('این فاکتور مرجوعیِ فعال داره؛ اول مرجوعی‌هاش رو ابطال کن');
       keys.forEach(function(k,ix){var sn=s[2+ix];if(sn.exists)st[k]=Object.assign({},sn.data());});
       (inv.lines||[]).forEach(function(l){
         var it=st[l.key];if(!it)return;
-        it.qty=(Number(it.qty)||0)+(sale?Number(l.qty):-Number(l.qty));
+        it.qty=(Number(it.qty)||0)+(sale?Number(l.qty):((isRet&&l.restock===false)?0:-Number(l.qty)));
       });
       keys.forEach(function(k){
         if(!st[k])return;
@@ -6102,9 +6667,17 @@ function accCancelInvoice(id){
         if(pl!==null)tx.set(pr,{left:pl,ts:Date.now()});else tx.delete(pr);
       });
       if(s[1].exists&&!inv.internal)tx.update(pRef,{balance:(Number(s[1].data().balance)||0)+(sale?-(Number(inv.total)||0):(Number(inv.total)||0))});
+      if(isRet&&oRef){
+        var os=s[2+keys.length];
+        if(os&&os.exists){
+          var od=os.data(),rm=Object.assign({},od.returned||{});
+          (inv.lines||[]).forEach(function(l){rm[l.key]=Math.max(0,(Number(rm[l.key])||0)-(Number(l.qty)||0));if(!rm[l.key])delete rm[l.key];});
+          tx.update(oRef,{returned:rm,returnedTotal:Math.max(0,(Number(od.returnedTotal)||0)-(Number(inv.total)||0))});
+        }
+      }
       tx.update(vRef,{status:'cancelled',cancelledAt:Date.now()});
     });
-  }).then(function(){ACC.saving=false;accReload('فاکتور ابطال شد ✅');}).catch(function(e){ACC.saving=false;console.error(e);accSetStat('ابطال ناموفق بود: '+(e&&e.message||e),'err');});
+  }).then(function(){ACC.saving=false;accReload(v.type==='sreturn'?'مرجوعی ابطال شد ✅':'فاکتور ابطال شد ✅');}).catch(function(e){ACC.saving=false;console.error(e);accSetStat('ابطال ناموفق بود: '+(e&&e.message||e),'err');});
 }
 
 // ── گزارش و خروجی ──
@@ -6112,7 +6685,8 @@ function accRenderReport(){
   var rep=accReport(ACC.range),st=accStockSummary(),bl=accBalances();
   var chips=Object.keys(ACC_RANGE_LABELS).map(function(k){return '<button type="button" class="chip'+(ACC.range===k?' on':'')+'" onclick="ACC.range=\''+k+'\';accRender()">'+ACC_RANGE_LABELS[k]+'</button>';}).join('');
   var h='<div style="margin-bottom:8px">'+chips+'</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
-  h+=accStatBox('فروش',accMoney(rep.sales));
+  h+=accStatBox(rep.returns?'فروشِ خالص (بعد از مرجوعی)':'فروش',accMoney(rep.sales));
+  if(rep.returns)h+=accStatBox('↩️ مرجوعی ('+accFa(rep.rcount)+' فقره)',accMoney(rep.returns),'#c0304a');
   h+=accStatBox('هزینه‌ی کالای فروخته‌شده',accMoney(rep.cost));
   h+=accStatBox('سودِ ناخالص'+(rep.unknown?' ⚠️':''),accMoney(rep.profit),rep.profit>=0?'#1a6a3a':'#c0304a');
   h+=accStatBox('حاشیه‌ی سود',rep.sales?(Math.round(rep.profit/rep.sales*1000)/10).toLocaleString('fa-IR')+'٪':'—');
@@ -6144,8 +6718,8 @@ function accCsvFor(kind){
   }else{
     rows.push(['شماره','نوع','تاریخ','طرف‌حساب','کد کالا','برند','تعداد','قیمت واحد','قیمت خرید (فروش)','جمع ردیف','تخفیف کل','مبلغ نهایی','سود فاکتور','وضعیت','سفارش آنلاین']);
     ACC.invoices.forEach(function(v){
-      var tl=v.type==='sale'?'فروش':(v.type==='purchase'?'خرید':'تعدیل');
-      (v.lines||[]).forEach(function(l,i){rows.push([v.number,tl,accDateDisp(v.date),v.partyName||'',l.code,l.brand,l.qty,l.price,l.cost||'',(Number(l.qty)||0)*(Number(l.price)||0),i===0?(Number(v.discount)||0):'',i===0?(Number(v.total)||0):'',i===0&&v.type==='sale'?(Number(v.profit)||0):'',v.status==='cancelled'?'ابطال':'فعال',v.orderNo||'']);});
+      var tl=v.type==='sale'?'فروش':(v.type==='purchase'?'خرید':(v.type==='sreturn'?'مرجوعی فروش':'تعدیل'));
+      (v.lines||[]).forEach(function(l,i){rows.push([v.number,tl,accDateDisp(v.date),v.partyName||'',l.code,l.brand,l.qty,l.price,l.cost||'',(Number(l.qty)||0)*(Number(l.price)||0),i===0?(Number(v.discount)||0):'',i===0?(Number(v.total)||0):'',i===0&&(v.type==='sale'||v.type==='sreturn')?(Number(v.profit)||0):'',v.status==='cancelled'?'ابطال':'فعال',v.orderNo||'']);});
     });
   }
   return rows.map(function(r){return r.map(accCsvCell).join(',');}).join('\r\n');
@@ -6416,6 +6990,7 @@ function addSideWM(num){
 
 // ── RENDER PDF ──
 function renderPDF(num,cb){
+  if(typeof html2canvas==='undefined'||!(window.jspdf&&window.jspdf.jsPDF)){cb('کتابخانه‌ی ساختِ PDF لود نشده (اینترنت یا فیلترشکن)؛ دوباره تلاش کن',null);return;}
   var el=document.getElementById('C'+num);
   el.innerHTML=buildPDF(num);
   var imgs=el.querySelectorAll('img'),total=imgs.length,done=0;
@@ -6438,6 +7013,7 @@ function renderPDF(num,cb){
 }
 // رندر PDF از یک محتوای HTML دلخواه (برای فاکتور دستی و گزارش‌های دوره‌ای)
 function renderGenericPDF(htmlContent,cb){
+  if(typeof html2canvas==='undefined'||!(window.jspdf&&window.jspdf.jsPDF)){cb('کتابخانه‌ی ساختِ PDF لود نشده (اینترنت یا فیلترشکن)؛ دوباره تلاش کن',null);return;}
   var el=document.getElementById('CINV');
   el.innerHTML=htmlContent;
   var imgs=el.querySelectorAll('img'),total=imgs.length,done=0;
@@ -6458,6 +7034,7 @@ function renderGenericPDF(htmlContent,cb){
   imgs.forEach(function(img){if(img.complete){done++;if(done===total)go();}else{img.onload=function(){done++;if(done===total)go();};img.onerror=function(){done++;if(done===total)go();};}});
 }
 function renderInvoiceWithReceiptPDF(htmlContent,receiptDataUrl,cb){
+  if(typeof html2canvas==='undefined'||!(window.jspdf&&window.jspdf.jsPDF)){cb('کتابخانه‌ی ساختِ PDF لود نشده (اینترنت یا فیلترشکن)؛ دوباره تلاش کن',null);return;}
   var el=document.getElementById('CINV');
   el.innerHTML=htmlContent;
   var imgs=el.querySelectorAll('img'),total=imgs.length,done=0;
@@ -9647,43 +10224,71 @@ function sendWeeklyReportAutoNow(cid,token){
 var CG_COUNTRY='';
 var CG_CATEGORY='p1';
 var CG_BRAND_SUGGESTIONS=[];
+var STK_BRANDS={};
+function cgRegBrandList(){
+  var src=(ACC.brandsLoaded&&accIsOwner())?ACC.brands:STK_BRANDS;
+  return Object.keys(src||{}).map(function(k){return src[k];});
+}
+function cgBrandParts(n){return String(n||'').split('|').map(function(s){return normSearchText(s);}).filter(Boolean);}
+// نوشته‌ی کاربر اگه معادلِ دقیقِ یه برندِ فهرست باشه (کلِ اسم، یا یکی از دو بخشِ «انگلیسی | فارسی» که فقط مالِ همون برنده) → اسمِ رسمی
+function cgCanonBrand(v){
+  var nv=normSearchText(v);if(!nv)return null;
+  var list=cgRegBrandList();if(!list.length)return null;
+  var full=list.filter(function(b){return normSearchText(b.name)===nv;});
+  if(full.length===1)return full[0].name;
+  var byAlias=list.filter(function(b){return (b.aliases||[]).indexOf(nv)>-1;});
+  if(byAlias.length===1)return byAlias[0].name;
+  var byPart=list.filter(function(b){return cgBrandParts(b.name).indexOf(nv)>-1;});
+  if(byPart.length===1)return byPart[0].name;
+  return null;
+}
+function cgBrandEnsureRegistry(){
+  if(typeof STK_LOADED==='undefined')return;
+  if((ACC.brandsLoaded&&accIsOwner())||STK_LOADED||STK_LOADING||!stkCanRetry())return;
+  stkCatalogLoad(function(){var el=document.getElementById('CG_BRAND');if(el&&el.value)cgBrandCheck();});
+}
+function cgBrandCheck(){
+  var el=document.getElementById('CG_BRAND'),note=document.getElementById('CG_BRAND_NOTE');
+  if(!el)return;
+  var v=el.value.trim();
+  function say(t,c){if(note){note.textContent=t||'';note.style.color=c||'#1a6a3a';}}
+  if(!v){say('');return;}
+  if(!cgRegBrandList().length){say('');return;}
+  var c=cgCanonBrand(v);
+  if(c&&c!==v){el.value=c;say('✓ با فهرستِ برندها یکی شد: '+c);if(typeof cgStockHint==='function')cgStockHint();return;}
+  if(c){say('');return;}
+  say('⚠️ «'+v+'» تو فهرستِ برندها نیست. به امین بگو ثبتش کنه تا شکلِ اسمش یکدست بشه (می‌تونی ادامه بدی).','#c0702a');
+}
 function suggestBrands(q){
   var el=document.getElementById('CG_BRAND_RES');
   q=(q||'').trim();
+  cgBrandEnsureRegistry();
   if(!q){el.innerHTML='';el.style.display='none';CG_BRAND_SUGGESTIONS=[];return;}
-  var brands=[];
+  var nq=normSearchText(q),reg=cgRegBrandList(),cands=[],seen={};
+  reg.forEach(function(b){seen[normSearchText(b.name)]=1;cands.push({n:b.name,logo:b.logo||'',reg:true});});
   document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){
     var bnEl=document.getElementById('BN'+bl.id.slice(1));
     var name=bnEl?bnEl.value.trim():'';
-    if(name&&brands.indexOf(name)===-1)brands.push(name);
+    var nn=normSearchText(name);
+    if(!name||seen[nn])return;
+    if(reg.length&&cgCanonBrand(name))return;      // شکلِ دیگه‌ی یه برندِ ثبت‌شده؛ پیشنهادش نمی‌دیم
+    seen[nn]=1;cands.push({n:name,logo:'',reg:false});
   });
-  function brandParts(b){
-    return b.split('|').map(function(s){return s.trim();}).filter(Boolean).concat([b]);
+  function parts(n){return cgBrandParts(n).concat([normSearchText(n)]);}
+  var hit=cands.filter(function(c){return parts(c.n).some(function(p){return p.indexOf(nq)>-1||(p.length>1&&nq.indexOf(p)>-1);});});
+  if(hit.length<6){
+    var already={};hit.forEach(function(c){already[c.n]=1;});
+    var scored=cands.filter(function(c){return !already[c.n];}).map(function(c){return {c:c,d:Math.min.apply(null,parts(c.n).map(function(p){return levenshteinDist(nq,p);}))};}).filter(function(x){return x.d<=3;}).sort(function(x,y){return x.d-y.d;});
+    for(var k=0;k<scored.length&&hit.length<6;k++)hit.push(scored[k].c);
   }
-  var exact=brands.filter(function(b){
-    return brandParts(b).some(function(part){return part.indexOf(q)>-1||q.indexOf(part)>-1;});
-  });
-  var results=exact.slice();
-  if(results.length<6){
-    var already={};results.forEach(function(b){already[b]=true;});
-    var scored=brands.filter(function(b){return !already[b];})
-      .map(function(b){
-        var bestDist=Math.min.apply(null,brandParts(b).map(function(part){return levenshteinDist(q,part);}));
-        return{b:b,dist:bestDist};
-      })
-      .filter(function(x){return x.dist<=3;})
-      .sort(function(a,b){return a.dist-b.dist;});
-    var need=6-results.length;
-    for(var i=0;i<scored.length&&i<need;i++)results.push(scored[i].b);
-  }
-  results=results.filter(function(b){return b!==q;});
-  CG_BRAND_SUGGESTIONS=results;
-  if(!results.length){el.innerHTML='';el.style.display='none';return;}
-  var h='';
-  results.forEach(function(b,i){
-    h+='<div class="srch-item" onclick="pickSuggestedBrand('+i+')">🏷️ '+escHtml(b)+'</div>';
-  });
-  el.innerHTML=h;el.style.display='block';
+  hit=hit.filter(function(c){return c.n!==q;}).sort(function(x,y){return (y.reg?1:0)-(x.reg?1:0);});
+  CG_BRAND_SUGGESTIONS=hit.map(function(c){return c.n;});
+  if(!hit.length){el.innerHTML='';el.style.display='none';return;}
+  el.innerHTML=hit.map(function(c,i){
+    var lg=c.logo?('<img src="'+accEsc(c.logo)+'" alt="" style="width:24px;height:24px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid #e2cdb0;flex-shrink:0">'):(c.reg?'<span style="width:24px;height:24px;line-height:24px;border-radius:6px;background:#3d2b1f;color:#fff;text-align:center;font-weight:900;font-size:0.7rem;flex-shrink:0">'+accEsc(c.n.trim().charAt(0).toUpperCase())+'</span>':'');
+    return '<div class="srch-item" style="display:flex;align-items:center;gap:8px" onclick="pickSuggestedBrand('+i+')">'+(lg||'🏷️')+'<span style="flex:1">'+escHtml(c.n)+'</span>'+(reg.length&&!c.reg?'<span style="font-size:0.62rem;color:#c0702a">(ثبت‌نشده)</span>':'')+'</div>';
+  }).join('');
+  el.style.display='block';
 }
 function pickSuggestedBrand(i){
   var name=CG_BRAND_SUGGESTIONS[i];
@@ -9691,6 +10296,7 @@ function pickSuggestedBrand(i){
   document.getElementById('CG_BRAND').value=name;
   document.getElementById('CG_BRAND_RES').style.display='none';
   document.getElementById('CG_BRAND_RES').innerHTML='';
+  cgBrandCheck();
   if(typeof cgStockHint==='function')cgStockHint();
 }
 
@@ -9702,7 +10308,9 @@ function stkCatalogLoad(cb){
   var db=accDb();if(!db||STK_LOADING)return;
   STK_LOADING=true;STK_ERR='';
   rvLoaderStart('stk',function(){STK_LOADING=false;STK_ERR='';stkCatalogLoad();},'انبار (انتخاب برای محتوا)');
-  db.collection('accItems').get({source:'server'}).then(function(snap){
+  Promise.all([db.collection('accItems').get({source:'server'}),db.collection('accBrands').get({source:'server'}).then(function(s){return s;},function(){return null;})]).then(function(both){
+    var snap=both[0];STK_BRANDS={};
+    if(both[1])both[1].forEach(function(d){var x=d.data()||{};STK_BRANDS[d.id]={id:d.id,name:x.name,logo:x.logo||'',aliases:x.aliases||[]};});
     STK_CATALOG={};snap.forEach(function(d){var x=d.data();STK_CATALOG[d.id]={id:d.id,brand:x.brand,code:x.code,name:x.name,sellPrice:x.sellPrice,qty:x.qty,thumb:x.thumb,hasImg:x.hasImg};});
     STK_LOADED=true;STK_LOADING=false;rvLoaderOk('stk');if(cb)cb();
     if(typeof cgStockHint==='function')cgStockHint();
@@ -9772,7 +10380,7 @@ function stkPick(i){
     if(nt&&nt.scrollIntoView)nt.scrollIntoView({block:'center'});
     return;
   }
-  setv('CG_BRAND',it.brand||'');setv('CG_CODE',it.code||'');setv('CG_TITLE',it.name||'');
+  setv('CG_BRAND',it.brand||'');setv('CG_CODE',it.code||'');setv('CG_TITLE',it.name||'');cgBrandCheck();
   cgStockHint();
   if(it.hasImg){
     var db=accDb();
@@ -10405,6 +11013,7 @@ function splitTextByEmoji(text){
 }
 function buildCaptionData(){
   var _es=CAPTION_EMOJI_SETS[getCaptionEmojiIdx()];
+  cgBrandCheck();
   var title=V('CG_TITLE'), brand=V('CG_BRAND'), code=V('CG_CODE'), color=V('CG_COLOR'),
       sizeRange=V('CG_SIZE_RANGE'), priceRaw=V('CG_PRICE'), minOrder=V('CG_MINORDER'), material=V('CG_MATERIAL'),
       desc1=V('CG_DESC1'), desc2=V('CG_DESC2'), fullDesc=V('CG_FULLDESC'), manualTgLink=V('CG_TGLINK'),
@@ -11640,7 +12249,7 @@ function hideProductLoadProgress(){
 }
 // ── دریافتِ محصولات صفحه‌به‌صفحه: هر صفحه کوچیک و با تلاشِ دوبارهٔ جدا؛ روی اینترنتِ ناپایدار یه درخواستِ سنگین به‌جای کلِ کالکشن ──
 var RV_PROD_PAGES={docs:[],last:null,ts:0};
-function rvFetchProductsSdk(attempt,onProgress,noRest){
+function rvFetchProductsSdk(attempt,onProgress,noRest,abortP){
   var st=RV_PROD_PAGES;
   if(!window.RV_PROD_RESUME||Date.now()-st.ts>600000||!st.docs.length){st.docs=[];st.last=null;}
   window.RV_PROD_RESUME=false;st.ts=Date.now();
@@ -11650,7 +12259,8 @@ function rvFetchProductsSdk(attempt,onProgress,noRest){
     var q=fbDb.collection('products').orderBy(firebase.firestore.FieldPath.documentId()).limit(size);
     if(st.last)q=q.startAfter(st.last);
     var t0=Date.now(),lim=size;
-    return withTimeout(q.get({source:'server'}),(RVNET.state==='stuck'||RVNET.live===false)?8000:25000,'products-page').then(function(snap){
+    var pg=withTimeout(q.get({source:'server'}),(RVNET.state==='stuck'||RVNET.live===false)?8000:25000,'products-page');
+    return (abortP?Promise.race([pg,abortP]):pg).then(function(snap){
       var n=snap.docs.length;
       snap.docs.forEach(function(d){st.docs.push(d);});
       if(n)st.last=snap.docs[n-1];
@@ -11662,6 +12272,7 @@ function rvFetchProductsSdk(attempt,onProgress,noRest){
       return once(0);
     },function(e){
       if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+      if(e&&e.code==='switch-rest')return Promise.reject(e);
       var info=rvErrInfo(e);
       if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=5)return Promise.reject(e);
       if(!noRest&&info.kind==='net'&&tries>=1&&rvRestAvailable())return Promise.reject({code:'switch-rest',message:'switch to REST',cause:e});
@@ -11681,7 +12292,13 @@ function rvFetchProductsPaged(attempt,onProgress){
       RV_REST_PREF=false;return rvFetchProductsSdk(attempt,onProgress,true);
     });
   }
-  return rvFetchProductsSdk(attempt,onProgress,false).catch(function(e){
+  var abortFn=null,abortP=null,timer=null;
+  if(rvRestAvailable()){
+    abortP=new Promise(function(_,rej){abortFn=function(){rej({code:'switch-rest',message:'SDK too slow: اتصالِ زنده تأیید نشد',cause:{code:'unavailable',message:'sdk too slow'}});};});
+    abortP.catch(function(){});     // جلوی «unhandled rejection» اگه کسی نخونه
+    timer=setTimeout(function(){if(RV_PROD_PAGES.docs.length===0&&RVNET.live!==true&&attempt===PRODLOAD_ATTEMPT)abortFn();},RV_SDK_ABORT_MS);
+  }
+  return rvFetchProductsSdk(attempt,onProgress,false,abortP).then(function(r){clearTimeout(timer);return r;},function(e){clearTimeout(timer);throw e;}).catch(function(e){
     if(e&&e.code==='switch-rest'){
       RV_REST_PREF=true;
       return rvFetchProductsRest(attempt,onProgress,true).catch(function(e2){
