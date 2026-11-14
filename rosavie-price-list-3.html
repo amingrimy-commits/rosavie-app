@@ -1786,6 +1786,7 @@ var PANEL_RELEASES=[
     'انبار: تو فرمِ «کالای جدید» (و کالایی که هنوز قیمتِ خرید نداره) «تخفیفِ تأمین‌کننده» هست: ۲۵، ۲۰، ۱۷، ۱۵، ۱۰، ۷ و ۵٪ با یه کلیک یا درصدِ دستی؛ قیمتِ خرید از قیمتِ فروش کم می‌شه و «خریدِ خودمون» ثبت می‌شه.',
     'محصولات حالا صفحه‌به‌صفحه (و با تلاشِ دوبارهٔ هر صفحه) دریافت می‌شن و نوار می‌گه «چندتا محصول رسید»؛ روی اینترنتِ ناپایدار خیلی مطمئن‌تره.',
     'مرجوعی: قیمتِ واحد قفل و دقیقاً قیمتِ همون فاکتورِ فروشه (حتی اگه قیمتِ امروزِ کالا عوض شده)؛ قیمتِ امروز فقط برای اطلاع نشون داده می‌شه. فقط با «✏️ تغییرِ قیمت» می‌شه عوضش کرد.',
+    'مبینا و تیم: تو «تولید محتوا»، وقتی کالا تو انبار نیست دکمه‌ی «➕ ثبتِ تو انبار» میاد؛ برند، کد، اسم و قیمتِ فروش از خودِ فرم پر می‌شه و کالا با موجودیِ ۰ ثبت می‌شه (فقط کالای جدید؛ ویرایش و قیمتِ خرید فقط مدیر).',
     'بنرِ قرمزِ «قوانین اجازه‌ی خوندن نمی‌دن» حالا اسمِ بخشِ مشکل‌دار رو می‌گه (مثلاً «برندهای انبار») و می‌گه کدوم فایل رو Publish کنی.',
     'مسیرِ جایگزین: اگه فیلترشکن اتصالِ زندهٔ فایربیس رو ببُره ولی درخواستِ ساده رد بشه، پنل خودکار با درخواستِ معمولی (REST) محصولات و تنظیماتِ تلگرام رو می‌خونه و ذخیره/حذفِ محصول رو هم انجام می‌ده.'
    ],
@@ -10443,6 +10444,70 @@ function cgOpenPublished(rid,mode){
     if(typeof showToast==='function')showToast('✏️ برای ویرایش بازش کردم');
   }
 }
+// ── ثبتِ کالای جدید تو انبار از «تولید محتوا» (برای مبینا و تیم): فقط کالای جدید، موجودیِ ۰، بدونِ قیمتِ خرید ──
+var CG_SA_KEYS=['brand','code','name','sellPrice','qty','ts','addedBy'];
+function cgStockAddClose(){var b=document.getElementById('CG_STKADD_BOX');if(b)b.remove();}
+function cgStockAddOpen(){
+  cgBrandCheck();
+  var brand=V('CG_BRAND'),code=toEnDigits(V('CG_CODE'));
+  var hint=document.getElementById('CG_STOCK_HINT');if(!hint)return;
+  if(!brand||!code){return;}
+  cgStockAddClose();
+  var canon=cgCanonBrand(brand),reg=cgRegBrandList().length>0;
+  var price=accNum(expandPriceShorthand(V('CG_PRICE'))||'');
+  var box=document.createElement('div');box.id='CG_STKADD_BOX';box.className='card';box.style.cssText='margin:8px 0;background:#fff8ee';
+  var warn=(reg&&!canon)?'<div class="acc-hint" style="color:#c0304a;line-height:1.8">⚠️ برندِ «'+escHtml(brand)+'» تو فهرستِ برندها نیست؛ ثبتِ کالا ممکن نیست. به امین بگو برند رو ثبت کنه (یا اسمش رو مثلِ فهرست بنویس).</div>':'';
+  box.innerHTML='<div style="font-weight:900;font-size:0.82rem;margin-bottom:6px">➕ ثبتِ کالا تو انبار</div>'+
+    '<div style="font-size:0.74rem;line-height:1.9">برند: <b>'+escHtml(canon||brand)+'</b> · کد: <b>'+escHtml(code)+'</b></div>'+warn+
+    '<div class="g1"><span class="lbl">نام / توضیحِ کالا</span><input class="fi" id="CG_SA_NAME" maxlength="200" value="'+escHtml(V('CG_TITLE'))+'" autocomplete="off"></div>'+
+    '<div class="g1"><span class="lbl">قیمتِ فروش (تومان)</span><input class="fi" id="CG_SA_PRICE" inputmode="numeric" value="'+(price?price:'')+'" autocomplete="off"></div>'+
+    '<div class="acc-hint" style="font-size:0.68rem;color:#7a5a38;line-height:1.8">موجودیِ اولیه صفره؛ شارژِ انبار با فاکتورِ خرید یا «تعدیل موجودی» (حسابداری) انجام می‌شه. قیمتِ خرید رو فقط مدیر می‌بینه.</div>'+
+    '<div id="CG_SA_STAT" style="font-size:0.72rem;min-height:16px;line-height:1.8"></div>'+
+    '<div style="display:flex;gap:8px"><button type="button" class="sbig" id="CG_SA_GO" style="background:#2a9d5c;color:#fff;margin:0"'+((reg&&!canon)?' disabled':'')+' onclick="cgStockAddSubmit()">✅ ثبت تو انبار</button><button type="button" class="sbig stg" style="margin:0;width:auto;padding:8px 16px" onclick="cgStockAddClose()">انصراف</button></div>';
+  hint.insertAdjacentElement('afterend',box);
+}
+function cgStockAddSubmit(){
+  var db=accDb();var st=document.getElementById('CG_SA_STAT'),go=document.getElementById('CG_SA_GO');
+  function say(t,c){if(st){st.textContent=t;st.style.color=c||'#1a6a3a';}}
+  if(!db){say('اتصال برقرار نیست','#c0304a');return;}
+  cgBrandCheck();
+  var brand=stripBidi(V('CG_BRAND')).replace(/\s+/g,' ').trim(),code=toEnDigits(stripBidi(V('CG_CODE')).trim());
+  if(!brand||!code){say('برند و کد رو تو فرمِ بالا پر کن','#c0304a');return;}
+  var canon=cgCanonBrand(brand);
+  if(cgRegBrandList().length&&!canon){say('این برند تو فهرستِ برندها نیست؛ به امین بگو ثبتش کنه','#c0304a');return;}
+  if(canon)brand=canon;
+  var name=stripBidi((document.getElementById('CG_SA_NAME')||{}).value||'').replace(/\s+/g,' ').trim().slice(0,200);
+  var sell=accNum((document.getElementById('CG_SA_PRICE')||{}).value);
+  if(!(sell>=0)||sell>1000000000){say('قیمتِ فروش درست نیست','#c0304a');return;}
+  var key=accItemKey(brand,code);
+  var who=(CURRENT_ROLE||'owner').toString().slice(0,40);
+  var doc={brand:brand,code:code,name:name,sellPrice:sell,qty:0,ts:Date.now(),addedBy:who};
+  if(go)go.disabled=true;say('در حال ثبت...');
+  function done(){
+    STK_CATALOG[key]={id:key,brand:brand,code:code,name:name,sellPrice:sell,qty:0,thumb:undefined,hasImg:undefined};
+    if(!STK_LOADED)STK_LOADED=true;
+    cgStockAddClose();cgStockHint();
+    if(accIsOwner()&&ACC.loaded&&!ACC.loading)accLoad();
+    addNotif('📦 کالای «'+brand+' کد '+code+'» تو انبار ثبت شد (موجودی ۰)');
+  }
+  function fail(e){
+    if(go)go.disabled=false;
+    var k=rvErrInfo(e).kind;
+    say(k==='perm'?'قوانینِ جدیدِ فایربیس هنوز ثبتِ کالا رو برای تیم باز نکردن؛ امین باید فایلِ firestore-rules.txt رو Publish کنه':(k==='net'?'اینترنت/فیلترشکن؛ دوباره تلاش کن':('ثبت نشد: '+(e&&e.message||e))),'#c0304a');
+  }
+  // اگه کالا از قبل هست (شاید یکی دیگه ثبت کرده)، بازنویسی نکن
+  if(rvPreferRest()){
+    rvRestGetDoc('accItems',key,true).then(function(ex){
+      if(ex){say('این کالا قبلاً ثبت شده','#c0304a');STK_CATALOG[key]=STK_CATALOG[key]||{id:key,brand:ex.data().brand,code:ex.data().code,name:ex.data().name,sellPrice:ex.data().sellPrice,qty:ex.data().qty};cgStockHint();return;}
+      return rvRestCommit([{update:{name:rvRestName('accItems',key),fields:rvFsFields(doc)},currentDocument:{exists:false}}]).then(function(){RVNET.rest.writes++;done();});
+    }).catch(fail);
+    return;
+  }
+  db.collection('accItems').doc(key).get({source:'server'}).then(function(ex){
+    if(ex.exists){say('این کالا قبلاً ثبت شده','#c0304a');var x=ex.data();STK_CATALOG[key]=STK_CATALOG[key]||{id:key,brand:x.brand,code:x.code,name:x.name,sellPrice:x.sellPrice,qty:x.qty};cgStockHint();return;}
+    return db.collection('accItems').doc(key).set(doc).then(done);
+  }).catch(fail);
+}
 function cgStockHint(){
   cgPublishedNotice();
   var el=document.getElementById('CG_STOCK_HINT');if(!el)return;
@@ -10459,7 +10524,7 @@ function cgStockHint(){
     var q=Number(it.qty)||0;
     el.innerHTML='📦 موجودیِ انبار: <b style="color:'+(q<0?'#c0304a':(q===0?'#9a6e3a':'#1a6a3a'))+'">'+accFa(q)+'</b>'+(owner&&Number(it.lastBuy)?' | آخرین قیمتِ خرید: '+accFa(it.lastBuy):'')+(Number(it.sellPrice)?' | قیمتِ فروش: '+accFa(it.sellPrice):'');
   }else{
-    el.innerHTML='<span style="color:#9a6e3a">📦 این کالا هنوز تو انبار نیست؛ بهتره اول تو «حسابداری ← انبار» ثبتش کنی.</span>';
+    el.innerHTML='<span style="color:#9a6e3a">📦 این کالا هنوز تو انبار نیست.</span> <button type="button" class="chip" style="margin:0 4px" onclick="cgStockAddOpen()">➕ ثبتِ تو انبار</button>';
   }
 }
 
