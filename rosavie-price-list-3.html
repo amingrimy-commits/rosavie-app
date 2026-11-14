@@ -1786,6 +1786,7 @@ var PANEL_RELEASES=[
     'انبار: تو فرمِ «کالای جدید» (و کالایی که هنوز قیمتِ خرید نداره) «تخفیفِ تأمین‌کننده» هست: ۲۵، ۲۰، ۱۷، ۱۵، ۱۰، ۷ و ۵٪ با یه کلیک یا درصدِ دستی؛ قیمتِ خرید از قیمتِ فروش کم می‌شه و «خریدِ خودمون» ثبت می‌شه.',
     'محصولات حالا صفحه‌به‌صفحه (و با تلاشِ دوبارهٔ هر صفحه) دریافت می‌شن و نوار می‌گه «چندتا محصول رسید»؛ روی اینترنتِ ناپایدار خیلی مطمئن‌تره.',
     'مرجوعی: قیمتِ واحد قفل و دقیقاً قیمتِ همون فاکتورِ فروشه (حتی اگه قیمتِ امروزِ کالا عوض شده)؛ قیمتِ امروز فقط برای اطلاع نشون داده می‌شه. فقط با «✏️ تغییرِ قیمت» می‌شه عوضش کرد.',
+    'حسابداری برای مبینا باز شد (فقط ۳ تب): «🧾 فاکتورها»، «📦 انبار» و «🏷️ برندها». خلاصه، طرف‌حساب‌ها، گزارش و سودِ فاکتورها بسته‌ست. هر کارش تو «گزارشِ فعالیتِ تیم» ثبت می‌شه.',
     'مبینا و تیم: تو «تولید محتوا»، وقتی کالا تو انبار نیست دکمه‌ی «➕ ثبتِ تو انبار» میاد؛ برند، کد، اسم و قیمتِ فروش از خودِ فرم پر می‌شه و کالا با موجودیِ ۰ ثبت می‌شه (فقط کالای جدید؛ ویرایش و قیمتِ خرید فقط مدیر).',
     'بنرِ قرمزِ «قوانین اجازه‌ی خوندن نمی‌دن» حالا اسمِ بخشِ مشکل‌دار رو می‌گه (مثلاً «برندهای انبار») و می‌گه کدوم فایل رو Publish کنی.',
     'مسیرِ جایگزین: اگه فیلترشکن اتصالِ زندهٔ فایربیس رو ببُره ولی درخواستِ ساده رد بشه، پنل خودکار با درخواستِ معمولی (REST) محصولات و تنظیماتِ تلگرام رو می‌خونه و ذخیره/حذفِ محصول رو هم انجام می‌ده.'
@@ -4969,10 +4970,15 @@ function accSetStat(msg,type){
   if(type!=='err'){clearTimeout(accSetStat._t);accSetStat._t=setTimeout(function(){accSetStat('');},5000);}
 }
 function accIsOwner(){return !CURRENT_ROLE;}
+// مدیر همه‌چیز؛ نقشی که acc:true داره (مبینا) فقط فاکتورها، انبار و برندها
+var ACC_TEAM_VIEWS=['inv','invNew','invView','retNew','items','itemView','brands','brandView','brandMerge'];
+function accHasAccess(){return !CURRENT_ROLE||!!(typeof ROLE_PERMISSIONS!=='undefined'&&ROLE_PERMISSIONS[CURRENT_ROLE]&&ROLE_PERMISSIONS[CURRENT_ROLE].acc);}
+function accViewAllowed(v){return accIsOwner()||ACC_TEAM_VIEWS.indexOf(v)>-1;}
 
 // ── باز کردن تب و بارگذاری ──
 function accOnOpen(){
-  if(!accIsOwner())return;
+  if(!accHasAccess())return;
+  if(!accViewAllowed(ACC.view)){ACC.view='items';ACC.arg=null;}
   accRender();
   if(!ACC.loaded&&!ACC.loading)accLoad();
   else if(ACC.loaded){accLoadOrders();accAutoSyncProducts();}
@@ -5021,6 +5027,8 @@ function accReload(msg){
   accLoad(function(){if(msg)accSetStat(msg,'ok');});
 }
 function accGo(view,arg){
+  if(!accHasAccess())return;
+  if(!accViewAllowed(view)){view='items';arg=null;}
   ACC.view=view;ACC.arg=(arg===undefined?null:arg);
   accRender();
   var pg=document.getElementById('pacc');if(pg&&pg.scrollIntoView)pg.scrollIntoView();
@@ -5092,6 +5100,8 @@ function accRender(){
   var body=document.getElementById('ACC_BODY'),nav=document.getElementById('ACC_NAV');
   if(!body||!nav)return;
   var tabs=[['home','🏠 خلاصه'],['inv','🧾 فاکتورها'],['items','📦 انبار'],['brands','🏷️ برندها'],['parties','👥 طرف‌حساب‌ها'],['report','📊 گزارش']];
+  if(!accViewAllowed(ACC.view)){ACC.view='items';ACC.arg=null;}
+  tabs=tabs.filter(function(t){return accViewAllowed(t[0]);});
   var cur=ACC.view;
   var navKey={invNew:'inv',invView:'inv',itemView:'items',brandView:'brands',brandMerge:'brands',retNew:'inv',partyView:'parties',partyEdit:'parties',payNew:'parties'}[cur]||cur;
   nav.innerHTML=tabs.map(function(t){return '<button type="button" class="chip'+(t[0]===navKey?' on':'')+'" onclick="accGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
@@ -6361,7 +6371,7 @@ function accUpdateTotals(){
   if(sale){
     var cost=0,unknown=false;
     d.lines.forEach(function(l){var it=l.key?ACC.items[l.key]:null,q=accNum(l.qty);if(!it||!q)return;var c=Number(it.avgCost)||Number(it.lastBuy)||0;if(!c)unknown=true;cost+=c*q;});
-    if(cost||unknown)h+='<br><span style="color:'+((t.total-cost)>=0?'#1a6a3a':'#c0304a')+'">سودِ تقریبی: <b>'+accMoney(t.total-cost)+'</b>'+(unknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخصه)':'')+'</span>';
+    if(accIsOwner()&&(cost||unknown))h+='<br><span style="color:'+((t.total-cost)>=0?'#1a6a3a':'#c0304a')+'">سودِ تقریبی: <b>'+accMoney(t.total-cost)+'</b>'+(unknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخصه)':'')+'</span>';
   }
   el.innerHTML=h;
   var w=document.getElementById('ACC_ORD_WARN');
@@ -6537,7 +6547,7 @@ function accRetCalc(){
   var pay=accNum((document.getElementById('ACC_R_PAY')||{}).value);
   if(!r.lines.length){box.innerHTML='<span style="color:#9a6e3a">تعدادِ مرجوعی رو بنویس.</span>'+(r.err?'<br><span style="color:#c0304a">'+accEsc(r.err)+'</span>':'');return;}
   var profit=-(r.total-r.costBack),dmg=r.lines.filter(function(l){return !l.restock;}).length;
-  box.innerHTML='جمعِ مرجوعی: <b>'+accMoney(r.total)+'</b><br>اثر روی بدهیِ مشتری: <b style="color:#1a6a3a">−'+accMoney(r.total-pay)+'</b>'+(pay?(' (بعد از پرداختِ '+accMoney(pay)+')'):'')+'<br>اثر روی سود: <b style="color:#c0304a">'+accMoney(profit)+'</b>'+(dmg?' ⚠️ '+accFa(dmg)+' قلم به انبار برنمی‌گرده؛ هزینه‌اش ضرر حساب می‌شه':'')+(pay>r.total?'<br><span style="color:#c0304a">پرداخت از جمعِ مرجوعی بیشتره</span>':'')+(r.err?'<br><span style="color:#c0304a">'+accEsc(r.err)+'</span>':'');
+  box.innerHTML='جمعِ مرجوعی: <b>'+accMoney(r.total)+'</b><br>اثر روی بدهیِ مشتری: <b style="color:#1a6a3a">−'+accMoney(r.total-pay)+'</b>'+(pay?(' (بعد از پرداختِ '+accMoney(pay)+')'):'')+(accIsOwner()?'<br>اثر روی سود: <b style="color:#c0304a">'+accMoney(profit)+'</b>':'')+(dmg?'<br>⚠️ '+accFa(dmg)+' قلم به انبار برنمی‌گرده؛ هزینه‌اش ضرر حساب می‌شه':'')+(pay>r.total?'<br><span style="color:#c0304a">پرداخت از جمعِ مرجوعی بیشتره</span>':'')+(r.err?'<br><span style="color:#c0304a">'+accEsc(r.err)+'</span>':'');
 }
 function accSaveReturn(){
   var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
@@ -6633,13 +6643,13 @@ function accRenderInvView(){
   h+='<div style="overflow-x:auto;margin:6px 0"><table style="width:100%;border-collapse:collapse;font-size:0.72rem;text-align:center"><thead><tr style="color:#9a6e3a"><th style="text-align:right">کالا</th><th>'+(adj?'تغییر':'تعداد')+'</th>'+(adj?'':'<th>قیمت</th><th>جمع</th>')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
   if(!adj){
     h+='<div style="font-size:0.78rem;line-height:2;background:rgba(212,168,122,0.15);border-radius:10px;padding:10px">جمعِ ردیف‌ها: <b>'+accMoney(v.subtotal)+'</b>'+(Number(v.discount)?'<br>تخفیف: <b>'+accMoney(v.discount)+'</b>':'')+'<br>مبلغِ نهایی: <b>'+accMoney(v.total)+'</b>'+(Number(v.paid)?'<br>'+(sale?'دریافتِ همزمان':'پرداختِ همزمان')+': <b>'+accMoney(v.paid)+'</b> ('+(ACC_METHODS[v.payMethod]||'')+')':'');
-    if(ret&&!cx)h+='<br><span style="color:#c0304a">اثر روی سود: <b>'+accMoney(v.profit)+'</b> (هزینه‌ی کالاهای برگشتی به انبار: '+accMoney(v.costTotal)+')</span>';
-    if(sale&&!cx)h+='<br><span style="color:'+(v.profit>=0?'#1a6a3a':'#c0304a')+'">سودِ این فاکتور: <b>'+accMoney(v.profit)+'</b>'+(v.costUnknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخص بود)':'')+'</span>';
+    if(ret&&!cx&&accIsOwner())h+='<br><span style="color:#c0304a">اثر روی سود: <b>'+accMoney(v.profit)+'</b> (هزینه‌ی کالاهای برگشتی به انبار: '+accMoney(v.costTotal)+')</span>';
+    if(sale&&!cx&&accIsOwner())h+='<br><span style="color:'+(v.profit>=0?'#1a6a3a':'#c0304a')+'">سودِ این فاکتور: <b>'+accMoney(v.profit)+'</b>'+(v.costUnknown?' ⚠️ (قیمتِ خریدِ بعضی کالاها نامشخص بود)':'')+'</span>';
     h+='</div>';
   }
   if(v.note)h+='<div style="font-size:0.72rem;color:#9a6e3a;margin-top:6px">'+accEsc(v.note)+'</div>';
   h+='<div style="margin-top:10px">';
-  if(v.partyId)h+='<button class="chip" onclick="accGo(\'partyView\',\''+accEsc(v.partyId)+'\')">👤 کارت حساب</button>';
+  if(v.partyId&&accIsOwner())h+='<button class="chip" onclick="accGo(\'partyView\',\''+accEsc(v.partyId)+'\')">👤 کارت حساب</button>';
   if(sale&&!cx&&!v.internal&&v.partyId)h+='<button class="chip" style="color:#a24b73;font-weight:800" onclick="accOpenReturn(\''+accEsc(v.id)+'\')">↩️ ثبتِ مرجوعی</button>';
   if(!cx&&!adj)h+='<button class="chip" style="color:#c0304a" onclick="accCancelInvoice(\''+accEsc(v.id)+'\')">❌ ابطالِ فاکتور</button>';
   h+='<button class="chip" onclick="accGo(\'inv\')">برگشت</button></div>';
@@ -10231,7 +10241,7 @@ var CG_CATEGORY='p1';
 var CG_BRAND_SUGGESTIONS=[];
 var STK_BRANDS={};
 function cgRegBrandList(){
-  var src=(ACC.brandsLoaded&&accIsOwner())?ACC.brands:STK_BRANDS;
+  var src=(ACC.brandsLoaded&&accHasAccess())?ACC.brands:STK_BRANDS;
   return Object.keys(src||{}).map(function(k){return src[k];});
 }
 function cgBrandParts(n){return String(n||'').split('|').map(function(s){return normSearchText(s);}).filter(Boolean);}
@@ -10249,7 +10259,7 @@ function cgCanonBrand(v){
 }
 function cgBrandEnsureRegistry(){
   if(typeof STK_LOADED==='undefined')return;
-  if((ACC.brandsLoaded&&accIsOwner())||STK_LOADED||STK_LOADING||!stkCanRetry())return;
+  if((ACC.brandsLoaded&&accHasAccess())||STK_LOADED||STK_LOADING||!stkCanRetry())return;
   stkCatalogLoad(function(){var el=document.getElementById('CG_BRAND');if(el&&el.value)cgBrandCheck();});
 }
 function cgBrandCheck(){
@@ -10308,7 +10318,7 @@ function pickSuggestedBrand(i){
 // ── تولید محتوا ← انتخاب کالا از انبار (برای همه‌ی اعضای تیم؛ قیمتِ خرید هیچ‌وقت لود نمی‌شه) ──
 var STK_CATALOG={},STK_LOADED=false,STK_LOADING=false,STK_ERR='',STK_ERR_AT=0,STK_SUGG=[];
 function stkCanRetry(){return !STK_ERR||(Date.now()-STK_ERR_AT>15000);}
-function stkItemsMap(){return (ACC.loaded&&accIsOwner())?ACC.items:STK_CATALOG;}
+function stkItemsMap(){return (ACC.loaded&&accHasAccess())?ACC.items:STK_CATALOG;}
 function stkCatalogLoad(cb){
   var db=accDb();if(!db||STK_LOADING)return;
   STK_LOADING=true;STK_ERR='';
@@ -10327,7 +10337,7 @@ function stkCatalogLoad(cb){
     if(box&&document.getElementById('STKSRCH')&&document.getElementById('STKSRCH').value){box.innerHTML='<div class="srch-item" style="color:#c0702a">⚠️ '+accEsc(STK_ERR)+'</div>';box.style.display='block';}
   });
 }
-function stkReady(){return STK_LOADED||(ACC.loaded&&accIsOwner());}
+function stkReady(){return STK_LOADED||(ACC.loaded&&accHasAccess());}
 function stkFindProduct(it){
   return allProds().filter(function(p){return String(p.code||'').trim()&&p.code!=='--'&&accItemKey(p.brandName,p.code)===it.id;})[0]||null;
 }
@@ -10487,7 +10497,7 @@ function cgStockAddSubmit(){
     STK_CATALOG[key]={id:key,brand:brand,code:code,name:name,sellPrice:sell,qty:0,thumb:undefined,hasImg:undefined};
     if(!STK_LOADED)STK_LOADED=true;
     cgStockAddClose();cgStockHint();
-    if(accIsOwner()&&ACC.loaded&&!ACC.loading)accLoad();
+    if(accHasAccess()&&ACC.loaded&&!ACC.loading)accLoad();
     addNotif('📦 کالای «'+brand+' کد '+code+'» تو انبار ثبت شد (موجودی ۰)');
   }
   function fail(e){
@@ -13197,7 +13207,7 @@ var TEAM_MEMBER_BY_EMAIL={};
 Object.keys(TEAM_MEMBERS).forEach(function(k){TEAM_MEMBER_BY_EMAIL[TEAM_MEMBERS[k].email]=TEAM_MEMBERS[k];});
 var ROLE_PERMISSIONS={
   sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,showOrdersPanel:true,hideOnlineOrders:true,defaultTab:'pcust'},
-  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','ppdf','ps','pa','pcust','pf'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc'}
+  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','ppdf','ps','pa','pcust','pf','pacc'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc',acc:true}
 };
 function currentTeamMemberLabel(){
   if(!CURRENT_ROLE)return null;
@@ -13648,11 +13658,23 @@ saveProductWithDuplicateCheck=function(data,onResolved){
   if(CURRENT_ROLE)logTeamActivity('ذخیره/ویرایش محصول',data&&data.code?('کد '+data.code):null);
   _rvOrigSaveProductWithDuplicateCheck(data,onResolved);
 };
+(function(){
+  var L={accSaveInvoice:'ثبت فاکتور',accSaveReturn:'ثبت مرجوعی',accCancelInvoice:'ابطال فاکتور',accSaveItem:'ذخیره‌ی کالای انبار',accAdjustStock:'تعدیل موجودی',accSaveBrand:'ذخیره‌ی برند',accDeleteBrand:'حذف برند',accMergeRun:'ادغام برندها'};
+  Object.keys(L).forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    window[n]=function(){if(CURRENT_ROLE)logTeamActivity('حسابداری: '+L[n],null);return o.apply(this,arguments);};
+  });
+})();
 function applyRolePermissions(role){
   CURRENT_ROLE=role;
   var perm=ROLE_PERMISSIONS[role];
   if(!perm)return;
   document.querySelectorAll('.rv-owner-only').forEach(function(el){el.style.display='none';});
+  if(perm.acc){
+    var _ab=document.querySelector('.tab[onclick*="showTab(\'pacc\'"]');if(_ab)_ab.style.display='';
+    var _ap=document.getElementById('pacc');if(_ap)_ap.style.display='';
+    var _at=document.querySelector('#pacc .ctitle span');if(_at)_at.textContent='(دسترسیِ محدود: فاکتورها، انبار، برندها)';
+  }
   var homeBtn=document.querySelector('.tab[onclick*="showTab(\'pf\'"]');
   if(homeBtn)homeBtn.style.display=perm.tabs.indexOf('pf')>-1?'':'none';
   var custBtn=document.querySelector('.tab[onclick*="showTab(\'pcust\'"]');
