@@ -1663,7 +1663,7 @@ function rvReportText(){
   if(RVNET.rest.lastOk)L.push('آخرین موفقیتِ REST: '+RVNET.rest.lastOk.what+' | '+RVNET.rest.lastOk.ms+'ms');
   if(RVNET.rest.test)L.push('آزمایشِ REST: '+RVNET.rest.test.lines.join(' || '));
   L.push('آخرین پیشرفتِ لودِ محصولات: '+((RVLOAD.products&&RVLOAD.products.progressAt)?(Math.round((Date.now()-RVLOAD.products.progressAt)/1000)+' ثانیه پیش'):'هنوز نه')+' | تلاش‌های خودکار: '+((RVLOAD.products&&RVLOAD.products.attempts)||0)+' | ثانیه‌ی ثابت‌مونده تا تایم‌اوت: '+Math.round(RV_LOAD_TIMEOUT/1000));
-  if(RVNET.rest.prodDocs)L.push('حجمِ دریافتیِ محصولات (REST): '+Math.round(RVNET.rest.prodBytes/1024)+' کیلوبایت برای '+RVNET.rest.prodDocs+' محصول | میانگین هر محصول: '+Math.round(RVNET.rest.prodBytes/RVNET.rest.prodDocs/1024)+' کیلوبایت'+(RVNET.rest.prodBytes/RVNET.rest.prodDocs>80*1024?' ⚠️ سنگین (عکسِ بزرگ تو خودِ سند؛ سبک‌سازی لازمه)':' ✓ سبک'));
+  if(RVNET.rest.prodDocs)L.push('حجمِ دریافتیِ محصولات (REST'+(rvLightListOn()?'، لیستِ سبک بدونِ عکسِ بزرگ':'')+'): '+Math.round(RVNET.rest.prodBytes/1024)+' کیلوبایت برای '+RVNET.rest.prodDocs+' محصول | میانگین هر محصول: '+Math.round(RVNET.rest.prodBytes/RVNET.rest.prodDocs/1024)+' کیلوبایت'+(RVNET.rest.prodBytes/RVNET.rest.prodDocs>80*1024?' ⚠️ سنگین (عکسِ بزرگ تو خودِ سند؛ سبک‌سازی لازمه)':' ✓ سبک')+(RVNET.rest.lightGuess?(' | ⚠️ '+RVNET.rest.lightGuess+' محصول احتمالاً هنوز عکسِ سنگین دارن (بدونِ thumb؛ سبک‌سازی لازمه)'):''));
   L.push('محصولاتِ رسیده تا الان: '+(window.PRODLOAD_COUNT||0)+' | اندازه‌ی صفحه‌ی بعدی/تلاش‌ها: '+(RV_PROD_PAGES.docs.length)+' سندِ نیمه‌کاره');
   L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
   L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
@@ -1818,6 +1818,7 @@ var PANEL_RELEASES=[
     'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
+    'لیستِ محصولات از مسیرِ REST حالا بدونِ عکسِ بزرگ گرفته می‌شه (قبلاً ۱۸۶ کیلوبایت برای هر محصول؛ حالا چند کیلوبایت)؛ عکسِ بزرگ فقط موقعِ ویرایش یا ساختِ PDF از سندِ خودش می‌آد و ذخیره هیچ عکسی رو پاک نمی‌کنه. خوندنِ کاملِ دومِ محصولات هم (که ۱٫۲ ثانیه بعد از لود پهنای‌باند رو دو برابر می‌کرد) حذف شد.',
     'گزارشِ اتصال حالا حجمِ دریافتیِ محصولات و میانگینِ هر محصول رو می‌نویسه (اگه سنگین باشه می‌گه سبک‌سازی لازمه)، و برای مدیر هم یه یادآوریِ یک‌باره میاد.',
     '🛠️ مهم: لودِ محصولات روی اینترنتِ کند دیگه هر ۴۵ ثانیه کشته و از اول شروع نمی‌شد؛ فقط وقتی ۴۵ ثانیه هیچ پیشرفتی نباشه بازتلاش می‌کنه (قبلاً هر لودی بعد از ۴۵ ثانیه، حتی در حالِ پیشرفت، رها می‌شد و هیچ‌وقت کامل نمی‌شد). پیشرفتِ هر دو مسیر نگه داشته می‌شه و سندِ تکراری نمی‌آد.',
     '«حالتِ سازگار»ِ خودکار دیگه برای همیشه ذخیره نمی‌شه؛ بعد از ۶ ساعت خودش خاموش می‌شه (حالتِ دستی مثلِ قبل).',
@@ -1995,14 +1996,18 @@ function rvRestHttp0(method,url,body,needAuth,timeoutMs){
     });
   });
 }
-function rvRestDoc(d){
+function rvRestDoc(d,masked){
   var id=d.name.split('/').pop();try{id=decodeURIComponent(id);}catch(e){}
   var obj={};Object.keys(d.fields||{}).forEach(function(k){obj[k]=rvFsDecode(d.fields[k]);});
+  if(masked)obj.__masked=true;
   return {id:id,exists:true,data:function(){return Object.assign({},obj);}};
 }
-function rvRestList(coll,token,size,timeoutMs){
-  var url=rvRestBase()+'/'+coll+rvRestKey()+'&pageSize='+size+(token?('&pageToken='+encodeURIComponent(token)):'');
-  return rvRestHttp('GET',url,null,false,timeoutMs||25000).then(function(j){return {docs:(j.documents||[]).map(rvRestDoc),next:j.nextPageToken||''};});
+// لیستِ محصولات فقط با فیلدهای سبک (بدونِ عکسِ بزرگِ img/img2 که تو سندهای سبک‌نشده تا ۲۰۰ کیلوبایته)؛ عکسِ بزرگ موقعِ ویرایش/PDF از سندِ خودش گرفته می‌شه
+var RV_PROD_LIGHT_FIELDS=['tab','tabLabel','brand','id','type','code','sizes','colors','minOrder','price','stock','title','material','country','desc1','desc2','sleeve','tgLink','fullDesc','colorList','mixEnabled','mixDesc','mixMinOrder','sizePriceList','fabricTags','tgMsgIds','thumb','hasImg','hasImg2'];
+function rvLightListOn(){try{return localStorage.getItem('rv_light_off')!=='1';}catch(e){return true;}}
+function rvRestList(coll,token,size,timeoutMs,mask){
+  var url=rvRestBase()+'/'+coll+rvRestKey()+'&pageSize='+size+(token?('&pageToken='+encodeURIComponent(token)):'')+(mask?mask.map(function(f){return '&mask.fieldPaths='+encodeURIComponent(f);}).join(''):'');
+  return rvRestHttp('GET',url,null,false,timeoutMs||25000).then(function(j){return {docs:(j.documents||[]).map(function(d){return rvRestDoc(d,!!mask);}),next:j.nextPageToken||''};});
 }
 function rvRestGetDoc(coll,id,auth){
   return rvRestHttp('GET',rvRestBase()+'/'+coll+'/'+rvSeg(id)+rvRestKey(),null,!!auth,20000).then(rvRestDoc,function(e){if(e&&e.code==='not-found')return null;throw e;});
@@ -2027,7 +2032,7 @@ function rvFetchProductsRest(attempt,onProgress,quick,resume){
   function page(tries){
     if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
     var t0=Date.now(),b0=RVNET.rest.bytes||0;
-    return rvRestList('products',R.token,size,tmo).then(function(r){
+    return rvRestList('products',R.token,size,tmo,rvLightListOn()?RV_PROD_LIGHT_FIELDS:null).then(function(r){
       RVNET.rest.prodBytes+=(RVNET.rest.bytes||0)-b0;RVNET.rest.prodDocs+=r.docs.length;
       r.docs.forEach(function(d){if(!R.ids[d.id]){R.ids[d.id]=1;docs.push(d);}});
       var dt=Date.now()-t0;if(dt<4000&&size<40)size=Math.min(40,size*2);else if(dt>12000&&size>2)size=Math.max(2,Math.floor(size/2));
@@ -12436,7 +12441,9 @@ function rvFetchProductsPaged(attempt,onProgress){
 function hydrateRowFromDoc(p){
   var rowImgId=null;
   if(p.thumb){rowImgId=genId();idbPut(rowImgId,p.thumb);}
-  var _hasBig=!!(p.hasImg||p.img),_hasBig2=!!(p.hasImg2||p.img2);
+  // لیستِ سبک: عکسِ بزرگ دانلود نشده و سندِ قدیمی thumb/hasImg نداره ← نمی‌دونیم عکس داره؛ «تنبل» حسابش می‌کنیم (ذخیره merge می‌شه و عکسِ سند دست‌نخورده می‌مونه؛ عکسِ بزرگ موقعِ نیاز از سندِ خودش میاد)
+  var _unk=!!p.__masked&&!p.thumb&&!p.hasImg&&!p.hasImg2&&!p.img;
+  var _hasBig=!!(p.hasImg||p.img)||_unk,_hasBig2=!!(p.hasImg2||p.img2);
   return {
     type:p.type||'',code:p.code||'',sizes:p.sizes||'',colors:p.colors||'',
     minO:p.minOrder||'',price:p.price||'',stock:p.stock||'in',
@@ -12486,9 +12493,9 @@ function hydrateProductsFromFirestore(){
     });
     window.RV_HYDRATED_FS=true;
     (function(){
-      var _leg=0;snap.forEach(function(d){var q=d.data();if(q&&(q.img||q.img2))_leg++;});
-      window.RV_LEGACY_IMG_COUNT=_leg;
-      if(_leg&&typeof accIsOwner==='function'&&accIsOwner())addNotif('🪶 '+_leg+' محصول هنوز عکسِ سنگین دارن و پنل/سایت رو کند می‌کنن. از «سایت ← سبک‌سازیِ عکس محصولات» تبدیلشون کن.');
+      var _leg=0,_guess=0;snap.forEach(function(d){var q=d.data();if(q&&(q.img||q.img2))_leg++;else if(q&&q.__masked&&!q.thumb&&!q.hasImg&&!q.hasImg2)_guess++;});
+      window.RV_LEGACY_IMG_COUNT=_leg+_guess;RVNET.rest.lightGuess=_guess;
+      if((_leg||_guess>=5)&&typeof accIsOwner==='function'&&accIsOwner())addNotif('🪶 '+(_leg||_guess)+' محصول '+(_leg?'':'(احتمالاً) ')+'هنوز عکسِ سنگین دارن و پنل/سایت رو کند می‌کنن. از «سایت ← سبک‌سازیِ عکس محصولات» تبدیلشون کن.');
     })();
     var restoredCount=0;
     var tabQueue=TABS.slice();
@@ -12727,6 +12734,7 @@ setTimeout(load,700);
 function hydrateMissingSiteImages(){
   if(typeof fbDb==='undefined'||!fbDb)return;
   if(window.RV_HYDRATED_FS)return; // لودِ اصلی همین الان از فایربیس بوده؛ نیازی به خوندنِ دوباره نیست
+  if(PRODLOAD_ATTEMPT>0)return;   // لودِ اصلی شروع شده (و خودش تلاشِ دوباره داره)؛ روی اینترنتِ کند این خوندنِ کاملِ دوم پهنای‌باند رو دو برابر می‌کرد
   fbDb.collection('products').get().then(function(snap){
     var dataByKey={};
     snap.forEach(function(doc){
