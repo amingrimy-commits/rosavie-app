@@ -347,12 +347,12 @@ input[type=file]{display:none}
   </div>
 </div>
 <div id="APP_ROOT" style="display:none">
-<div id="PRODLOAD_BAR" style="display:none;position:sticky;top:0;z-index:900;background:#3d2b1f;color:#f9f0e8;padding:6px 12px;font-size:0.72rem;text-align:center">
+<div id="PRODLOAD_BAR" data-rv-noload="1" style="display:none;position:sticky;top:0;z-index:900;background:#3d2b1f;color:#f9f0e8;padding:6px 12px;font-size:0.72rem;text-align:center">
   <style>@keyframes prodloadSlide{0%{margin-right:-35%}100%{margin-right:100%}}.prodload-indet{width:35%!important;animation:prodloadSlide 1.1s linear infinite}.prodload-ph{padding:22px 10px;text-align:center;color:#9a6e3a;font-size:0.8rem;border:1.5px dashed #d4a87a;border-radius:10px;margin:10px 0}</style>
   <span id="PRODLOAD_TEXT">در حال بارگذاری محصولات...</span>
   <button id="PRODLOAD_RETRY" type="button" onclick="retryProductLoad()" style="display:none;margin-right:8px;padding:2px 10px;border:none;border-radius:6px;background:#f9f0e8;color:#3d2b1f;font-weight:900;font-size:0.72rem;cursor:pointer">🔄 تلاش دوباره</button>
   <button id="PRODLOAD_COMPAT" type="button" onclick="toggleFbCompatMode()" style="display:none;margin-right:6px;padding:2px 10px;border:none;border-radius:6px;background:#c0702a;color:#fff;font-weight:900;font-size:0.72rem;cursor:pointer">🔧 حالتِ سازگار</button>
-  <div style="height:3px;background:rgba(255,255,255,0.25);border-radius:2px;margin-top:4px;overflow:hidden"><div id="PRODLOAD_FILL" style="height:100%;width:0%;background:#2a9d5c;transition:width 0.2s"></div></div>
+  
 </div>
 <div class="hdr">
   <span class="hdr-sig rv-owner-only">A♡R</span>
@@ -1331,6 +1331,7 @@ function initFirebase(){
 // ۱) هر ۲ ثانیه وضعیتِ اینترنت/فیلترشکن/فایربیس چک می‌شه ۲) لودهایی که شکست خوردن خودکار (با صبر و بدونِ پاک‌کردنِ کارِ کاربر) دوباره امتحان می‌شن
 // ۳) شنونده‌های زنده‌ی فایربیس با خطا نمی‌میرن ۴) هر «در حال …» یه چرخنده‌ی متحرک می‌گیره ۵) گزارشِ قابلِ کپی برای پیدا کردنِ علتِ مشکل
 var RV_T=window.__RV_T||{};
+var RV_NO_REST=!!RV_T.noRest;
 var RV_TICK_MS=RV_T.tick||2000,RV_PROBE_MS=RV_T.probe||3500,RV_STUCK_MS=RV_T.stuck||6000,RV_LIVE_FIRST_MS=RV_T.liveFirst||25000,RV_COMPAT_AUTO_MS=RV_T.compat||20000,RV_LOAD_TIMEOUT=RV_T.loadTimeout||45000;
 var RV_PAGE_BACKOFF=RV_T.pageBackoff||1500;
 var RV_SDK_ABORT_MS=RV_T.sdkAbort||5000;
@@ -1408,9 +1409,10 @@ function rvTick(){
 }
 
 // ── لودرها: ثبتِ وضعیت + تلاشِ دوبارهٔ خودکار ──
-function rvLoaderStart(name,retry,label){
+function rvLoaderStart(name,retry,label,manual){
   var l=RVLOAD[name]=RVLOAD[name]||{name:name,attempts:0,label:name};
   if(label)l.label=label;if(retry)l.retry=retry;
+  if(manual!==undefined)l.manual=!!manual;       // لودرِ «دستی»: هیچ بازتلاش/کشتنِ خودکاری نداره؛ فقط با دکمه‌ی «ادامه»
   l.status='loading';l.startedAt=Date.now();
   return l;
 }
@@ -1447,6 +1449,7 @@ function rvWatchdog(){
   var now=Date.now(),online=(RVNET.state!=='offline');
   Object.keys(RVLOAD).forEach(function(n){
     var l=RVLOAD[n];
+    if(l.manual)return;
     if(rvLoaderStale(l,now)){l.status='failed';l.failedAt=now;l.err={kind:'net',code:'timeout',msg:'کند شد (تایم‌اوت)',raw:'timeout'};l.nextAt=now;}
     if(l.status==='failed'&&l.retry&&online&&now>=(l.nextAt||0)&&(!l.err||l.err.kind!=='quota'||now>=l.nextAt)){rvRunLoader(n,false);}
   });
@@ -1462,6 +1465,7 @@ function rvHealAll(reason){
   var d=0;
   Object.keys(RVLOAD).forEach(function(n){
     var l=RVLOAD[n];
+    if(l.manual&&reason!=='manual')return;
     if(l.status==='failed'||rvLoaderStale(l,Date.now())){
       setTimeout(function(){rvRunLoader(n,reason==='manual');},d);d+=350;
     }
@@ -1664,6 +1668,7 @@ function rvReportText(){
   if(RVNET.rest.test)L.push('آزمایشِ REST: '+RVNET.rest.test.lines.join(' || '));
   L.push('آخرین پیشرفتِ لودِ محصولات: '+((RVLOAD.products&&RVLOAD.products.progressAt)?(Math.round((Date.now()-RVLOAD.products.progressAt)/1000)+' ثانیه پیش'):'هنوز نه')+' | تلاش‌های خودکار: '+((RVLOAD.products&&RVLOAD.products.attempts)||0)+' | ثانیه‌ی ثابت‌مونده تا تایم‌اوت: '+Math.round(RV_LOAD_TIMEOUT/1000));
   if(RVNET.rest.prodDocs)L.push('حجمِ دریافتیِ محصولات (REST'+(rvLightListOn()?'، لیستِ سبک بدونِ عکسِ بزرگ':'')+'): '+Math.round(RVNET.rest.prodBytes/1024)+' کیلوبایت برای '+RVNET.rest.prodDocs+' محصول | میانگین هر محصول: '+Math.round(RVNET.rest.prodBytes/RVNET.rest.prodDocs/1024)+' کیلوبایت'+(RVNET.rest.prodBytes/RVNET.rest.prodDocs>80*1024?' ⚠️ سنگین (عکسِ بزرگ تو خودِ سند؛ سبک‌سازی لازمه)':' ✓ سبک')+(RVNET.rest.lightGuess?(' | ⚠️ '+RVNET.rest.lightGuess+' محصول احتمالاً هنوز عکسِ سنگین دارن (بدونِ thumb؛ سبک‌سازی لازمه)'):''));
+  L.push('لودِ محصولات (تدریجی با حافظه‌ی دائمی): فاز '+RVPL.phase+' | '+RVPL.done+' از '+RVPL.total+' محصول | از حافظه‌ی دائم '+RVPL.cachedN+' | '+(RVPL.bytesDone/1048576).toFixed(2)+' از ~'+(rvPLEst()/1048576).toFixed(2)+' مگابایت');
   L.push('محصولاتِ رسیده تا الان: '+(window.PRODLOAD_COUNT||0)+' | اندازه‌ی صفحه‌ی بعدی/تلاش‌ها: '+(RV_PROD_PAGES.docs.length)+' سندِ نیمه‌کاره');
   L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
   L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
@@ -1740,7 +1745,7 @@ function rvUpdateTop(){
     if(!document.body.contains(el)){RV_SPIN_SET.delete(el);return;}
     if(el.getClientRects().length>0)n++;
   });
-  var busy=n>0||Object.keys(RVLOAD).some(function(k){return RVLOAD[k].status==='loading';});
+  var busy=n>0||Object.keys(RVLOAD).some(function(k){return RVLOAD[k].status==='loading'&&!RVLOAD[k].manual;});
   var top=document.getElementById('RV_TOPBAR');if(top)top.classList.toggle('on',busy);
 }
 // هنگامِ ساختنِ صدها ردیفِ محصول ناظر رو موقتاً خاموش می‌کنیم (روی گوشیِ ضعیف ثانیه‌ها صرفه‌جویی)، بعدش یه بار کلِ صفحه رو می‌خونه
@@ -1818,6 +1823,7 @@ var PANEL_RELEASES=[
     'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
+    'لودِ محصولات تغییر کرد: حالا درصد + «X از Y مگابایت» + «N از M محصول» نشون می‌ده (نوارِ سبزِ متحرک حذف شد)؛ محصولات همون‌طور که دانلود می‌شن ردیفشون ساخته و تو حافظه‌ی دائمیِ گوشی ذخیره می‌شه، پس با خطا یا رفرش هیچ‌کدوم پاک یا از اول دانلود نمی‌شن؛ بازتلاشِ خودکار حذف شد و فقط دکمه‌ی «▶️ ادامه‌ی دانلود» هست که فقط بقیه رو می‌گیره.',
     'لیستِ محصولات از مسیرِ REST حالا بدونِ عکسِ بزرگ گرفته می‌شه (قبلاً ۱۸۶ کیلوبایت برای هر محصول؛ حالا چند کیلوبایت)؛ عکسِ بزرگ فقط موقعِ ویرایش یا ساختِ PDF از سندِ خودش می‌آد و ذخیره هیچ عکسی رو پاک نمی‌کنه. خوندنِ کاملِ دومِ محصولات هم (که ۱٫۲ ثانیه بعد از لود پهنای‌باند رو دو برابر می‌کرد) حذف شد.',
     'گزارشِ اتصال حالا حجمِ دریافتیِ محصولات و میانگینِ هر محصول رو می‌نویسه (اگه سنگین باشه می‌گه سبک‌سازی لازمه)، و برای مدیر هم یه یادآوریِ یک‌باره میاد.',
     '🛠️ مهم: لودِ محصولات روی اینترنتِ کند دیگه هر ۴۵ ثانیه کشته و از اول شروع نمی‌شد؛ فقط وقتی ۴۵ ثانیه هیچ پیشرفتی نباشه بازتلاش می‌کنه (قبلاً هر لودی بعد از ۴۵ ثانیه، حتی در حالِ پیشرفت، رها می‌شد و هیچ‌وقت کامل نمی‌شد). پیشرفتِ هر دو مسیر نگه داشته می‌شه و سندِ تکراری نمی‌آد.',
@@ -1938,7 +1944,7 @@ whenAdminReady(function(){setTimeout(rvShowUpdateIfNeeded,1500);});
 // خوندنِ محصولات/عکس‌ها/تنظیمات و ذخیره‌ی محصول با درخواستِ معمولیِ HTTPS؛ فقط وقتی «گیر کرده» یا خطای اتصال داریم استفاده می‌شه
 var RV_REST_PREF=false;
 RVNET.rest={calls:0,reads:0,writes:0,fail:0,settings:false,tries:0,last:null,lastOk:null,test:null,bytes:0,prodBytes:0,prodDocs:0};
-function rvRestAvailable(){try{return typeof firebaseConfig!=='undefined'&&!!firebaseConfig.projectId&&typeof fetch==='function'&&localStorage.getItem('rv_rest_off')!=='1';}catch(e){return false;}}
+function rvRestAvailable(){try{return !RV_NO_REST&&typeof firebaseConfig!=='undefined'&&!!firebaseConfig.projectId&&typeof fetch==='function'&&localStorage.getItem('rv_rest_off')!=='1';}catch(e){return false;}}
 function rvPreferRest(){return rvRestAvailable()&&(RV_REST_PREF||(RVNET.state==='stuck'&&!!RVNET.stuckSince&&Date.now()-RVNET.stuckSince>3000));}
 function rvRestBase(){return 'https://firestore.googleapis.com/v1/projects/'+firebaseConfig.projectId+'/databases/(default)/documents';}
 function rvRestKey(){return '?key='+encodeURIComponent(firebaseConfig.apiKey||'');}
@@ -1985,7 +1991,7 @@ function rvRestHttp0(method,url,body,needAuth,timeoutMs){
       var to=setTimeout(function(){if(done)return;done=true;try{if(ctrl)ctrl.abort();}catch(e){}reject({code:'unavailable',message:'timeout: REST '+method});},timeoutMs||25000);
       var h={};if(body)h['Content-Type']='application/json';if(tok)h['Authorization']='Bearer '+tok;
       fetch(url,{method:method,headers:h,body:body?JSON.stringify(body):undefined,signal:ctrl?ctrl.signal:undefined}).then(function(r){
-        return r.text().catch(function(){return '';}).then(function(tx){RVNET.rest.bytes=(RVNET.rest.bytes||0)+tx.length;try{return JSON.parse(tx);}catch(e){return {};}}).then(function(j){
+        return r.text().catch(function(){return '';}).then(function(tx){RVNET.rest.bytes=(RVNET.rest.bytes||0)+tx.length;var jj;try{jj=JSON.parse(tx);}catch(e){jj={};}try{Object.defineProperty(jj,'__bytes',{value:tx.length});}catch(e){}return jj;}).then(function(j){
           if(done)return;done=true;clearTimeout(to);
           if(r.ok){RVNET.rest.calls++;resolve(j);return;}
           var st=(j&&j.error&&j.error.status)||'';
@@ -2000,14 +2006,14 @@ function rvRestDoc(d,masked){
   var id=d.name.split('/').pop();try{id=decodeURIComponent(id);}catch(e){}
   var obj={};Object.keys(d.fields||{}).forEach(function(k){obj[k]=rvFsDecode(d.fields[k]);});
   if(masked)obj.__masked=true;
-  return {id:id,exists:true,data:function(){return Object.assign({},obj);}};
+  return {id:id,exists:true,ut:d.updateTime||'',data:function(){return Object.assign({},obj);}};
 }
 // لیستِ محصولات فقط با فیلدهای سبک (بدونِ عکسِ بزرگِ img/img2 که تو سندهای سبک‌نشده تا ۲۰۰ کیلوبایته)؛ عکسِ بزرگ موقعِ ویرایش/PDF از سندِ خودش گرفته می‌شه
 var RV_PROD_LIGHT_FIELDS=['tab','tabLabel','brand','id','type','code','sizes','colors','minOrder','price','stock','title','material','country','desc1','desc2','sleeve','tgLink','fullDesc','colorList','mixEnabled','mixDesc','mixMinOrder','sizePriceList','fabricTags','tgMsgIds','thumb','hasImg','hasImg2'];
 function rvLightListOn(){try{return localStorage.getItem('rv_light_off')!=='1';}catch(e){return true;}}
 function rvRestList(coll,token,size,timeoutMs,mask){
   var url=rvRestBase()+'/'+coll+rvRestKey()+'&pageSize='+size+(token?('&pageToken='+encodeURIComponent(token)):'')+(mask?mask.map(function(f){return '&mask.fieldPaths='+encodeURIComponent(f);}).join(''):'');
-  return rvRestHttp('GET',url,null,false,timeoutMs||25000).then(function(j){return {docs:(j.documents||[]).map(function(d){return rvRestDoc(d,!!mask);}),next:j.nextPageToken||''};});
+  return rvRestHttp('GET',url,null,false,timeoutMs||25000).then(function(j){return {docs:(j.documents||[]).map(function(d){return rvRestDoc(d,!!mask);}),next:j.nextPageToken||'',bytes:j.__bytes||0};});
 }
 function rvRestGetDoc(coll,id,auth){
   return rvRestHttp('GET',rvRestBase()+'/'+coll+'/'+rvSeg(id)+rvRestKey(),null,!!auth,20000).then(rvRestDoc,function(e){if(e&&e.code==='not-found')return null;throw e;});
@@ -4836,6 +4842,9 @@ function sortRows(cont,tab){
 }
 
 // ── ADD BRAND ──
+function rvAddRowObj(bid,tab,r){
+  addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',tgmsgids:r.tgmsgids||'[]',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',siteimg2:r.siteimg2||'',hasimg:r.hasimg,hasimg2:r.hasimg2,biglazy:r.biglazy||'',imgsrc:r.imgsrc||'',fabrictags:r.fabrictags||'[]',patterntags:r.patterntags||'[]'});
+}
 function addBrand(tab,nm,sRows,sLogoId,sLogo){
   BID++;var bid=BID;
   var isT5=(tab==='p5');
@@ -4855,7 +4864,7 @@ function addBrand(tab,nm,sRows,sLogoId,sLogo){
   document.getElementById('BN'+bid).oninput=save;
   if(sLogo){LOGOS[bid]=sLogo;var lp=document.getElementById('LP'+bid);lp.src=sLogo;lp.style.display='block';}
   else if(sLogoId){LOGO_IDS[bid]=sLogoId;idbGet(sLogoId,function(d){if(d){LOGOS[bid]=d;var lp2=document.getElementById('LP'+bid);if(lp2){lp2.src=d;lp2.style.display='block';}}});}
-  if(sRows&&sRows.length){sRows.forEach(function(r){addRow(bid,tab,r.type,r.code,r.sizes,r.colors,r.minO,r.price,r.stock,r.imgId,r.outSince,r.title,{material:r.material||'',country:r.country||'',desc1:r.desc1||'',desc2:r.desc2||'',sleeve:r.sleeve||'',extraImgIds:r.extraImgIds||'[]',tglink:r.tglink||'',tgmsgids:r.tgmsgids||'[]',fulldesc:r.fulldesc||'',colorlist:r.colorlist||'[]',mixenabled:r.mixenabled||'',mixdesc:r.mixdesc||'',mixminorder:r.mixminorder||'',sizepricelist:r.sizepricelist||'[]',siteimg:r.siteimg||'',siteimg2:r.siteimg2||'',hasimg:r.hasimg,hasimg2:r.hasimg2,biglazy:r.biglazy||'',imgsrc:r.imgsrc||'',fabrictags:r.fabrictags||'[]',patterntags:r.patterntags||'[]'});});}
+  if(sRows&&sRows.length){sRows.forEach(function(r){rvAddRowObj(bid,tab,r);});}
   else if(!sRows){addRow(bid,tab);}
   save();
 }
@@ -12460,11 +12469,257 @@ function hydrateRowFromDoc(p){
     hasimg:_hasBig?'1':'',hasimg2:_hasBig2?'1':'',biglazy:(_hasBig||_hasBig2)?'1':'',imgsrc:p.thumb?'thumb':''
   };
 }
+// ══════════ لودِ محصولات: تدریجی، با حافظه‌ی دائمی (IndexedDB) و بدونِ بازتلاشِ خودکار ══════════
+// ۱) فهرستِ شناسه+زمانِ آخرین تغییرِ همه‌ی محصولات (چند ده کیلوبایت) ← ۲) هر محصولی که تو حافظه‌ی دائمی با همون زمان هست دوباره دانلود نمی‌شه ← ۳) بقیه دانلود می‌شن و همون لحظه تو حافظه ذخیره و ردیفشون ساخته می‌شه
+var RVPL={phase:'idle',total:0,done:0,bytesDone:0,cachedN:0,err:null,shown:{},emptyBids:[],running:false,lastR:0};
+var RVPC={p:null,mem:{}};
+function rvPCOpen(){
+  if(RVPC.p)return RVPC.p;
+  RVPC.p=new Promise(function(res){
+    try{
+      var rq=indexedDB.open('rv_prodcache',1);
+      rq.onupgradeneeded=function(){try{rq.result.createObjectStore('docs',{keyPath:'id'});}catch(e){}};
+      rq.onsuccess=function(){res(rq.result);};
+      rq.onerror=function(){res(null);};rq.onblocked=function(){res(null);};
+    }catch(e){res(null);}
+  });
+  return RVPC.p;
+}
+function rvPCAll(){
+  return rvPCOpen().then(function(db){
+    if(!db)return Object.assign({},RVPC.mem);
+    return new Promise(function(res){
+      var out={};
+      try{
+        var rq=db.transaction('docs','readonly').objectStore('docs').openCursor();
+        rq.onsuccess=function(){var c=rq.result;if(c){out[c.key]=c.value;c.continue();}else res(Object.assign(out,RVPC.mem));};
+        rq.onerror=function(){res(Object.assign({},RVPC.mem));};
+      }catch(e){res(Object.assign({},RVPC.mem));}
+    });
+  });
+}
+function rvPCPut(entries){
+  entries.forEach(function(e){RVPC.mem[e.id]=e;});
+  if(!entries.length)return Promise.resolve();
+  return rvPCOpen().then(function(db){
+    if(!db)return;
+    return new Promise(function(res){
+      try{var tx=db.transaction('docs','readwrite'),st=tx.objectStore('docs');entries.forEach(function(e){st.put(e);});tx.oncomplete=function(){res();};tx.onerror=function(){res();};tx.onabort=function(){res();};}catch(e){res();}
+    });
+  });
+}
+function rvPCDel(ids){
+  ids.forEach(function(k){delete RVPC.mem[k];});
+  return rvPCOpen().then(function(db){
+    if(!db||!ids.length)return;
+    return new Promise(function(res){
+      try{var tx=db.transaction('docs','readwrite'),st=tx.objectStore('docs');ids.forEach(function(k){st.delete(k);});tx.oncomplete=function(){res();};tx.onerror=function(){res();};tx.onabort=function(){res();};}catch(e){res();}
+    });
+  });
+}
+function rvFaN(n){return Number(n||0).toLocaleString('fa-IR');}
+function rvMB(b){return Number((b||0)/1048576).toLocaleString('fa-IR',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function rvPLUsable(){return rvRestAvailable()&&rvLightListOn();}
+function rvPLEst(){
+  var n=RVPL.done,tot=RVPL.total;if(!tot)return 0;
+  var avg=n>0?RVPL.bytesDone/n:(parseFloat(localStorage.getItem('rv_prod_avg'))||0);
+  return Math.round(RVPL.bytesDone+avg*Math.max(0,tot-n));
+}
+function rvPLText(){
+  var N=function(x){return '\u2068'+x+'\u2069';};      // دورِ هر عدد جداکننده‌ی دوطرفه (FSI/PDI)؛ وگرنه تو خطِ راست‌به‌چپ عددها با «٪» و «·» و «~» قاطی می‌شن
+  if(RVPL.phase==='list'||!RVPL.total)return '⏳ در حال شمارشِ محصولات…';
+  var pct=Math.min(100,Math.floor(RVPL.done/RVPL.total*100)),est=rvPLEst();
+  var core=N(rvFaN(pct)+'٪')+' | '+N(rvMB(RVPL.bytesDone))+' از '+(est?('~'+N(rvMB(est))):'…')+' مگابایت | '+N(rvFaN(RVPL.done))+' از '+N(rvFaN(RVPL.total))+' محصول'+(RVPL.cachedN?(' | '+N(rvFaN(RVPL.cachedN))+' از قبل ذخیره بود'):'');
+  if(RVPL.phase==='paused')return '⏸️ دانلود متوقف شد — '+core+'. محصولاتِ دانلودشده نگه داشته شدن؛ «ادامه» فقط بقیه رو می‌گیره.';
+  return '⬇️ '+core;
+}
+function rvPLRender(force){
+  if(!force&&Date.now()-RVPL.lastR<150)return;RVPL.lastR=Date.now();
+  window.PRODLOAD_COUNT=RVPL.done;
+  var bar=document.getElementById('PRODLOAD_BAR'),txt=document.getElementById('PRODLOAD_TEXT'),retry=document.getElementById('PRODLOAD_RETRY'),cb=document.getElementById('PRODLOAD_COMPAT');
+  if(RVPL.phase==='done'){if(bar)bar.style.display='none';return;}
+  var paused=RVPL.phase==='paused';
+  if(bar){bar.style.display='block';bar.style.background=paused?'#8a1f35':'#3d2b1f';}
+  if(txt)txt.textContent=rvPLText()+(paused&&RVPL.err?(' ('+rvErrInfo(RVPL.err).msg+')'):'');
+  if(retry){retry.style.display=paused?'inline-block':'none';retry.textContent='▶️ ادامه‌ی دانلود';}
+  if(cb){cb.style.display=paused?'inline-block':'none';cb.textContent=fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار';}
+}
+function rvPLList(attempt){
+  var ids=[],token='';
+  function page(tries){
+    if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+    return rvRestList('products',token,300,20000,['id']).then(function(r){
+      r.docs.forEach(function(d){ids.push({id:d.id,ut:d.ut});});
+      token=r.next;if(token)return page(0);
+    },function(e){
+      var info=rvErrInfo(e);
+      if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=2)return Promise.reject(e);
+      return new Promise(function(res){setTimeout(res,Math.min(5000,RV_PAGE_BACKOFF*Math.pow(2,tries)));}).then(function(){return page(tries+1);});
+    });
+  }
+  return page(0).then(function(){return ids;});
+}
+function rvPLGet(id,attempt,tries){
+  tries=tries||0;
+  var url=rvRestBase()+'/products/'+rvSeg(id)+rvRestKey()+RV_PROD_LIGHT_FIELDS.map(function(f){return '&mask.fieldPaths='+encodeURIComponent(f);}).join('');
+  return rvRestHttp('GET',url,null,false,25000).then(function(j){
+    var d=rvRestDoc(j,true);return {id:d.id||id,ut:d.ut,data:d.data(),bytes:j.__bytes||0};
+  },function(e){
+    if(e&&e.code==='not-found')return {id:id,missing:true};
+    if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+    var info=rvErrInfo(e);
+    if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=3)return Promise.reject(e);
+    return new Promise(function(res){setTimeout(res,Math.min(8000,RV_PAGE_BACKOFF*Math.pow(2,tries)));}).then(function(){return rvPLGet(id,attempt,tries+1);});
+  });
+}
+function rvPLPool(list,limit,worker){
+  return new Promise(function(resolve,reject){
+    var i=0,active=0,failed=null;
+    function next(){
+      if(failed)return;
+      if(i>=list.length&&active===0){resolve();return;}
+      while(active<limit&&i<list.length&&!failed){
+        (function(item){active++;worker(item).then(function(){active--;next();},function(e){if(!failed){failed=e;reject(e);}});})(list[i++]);
+      }
+    }
+    next();
+  });
+}
+function rvPLApply(docs){
+  var by={};
+  docs.forEach(function(s){
+    var p=s.data;if(!p||!p.tab||!p.code)return;
+    var bn=p.brand||'';
+    by[p.tab]=by[p.tab]||{};by[p.tab][bn]=by[p.tab][bn]||[];
+    by[p.tab][bn].push(hydrateRowFromDoc(p));
+  });
+  Object.keys(by).forEach(function(tab){
+    clearTabPlaceholder(tab);
+    Object.keys(by[tab]).forEach(function(bn){
+      var blk=null;
+      document.querySelectorAll('[id^="B"][data-tab="'+tab+'"]').forEach(function(b){if(!blk){var n=document.getElementById('BN'+b.id.slice(1));if(n&&n.value===bn)blk=b;}});
+      if(!blk)addBrand(tab,bn,by[tab][bn]);
+      else{var bid=blk.id.slice(1);by[tab][bn].forEach(function(r){rvAddRowObj(bid,tab,r);});save();}
+    });
+  });
+}
+function rvPLStart(attempt){
+  // ردیف‌های قبلی (از تلاشِ قبلی) نگه داشته می‌شن؛ فقط فرم‌های خالیِ موقتِ خطا برداشته می‌شن
+  RVPL.emptyBids.forEach(function(bid){var el=document.getElementById('B'+bid);if(el&&!el.querySelector('[id^="CD"][value]'))el.remove();});RVPL.emptyBids=[];
+  TABS.forEach(function(t){var box=document.getElementById('BB-'+t);if(box&&!box.querySelector('.bb')&&!box.querySelector('.prodload-ph'))box.insertAdjacentHTML('afterbegin','<div class="prodload-ph">⏳ در حال دریافت محصولات این دسته از سرور...</div>');});
+  RVPL.running=true;RVPL.phase='list';RVPL.err=null;RVPL.total=0;RVPL.done=0;RVPL.bytesDone=0;RVPL.cachedN=0;
+  window.PRODLOAD_COUNT=0;rvPLRender(true);
+  var slots=[],idx={},nextApply=0,applyPaused=false;
+  function flush(){
+    var batch=[];
+    while(nextApply<slots.length&&slots[nextApply].state!=='wait'){var s=slots[nextApply++];if(s.state==='ready'&&!RVPL.shown[s.id]){RVPL.shown[s.id]=1;batch.push(s);}}
+    if(batch.length){if(!applyPaused){applyPaused=true;rvObserverPause();}rvPLApply(batch);}
+  }
+  function resolveSlot(s,res){
+    if(s.state!=='wait')return;
+    if(res.missing){s.state='skip';}
+    else{s.state='ready';s.data=res.data;s.ut=res.ut||s.ut;s.bytes=res.bytes;}
+    RVPL.done++;RVPL.bytesDone+=(res.bytes||0);
+    if(!res.missing&&res.fresh){RVNET.rest.prodBytes+=res.bytes||0;RVNET.rest.prodDocs++;RVNET.rest.reads++;}
+  }
+  rvPLList(attempt).then(function(list){
+    if(attempt!==PRODLOAD_ATTEMPT)throw {code:'cancelled',message:'cancelled'};
+    RVPL.total=list.length;
+    return rvPCAll().then(function(cache){
+      if(attempt!==PRODLOAD_ATTEMPT)throw {code:'cancelled',message:'cancelled'};
+      var alive={};list.forEach(function(x){alive[x.id]=1;});
+      var stale=Object.keys(cache).filter(function(k){return !alive[k];});if(stale.length)rvPCDel(stale);
+      list.forEach(function(x,i){
+        var c=cache[x.id],hit=!!(c&&c.d&&c.ut===x.ut&&x.ut);
+        var s={id:x.id,ut:x.ut,state:'wait'};slots.push(s);idx[x.id]=i;
+        if(hit){s.state='ready';s.data=c.d;s.bytes=c.b||0;RVPL.done++;RVPL.cachedN++;RVPL.bytesDone+=c.b||0;}
+      });
+      RVPL.phase='dl';rvLoaderProgress('products');rvPLRender(true);flush();
+      var need=slots.filter(function(s){return s.state==='wait';});
+      if(!need.length)return;
+      function onBatch(entries){
+        entries.forEach(function(e){RVPC.mem[e.id]=e;});
+        rvPCPut(entries);
+      }
+      if(need.length>=Math.max(40,Math.floor(0.85*slots.length))){
+        // تقریباً هیچ‌کدوم تو کش نیستن (مثلاً اولین لود): صفحه‌به‌صفحه (سریع‌تر از تک‌تک)؛ هر صفحه همون لحظه ذخیره می‌شه. اگه بخشِ قابلِ‌توجهی از قبل ذخیره بوده، تک‌تک گرفته می‌شه تا حتی یکی از دانلودشده‌ها دوباره دانلود نشه
+        var token='',size=20;
+        function pg(tries){
+          if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+          var t0=Date.now();
+          return rvRestList('products',token,size,30000,RV_PROD_LIGHT_FIELDS).then(function(r){
+            var share=r.docs.length?Math.round(r.bytes/r.docs.length):0,ents=[];
+            r.docs.forEach(function(d){
+              var i=idx[d.id],s;
+              if(i===undefined){s={id:d.id,ut:d.ut,state:'wait'};slots.push(s);idx[d.id]=slots.length-1;RVPL.total++;}
+              else s=slots[i];
+              if(s.state!=='wait')return;
+              resolveSlot(s,{data:d.data(),ut:d.ut,bytes:share,fresh:true});
+              ents.push({id:d.id,ut:d.ut,b:share,d:s.data});
+            });
+            onBatch(ents);
+            token=r.next;var dt=Date.now()-t0;
+            if(dt<3000&&size<60)size=Math.min(60,size*2);else if(dt>10000&&size>5)size=Math.max(5,Math.floor(size/2));
+            rvLoaderProgress('products');rvPLRender();
+            if(attempt===PRODLOAD_ATTEMPT)flush();
+            if(token)return pg(0);
+          },function(e){
+            if(attempt!==PRODLOAD_ATTEMPT)return Promise.reject({code:'cancelled',message:'cancelled'});
+            var info=rvErrInfo(e);
+            if(info.kind==='quota'||info.kind==='perm'||info.kind==='auth'||tries>=3)return Promise.reject(e);
+            size=Math.max(5,Math.floor(size/2));
+            return new Promise(function(res){setTimeout(res,Math.min(8000,RV_PAGE_BACKOFF*Math.pow(2,tries)));}).then(function(){return pg(tries+1);});
+          });
+        }
+        return pg(0).then(function(){
+          // محصولاتی که تو هیچ صفحه‌ای نیومدن (وسطِ کار حذف شدن) رد می‌شن
+          slots.forEach(function(s){if(s.state==='wait'){s.state='skip';RVPL.done++;}});
+        });
+      }
+      // فقط چند محصول کم یا تغییرکرده: تک‌تک، ۶ تا هم‌زمان؛ هر کدوم همون لحظه ذخیره می‌شه
+      return rvPLPool(need,6,function(s){
+        return rvPLGet(s.id,attempt).then(function(res){
+          if(!res.missing){var e={id:res.id,ut:res.ut||s.ut,b:res.bytes,d:res.data};RVPC.mem[e.id]=e;rvPCPut([e]);}
+          if(attempt!==PRODLOAD_ATTEMPT)return;
+          res.fresh=true;resolveSlot(s,res);rvLoaderProgress('products');rvPLRender();flush();
+        });
+      });
+    });
+  }).then(function(){
+    if(attempt!==PRODLOAD_ATTEMPT)return;
+    flush();
+    rvObserverResume();clearAllPlaceholders();
+    TABS.forEach(function(t){var box=document.getElementById('BB-'+t);if(box&&!box.querySelector('.bb'))addBrand(t);});
+    window.RV_HYDRATED_FS=true;
+    var _guess=0;slots.forEach(function(s){var q=s.data;if(s.state==='ready'&&q&&q.__masked&&!q.thumb&&!q.hasImg&&!q.hasImg2)_guess++;});
+    window.RV_LEGACY_IMG_COUNT=_guess;RVNET.rest.lightGuess=_guess;
+    if(_guess>=5&&typeof accIsOwner==='function'&&accIsOwner())addNotif('🪶 '+_guess+' محصول (احتمالاً) هنوز عکسِ سنگین دارن و پنل/سایت رو کند می‌کنن. از «سایت ← سبک‌سازیِ عکس محصولات» تبدیلشون کن.');
+    try{if(RVPL.done>0){localStorage.setItem('rv_prod_avg',String(Math.round(RVPL.bytesDone/RVPL.done)));localStorage.setItem('rv_prod_n',String(RVPL.total));}}catch(e){}
+    RVPL.phase='done';RVPL.running=false;_loading=false;
+    rvLoaderOk('products');rvPLRender(true);
+    setTimeout(function(){save();preloadAll(function(){});checkArchive();renderVipList();},200);
+  }).catch(function(e){
+    if(e&&e.code==='cancelled')return;
+    console.error('rvPLStart error',e);
+    if(RVPL.phase==='list'&&!RVPL.total&&rvErrInfo(e).kind==='net'){RVPL.running=false;hydrateProductsLegacy(attempt);return;}   // حتی فهرست رو نتونست بگیره: یک‌بار با روشِ معمولی (SDK)
+    RVPL.phase='paused';RVPL.err=e;RVPL.running=false;_loading=false;
+    rvObserverResume();
+    try{flush();}catch(x){}
+    rvLoaderFail('products',e);
+    if(!document.querySelector('[id^="B"][data-tab]')){clearAllPlaceholders();TABS.forEach(function(t){addBrand(t);});document.querySelectorAll('[id^="B"][data-tab]').forEach(function(b){RVPL.emptyBids.push(b.id.slice(1));});}
+    rvPLRender(true);
+    addNotif('⏸️ دانلودِ محصولات متوقف شد ('+rvErrInfo(e).msg+'). '+rvFaN(RVPL.done)+' از '+rvFaN(RVPL.total)+' محصول دانلود شده و نگه داشته شد؛ با «ادامه‌ی دانلود» فقط بقیه گرفته می‌شه.');
+  });
+}
 function hydrateProductsFromFirestore(){
   if(!initFirebase()){TABS.forEach(function(t){addBrand(t);});_loading=false;rvLoaderFail('products',{code:'init',message:'Firebase بالا نیومد'});showProductLoadError({code:'init',message:'Firebase بالا نیومد'});return;}
   var attempt=++PRODLOAD_ATTEMPT;
   rvAbortRestLists();     // دانلودِ REST تلاشِ قبلی پهنای‌باند رو اشغال نکنه
-  rvLoaderStart('products',function(){retryProductLoad();},'محصولات');
+  rvLoaderStart('products',function(){retryProductLoad();},'محصولات',true);
+  if(rvPLUsable()){rvPLStart(attempt);return;}
+  hydrateProductsLegacy(attempt);
+}
+function hydrateProductsLegacy(attempt){
   window.PRODLOAD_COUNT=window.RV_PROD_RESUME?Math.max(RV_PROD_PAGES.docs.length,RV_REST_PAGES.docs.length):0;
   startProductFetchIndicator();
   rvFetchProductsPaged(attempt,function(n){window.PRODLOAD_COUNT=n;rvLoaderProgress('products');tickProductFetchIndicator();}).then(function(snap){
