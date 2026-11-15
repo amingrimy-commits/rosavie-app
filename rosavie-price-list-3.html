@@ -1823,6 +1823,9 @@ var PANEL_RELEASES=[
     'مبینا و علی (تیم) دیگه شنونده‌ی «مشتری‌ها» و «پیام‌های پشتیبانی» رو نمی‌گیرن که اجازه‌ی خوندنش رو ندارن و فقط خطا می‌داد.',
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
+    'عکسِ محصولاتِ قدیمی (سبک‌نشده) تو لیست: حالا هر ردیف که دیده بشه «🖼️» نشون می‌ده و عکسش از سندِ خودش گرفته و کوچک می‌شه و تو حافظه‌ی دائمی می‌مونه (بار بعد بدونِ دانلود). با زدنِ روی عکس هم عکسِ اصلی میاد و ویرایشگر با همون باز می‌شه، نه خالی.',
+    'دکمه‌ی لوگوی برند حالا مثلِ بقیه‌ی دکمه‌های عکسِ پنل (با .click() روی ورودیِ مخفی) ساخته شد، نه با label روی ورودیِ مخفی.',
+    'دکمه‌ی انتخابِ لوگوی برند محکم‌تر شد: خواندنِ عکس با روشِ دوم هم امتحان می‌شه، پیشرفت و خطا (فرمتِ نامناسب، حجم) درست کنارِ دکمه نوشته می‌شه نه فقط بالای صفحه، و اگه صفحه وسطِ کار دوباره رندر بشه عکسِ انتخاب‌شده نمی‌پره.',
     'لودِ محصولات تغییر کرد: حالا درصد + «X از Y مگابایت» + «N از M محصول» نشون می‌ده (نوارِ سبزِ متحرک حذف شد)؛ محصولات همون‌طور که دانلود می‌شن ردیفشون ساخته و تو حافظه‌ی دائمیِ گوشی ذخیره می‌شه، پس با خطا یا رفرش هیچ‌کدوم پاک یا از اول دانلود نمی‌شن؛ بازتلاشِ خودکار حذف شد و فقط دکمه‌ی «▶️ ادامه‌ی دانلود» هست که فقط بقیه رو می‌گیره.',
     'لیستِ محصولات از مسیرِ REST حالا بدونِ عکسِ بزرگ گرفته می‌شه (قبلاً ۱۸۶ کیلوبایت برای هر محصول؛ حالا چند کیلوبایت)؛ عکسِ بزرگ فقط موقعِ ویرایش یا ساختِ PDF از سندِ خودش می‌آد و ذخیره هیچ عکسی رو پاک نمی‌کنه. خوندنِ کاملِ دومِ محصولات هم (که ۱٫۲ ثانیه بعد از لود پهنای‌باند رو دو برابر می‌کرد) حذف شد.',
     'گزارشِ اتصال حالا حجمِ دریافتیِ محصولات و میانگینِ هر محصول رو می‌نویسه (اگه سنگین باشه می‌گه سبک‌سازی لازمه)، و برای مدیر هم یه یادآوریِ یک‌باره میاد.',
@@ -3401,6 +3404,59 @@ function rvShowThumbNow(rid){
   }else if(h.tagName==='IMG'&&h.getAttribute('src')!==d){h.src=d;}
 }
 // عکسِ کوچکِ ردیف: فقط وقتی ردیف تو صفحه دیده بشه رندر می‌شه (گوشی‌های ضعیف زیرِ بارِ دیکُدِ همه‌ی عکس‌ها نمی‌رن)
+// ── عکسِ کوچکِ ردیف‌های قدیمی (بدونِ thumb تو سند): وقتی ردیف تو صفحه دیده می‌شه، عکسِ بزرگِ همون سند گرفته و کوچک می‌شه ──
+var RV_TH={q:[],active:0,io:null,watch:{}};
+function rvMakeThumb(dataUrl,max,cb){
+  var img=new Image();
+  img.onload=function(){
+    var s=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*s)),h=Math.max(1,Math.round(img.height*s));
+    var cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+    cb(cv.toDataURL('image/jpeg',0.7));
+  };
+  img.onerror=function(){cb(null);};
+  img.src=dataUrl;
+}
+function rvDeriveThumb(rid){
+  var row=rvRowEl(rid);
+  if(!row||row.dataset.imgsrc||IMAGES[rid]||row.dataset.imgdirty==='1'||row.dataset.hasimg!=='1')return Promise.resolve();
+  var prod=collectSingleProduct(rid);if(!prod||!prod.id)return Promise.resolve();
+  var ent=RVPC.mem[prod.id];
+  if(ent&&ent.th){rvSetRowThumb(rid,ent.th);return Promise.resolve();}
+  if(!initFirebase())return Promise.resolve();
+  return rvFetchBig(prod.id).then(function(o){
+    if(!o||!o.img){var pm=document.getElementById('PIM'+rid);if(pm&&pm.tagName==='SPAN')pm.textContent='+';return;}   // این محصول واقعاً عکس نداره
+    return new Promise(function(res){
+      rvMakeThumb(o.img,240,function(th){
+        if(th){rvSetRowThumb(rid,th);var e2=RVPC.mem[prod.id];if(e2){e2.th=th;rvPCPut([e2]);}}
+        res();
+      });
+    });
+  }).catch(function(e){RV_TH.watch[rid]=0;});     // موقتاً نشد؛ دفعه‌ی بعدی که ردیف دیده بشه دوباره امتحان می‌شه
+}
+function rvThumbPump(){
+  while(RV_TH.active<2&&RV_TH.q.length){
+    var rid=RV_TH.q.shift();RV_TH.active++;
+    rvDeriveThumb(rid).then(function(){RV_TH.active--;rvThumbPump();},function(){RV_TH.active--;rvThumbPump();});
+  }
+}
+function rvThumbScan(){
+  if(typeof IntersectionObserver==='undefined')return;
+  if(!RV_TH.io){
+    RV_TH.io=new IntersectionObserver(function(es){
+      es.forEach(function(e){if(e.isIntersecting){var rid=e.target.getAttribute('data-trid');RV_TH.io.unobserve(e.target);if(RV_TH.q.indexOf(rid)<0)RV_TH.q.push(rid);}});
+      rvThumbPump();
+    },{rootMargin:'150px'});
+  }
+  document.querySelectorAll('[id^="PIB"]').forEach(function(btn){
+    var rid=btn.id.slice(3);
+    if(RV_TH.watch[rid])return;
+    var row=rvRowEl(rid);
+    if(!row||row.dataset.biglazy!=='1'||row.dataset.hasimg!=='1'||row.dataset.imgsrc||IMAGES[rid])return;
+    RV_TH.watch[rid]=1;
+    var pm=document.getElementById('PIM'+rid);if(pm&&pm.tagName==='SPAN'&&pm.textContent==='+')pm.textContent='🖼️';   // یعنی عکس داره و داره میاد
+    btn.setAttribute('data-trid',rid);RV_TH.io.observe(btn);
+  });
+}
 function rvSetRowThumb(rid,d){
   IMAGES[rid]=d;
   var btn=document.getElementById('PIB'+rid);
@@ -4959,7 +5015,23 @@ function addRow(bid,tab,type,code,sizes,colors,minO,price,stock,imgId,outSince,t
   dh.ontouchend=function(){div.classList.remove('dragging');var tgt=document.querySelector('.dover');document.querySelectorAll('.dover').forEach(function(r){r.classList.remove('dover');});if(tgt&&tgt!==DRAG&&tgt.dataset.bid===DRAG.dataset.bid)tgt.parentNode.insertBefore(DRAG,tgt);DRAG=null;save();};
   save();
 }
-function pickImg(rid){openEditor('product_'+rid,IMAGES[rid]||null);}
+function pickImg(rid){
+  var row=rvRowEl(rid);
+  if(row&&row.dataset.biglazy==='1'&&row.dataset.hasimg==='1'&&row.dataset.imgdirty!=='1'){
+    // عکسِ اصلی هنوز دانلود نشده: اول از سندِ خودش میاد، بعد ویرایشگر با همون باز می‌شه (قبلاً خالی باز می‌شد)
+    var pm=document.getElementById('PIM'+rid),old=pm&&pm.tagName==='SPAN'?pm.textContent:null;
+    if(pm&&pm.tagName==='SPAN')pm.textContent='⏳';
+    ensureRowBig(rid).then(function(){
+      var r2=rvRowEl(rid);openEditor('product_'+rid,(r2&&r2.dataset.siteimg)||IMAGES[rid]||null);
+      if(pm&&pm.tagName==='SPAN'&&old!==null)pm.textContent=old;
+    }).catch(function(e){
+      if(pm&&pm.tagName==='SPAN'&&old!==null)pm.textContent=old;
+      alert('دریافتِ عکسِ اصلی ناموفق بود ('+(e&&e.message?e.message:e)+'). اینترنت/فیلترشکن رو چک کن و دوباره بزن.');
+    });
+    return;
+  }
+  openEditor('product_'+rid,(row&&row.dataset.siteimg)||IMAGES[rid]||null);
+}
 function loadImg(rid,inp){var f=inp.files[0];if(!f)return;compressRatio(f,3,4,400,0.85,function(d){var id=genId();IMAGES[rid]=d;IMG_IDS[rid]=id;idbPut(id,d);var _r=rvRowEl(rid);if(_r){_r.dataset.imgdirty='1';_r.dataset.imgsrc='';}var h=document.getElementById('PIM'+rid);if(h){var im=document.createElement('img');im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:5px';im.src=d;h.replaceWith(im);}save();});}
 function togT(rid,tab){var btn=document.getElementById('TT'+rid);if(!btn)return;var seq=TSEQ[tab]||[];var i=seq.indexOf(btn.dataset.t);var nxt=seq[(i+1)%seq.length];btn.dataset.t=nxt;btn.className=TCLS[nxt];btn.textContent=TLBL[nxt];var row=document.getElementById('R'+rid);if(row)sortRows(row.parentNode,tab);save();}
 function togSleeve(rid){var btn=document.getElementById('TS'+rid);if(!btn)return;var i=SLEEVE_SEQ.indexOf(btn.dataset.s);var nxt=SLEEVE_SEQ[(i+1)%SLEEVE_SEQ.length];btn.dataset.s=nxt;btn.className=SLEEVE_CLS[nxt];btn.textContent=SLEEVE_LBL[nxt];var row=document.getElementById('R'+rid);if(row)row.dataset.sleeve=nxt;save();}
@@ -5079,6 +5151,7 @@ function accReload(msg){
 }
 function accGo(view,arg){
   if(!accHasAccess())return;
+  if(view==='brandView'&&!(ACC.view==='brandView'&&ACC.arg===arg))ACC.brandLogo=null;
   if(!accViewAllowed(view)){view='items';arg=null;}
   ACC.view=view;ACC.arg=(arg===undefined?null:arg);
   accRender();
@@ -5647,40 +5720,57 @@ function accRegisterAllBrands(){
 function accRenderBrandView(){
   var id=ACC.arg||'',b=id?ACC.brands[id]:null;
   var cnt=b?accBrandItemCount(b.name):0,locked=!!(b&&cnt>0);
-  ACC.brandLogo={data:b?(b.logo||''):'',changed:false};
+  ACC.brandLogoFor=id;
+  if(!(ACC.brandLogo&&ACC.brandLogo.changed&&ACC.brandLogo.forId===id))ACC.brandLogo={data:b?(b.logo||''):'',changed:false,forId:id};
   var dp=b?ACC.brandDisc[id]:null;ACC_BDISC={pct:(dp==null?null:dp)};
   var nameVal=b?b.name:(ACC.brandDraftName||'');
   var h='<div style="font-weight:900;font-size:0.9rem;margin-bottom:8px">'+(b?'✏️ ویرایشِ برند':'➕ برندِ جدید')+'</div>';
   h+='<div class="g1"><span class="lbl">اسمِ برند (همون شکلی که تو کالاها و کپشن‌ها می‌نویسی؛ مثلاً Fitan | فیتن)</span><input class="fi" id="ACC_B_NAME" value="'+accEsc(nameVal)+'"'+(locked?' readonly style="opacity:.7"':'')+' autocomplete="off">'+(locked?'<div class="acc-hint" style="color:#c0702a">اسمِ این برند قفله چون '+accFa(cnt)+' کالا با همین اسم ثبت شده (کلیدِ کالاها به اسمِ برند وابسته‌ست). لوگو و تخفیف رو می‌تونی عوض کنی.</div>':'')+'</div>';
-  h+='<div class="g1"><span class="lbl">🖼️ لوگوی برند</span><div id="ACC_B_LOGO_BOX" style="margin-bottom:6px">'+(b&&b.logo?'<img class="acc-br-logo" style="width:72px;height:72px" src="'+accEsc(b.logo)+'" alt="">':'<span style="font-size:0.7rem;color:#9a6e3a">هنوز لوگویی نداره</span>')+'</div><label class="sbig stg" style="display:block;text-align:center;cursor:pointer;margin:0">+ انتخاب / تغییرِ لوگو<input type="file" accept="image/*" style="display:none" onchange="accPickBrandLogo(this)"></label></div>';
+  h+='<div class="g1"><span class="lbl">🖼️ لوگوی برند</span><div id="ACC_B_LOGO_BOX" style="margin-bottom:6px">'+(ACC.brandLogo.changed?'<img class="acc-br-logo" style="width:72px;height:72px;border:2px solid #2a9d5c" src="'+ACC.brandLogo.data+'" alt=""> <span style="font-size:0.68rem;color:#1a6a3a">لوگو انتخاب شد؛ «ذخیره» رو بزن</span>':(b&&b.logo?'<img class="acc-br-logo" style="width:72px;height:72px" src="'+accEsc(b.logo)+'" alt="">':'<span style="font-size:0.7rem;color:#9a6e3a">هنوز لوگویی نداره</span>'))+'</div><button type="button" class="sbig stg" style="display:block;width:100%;text-align:center;margin:0" onclick="document.getElementById(\'ACC_B_LOGO_FILE\').click()">+ انتخاب / تغییرِ لوگو</button><input type="file" id="ACC_B_LOGO_FILE" accept="image/*" style="display:none" onchange="accPickBrandLogo(this)"></div>';
   var ch=[25,20,17,15,10,7,5].map(function(p){return '<button type="button" class="chip'+(ACC_BDISC.pct===p?' on':'')+'" data-bd="'+p+'" onclick="accBrandDiscSet('+p+')">'+accFa(p)+'٪</button>';}).join('');
   h+='<div class="g1" id="ACC_BDISC_BOX"><span class="lbl">🏷️ تخفیفِ پیش‌فرضِ این تأمین‌کننده (٪ از قیمتِ فروش)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+ch+'<button type="button" class="chip'+(ACC_BDISC.pct===null?' on':'')+'" data-bd="none" onclick="accBrandDiscSet(\'\')">بدونِ پیش‌فرض</button></div><input class="fi" id="ACC_B_DISC" inputmode="decimal" placeholder="یا درصد رو دستی بنویس (مثلاً ۱۲٫۵)" value="'+(ACC_BDISC.pct!==null&&[25,20,17,15,10,7,5].indexOf(ACC_BDISC.pct)<0?accEsc(String(ACC_BDISC.pct)):'')+'" oninput="accBrandDiscSet(this.value,true)" autocomplete="off"><div class="acc-hint" id="ACC_B_DISC_HINT" style="font-size:0.68rem;color:#1a6a3a;min-height:14px">'+(ACC_BDISC.pct!==null?('تخفیفِ پیش‌فرض: '+accPct(ACC_BDISC.pct)+'٪'):'')+'</div><div style="font-size:0.66rem;color:#9a6e3a">وقتی کالای جدیدی از این برند ثبت کنی، قیمتِ خرید خودکار با همین درصد از قیمتِ فروش حساب می‌شه؛ تو خودِ کالا هم می‌تونی عوضش کنی.</div></div>';
   h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveBrand(\''+accEsc(id)+'\')">💾 ذخیره</button>';
+  h+='<div id="ACC_B_MSG" style="display:none;font-size:0.78rem;line-height:1.9;margin:6px 0;font-weight:700"></div>';
   if(b)h+='<button class="sbig stg" onclick="ACC.mergeSrc=\'\';ACC.mergeTarget=\''+accEsc(id)+'\';accGo(\'brandMerge\',\'\')">🔗 ادغامِ یه برندِ دیگه تو این برند</button><button class="sbig" style="background:#fde8e8;color:#c04040;border:1px solid #f5b8b8" onclick="accDeleteBrand(\''+accEsc(id)+'\')">🗑️ حذف از فهرست</button>';
   h+='<button class="sbig stg" onclick="accGo(\'brands\')">← بازگشت</button>';
   return h;
 }
-function accLogoResize(dataUrl,maxW,cb){
-  var img=new Image();
-  img.onload=function(){
-    var w=img.width,h=img.height,s=Math.min(1,maxW/Math.max(w,h)),ow=Math.max(1,Math.round(w*s)),oh=Math.max(1,Math.round(h*s));
-    var cv=document.createElement('canvas');cv.width=ow;cv.height=oh;var g=cv.getContext('2d');
-    g.fillStyle='#ffffff';g.fillRect(0,0,ow,oh);g.drawImage(img,0,0,ow,oh);
-    cb(cv.toDataURL('image/jpeg',0.85));
-  };
-  img.onerror=function(){cb(null);};
-  img.src=dataUrl;
+function accLogoRead(file,maxW,cb){
+  var done=false,url=null;
+  function fin(d,e){if(done)return;done=true;try{if(url)URL.revokeObjectURL(url);}catch(x){}cb(d,e);}
+  function draw(img){
+    var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+    if(!w||!h){fin(null,'عکس خالیه');return;}
+    var s=Math.min(1,maxW/Math.max(w,h)),ow=Math.max(1,Math.round(w*s)),oh=Math.max(1,Math.round(h*s));
+    try{var cv=document.createElement('canvas');cv.width=ow;cv.height=oh;var g=cv.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,ow,oh);g.drawImage(img,0,0,ow,oh);fin(cv.toDataURL('image/jpeg',0.85));}
+    catch(e){fin(null,'کوچک‌کردنِ عکس شکست خورد ('+(e&&e.message||e)+')');}
+  }
+  function viaReader(){
+    var fr=new FileReader();
+    fr.onload=function(){var im=new Image();im.onload=function(){draw(im);};im.onerror=function(){fin(null,'فرمتِ این عکس پشتیبانی نمی‌شه؛ یه عکسِ JPG یا PNG انتخاب کن');};im.src=fr.result;};
+    fr.onerror=function(){fin(null,'فایل خونده نشد');};
+    fr.readAsDataURL(file);
+  }
+  try{url=URL.createObjectURL(file);var im0=new Image();im0.onload=function(){draw(im0);};im0.onerror=function(){viaReader();};im0.src=url;}catch(e){viaReader();}
+  setTimeout(function(){fin(null,'خیلی طول کشید؛ یه عکسِ کوچک‌تر انتخاب کن');},30000);
+}
+function accBrandMsg(t,ok){
+  var m=document.getElementById('ACC_B_MSG');
+  if(m){m.textContent=t||'';m.style.color=ok?'#1a6a3a':'#c0304a';m.style.display=t?'block':'none';if(t&&m.scrollIntoView)try{m.scrollIntoView({block:'center'});}catch(e){}}
+  if(t)accSetStat(t,ok?'ok':'err');
 }
 function accPickBrandLogo(input){
   var f=input.files&&input.files[0];if(!f)return;
-  var fr=new FileReader();
-  fr.onload=function(){accLogoResize(fr.result,200,function(d){
-    if(!d){accSetStat('عکس خونده نشد','err');return;}
-    ACC.brandLogo={data:d,changed:true};
-    var box=document.getElementById('ACC_B_LOGO_BOX');
-    if(box)box.innerHTML='<img class="acc-br-logo" style="width:72px;height:72px;border:2px solid #2a9d5c" src="'+d+'" alt=""> <span style="font-size:0.68rem;color:#1a6a3a">لوگو انتخاب شد؛ «ذخیره» رو بزن</span>';
-  });};
-  fr.readAsDataURL(f);input.value='';
+  var box=document.getElementById('ACC_B_LOGO_BOX');
+  if(box)box.innerHTML='<span style="font-size:0.72rem;color:#9a6e3a">⏳ در حال خواندنِ عکس ('+Math.round(f.size/1024)+' کیلوبایت)…</span>';
+  var forId=ACC.brandLogoFor;
+  accLogoRead(f,200,function(d,err){
+    try{input.value='';}catch(e){}
+    var b2=document.getElementById('ACC_B_LOGO_BOX');
+    if(!d){if(b2)b2.innerHTML='<span style="font-size:0.74rem;color:#c0304a;line-height:1.8">❌ '+accEsc(err||'عکس خونده نشد')+'</span>';return;}
+    ACC.brandLogo={data:d,changed:true,forId:forId};
+    if(b2)b2.innerHTML='<img class="acc-br-logo" style="width:72px;height:72px;border:2px solid #2a9d5c" src="'+d+'" alt=""> <span style="font-size:0.68rem;color:#1a6a3a">لوگو انتخاب شد؛ «ذخیره» رو بزن</span>';
+  });
 }
 function accBrandDiscSet(p,fromInput){
   var dEl=document.getElementById('ACC_B_DISC'),hint=document.getElementById('ACC_B_DISC_HINT');
@@ -5694,12 +5784,12 @@ function accBrandDiscSet(p,fromInput){
   mark(pct);if(hint){hint.textContent='تخفیفِ پیش‌فرض: '+accPct(pct)+'٪';hint.style.color='#1a6a3a';}
 }
 function accSaveBrand(id){
-  var db=accDb();if(!db){accSetStat('اتصال برقرار نیست','err');return;}
+  var db=accDb();if(!db){accBrandMsg('اتصال برقرار نیست');return;}
   var name=stripBidi(document.getElementById('ACC_B_NAME').value).replace(/\s+/g,' ').trim();
-  if(!name){accSetStat('اسمِ برند رو بنویس','err');return;}
+  if(!name){accBrandMsg('اسمِ برند رو بنویس');return;}
   var key=accBrandKey(name);
-  if(!id&&ACC.brands[key]){accSetStat('این برند (با همین اسم یا شکلِ مشابه) قبلاً ثبت شده: «'+ACC.brands[key].name+'»','err');return;}
-  if(id&&key!==id&&ACC.brands[key]){accSetStat('اسمِ جدید با برندِ «'+ACC.brands[key].name+'» یکیه','err');return;}
+  if(!id&&ACC.brands[key]){accBrandMsg('این برند (با همین اسم یا شکلِ مشابه) قبلاً ثبت شده: «'+ACC.brands[key].name+'»');return;}
+  if(id&&key!==id&&ACC.brands[key]){accBrandMsg('اسمِ جدید با برندِ «'+ACC.brands[key].name+'» یکیه');return;}
   var old=id?ACC.brands[id]:null,b=db.batch();
   var logo=ACC.brandLogo&&ACC.brandLogo.changed?(ACC.brandLogo.data||''):(old?old.logo||'':'');
   var doc={name:name,logo:logo,ts:old&&old.ts?old.ts:Date.now()};
@@ -5712,7 +5802,7 @@ function accSaveBrand(id){
       if(ACC.returnToItem){ACC.returnToItem=false;ACC.preBrand=name;ACC.view='itemView';ACC.arg='';accRender();accSetStat('برند ثبت شد ✅');}
       else{ACC.view='brands';ACC.arg=null;accRender();accSetStat('برند ذخیره شد ✅');}
     });
-  }).catch(function(e){console.error(e);accSetStat('ذخیره ناموفق بود: '+(e&&e.message||e),'err');});
+  }).catch(function(e){console.error(e);accBrandMsg((e&&e.code==='permission-denied'?'قوانینِ جدیدِ فایربیس هنوز Publish نشدن (امین باید فایلِ firestore-rules.txt رو Publish کنه): ':'ذخیره ناموفق بود: ')+(e&&e.message||e));});
 }
 function accDeleteBrand(id){
   var db=accDb();if(!db)return;var b=ACC.brands[id];if(!b)return;
@@ -12449,7 +12539,8 @@ function rvFetchProductsPaged(attempt,onProgress){
 }
 function hydrateRowFromDoc(p){
   var rowImgId=null;
-  if(p.thumb){rowImgId=genId();idbPut(rowImgId,p.thumb);}
+  var _th0=p.thumb||p.__th;   // __th: عکسِ کوچکی که پنل خودش از عکسِ بزرگِ سندِ قدیمی ساخته (فقط برای نمایش؛ تو سند نوشته نمی‌شه)
+  if(_th0){rowImgId=genId();idbPut(rowImgId,_th0);}
   // لیستِ سبک: عکسِ بزرگ دانلود نشده و سندِ قدیمی thumb/hasImg نداره ← نمی‌دونیم عکس داره؛ «تنبل» حسابش می‌کنیم (ذخیره merge می‌شه و عکسِ سند دست‌نخورده می‌مونه؛ عکسِ بزرگ موقعِ نیاز از سندِ خودش میاد)
   var _unk=!!p.__masked&&!p.thumb&&!p.hasImg&&!p.hasImg2&&!p.img;
   var _hasBig=!!(p.hasImg||p.img)||_unk,_hasBig2=!!(p.hasImg2||p.img2);
@@ -12589,6 +12680,7 @@ function rvPLApply(docs){
   var by={};
   docs.forEach(function(s){
     var p=s.data;if(!p||!p.tab||!p.code)return;
+    if(s.th&&!p.thumb)p.__th=s.th;
     var bn=p.brand||'';
     by[p.tab]=by[p.tab]||{};by[p.tab][bn]=by[p.tab][bn]||[];
     by[p.tab][bn].push(hydrateRowFromDoc(p));
@@ -12602,6 +12694,7 @@ function rvPLApply(docs){
       else{var bid=blk.id.slice(1);by[tab][bn].forEach(function(r){rvAddRowObj(bid,tab,r);});save();}
     });
   });
+  setTimeout(rvThumbScan,60);
 }
 function rvPLStart(attempt){
   // ردیف‌های قبلی (از تلاشِ قبلی) نگه داشته می‌شن؛ فقط فرم‌های خالیِ موقتِ خطا برداشته می‌شن
@@ -12632,7 +12725,7 @@ function rvPLStart(attempt){
       list.forEach(function(x,i){
         var c=cache[x.id],hit=!!(c&&c.d&&c.ut===x.ut&&x.ut);
         var s={id:x.id,ut:x.ut,state:'wait'};slots.push(s);idx[x.id]=i;
-        if(hit){s.state='ready';s.data=c.d;s.bytes=c.b||0;RVPL.done++;RVPL.cachedN++;RVPL.bytesDone+=c.b||0;}
+        if(hit){s.state='ready';s.data=c.d;s.th=c.th||'';s.bytes=c.b||0;RVPL.done++;RVPL.cachedN++;RVPL.bytesDone+=c.b||0;}
       });
       RVPL.phase='dl';rvLoaderProgress('products');rvPLRender(true);flush();
       var need=slots.filter(function(s){return s.state==='wait';});
