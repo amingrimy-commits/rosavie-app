@@ -539,6 +539,7 @@ input[type=file]{display:none}
 <div class="pg" id="p9"><div class="card"><div class="ctitle">بادی</div><button class="addb" onclick="addBrand('p9')">+ افزودن برند</button><div id="BB-p9"></div></div></div>
 <div class="pg" id="p10"><div class="card"><div class="ctitle">گن</div><button class="addb" onclick="addBrand('p10')">+ افزودن برند</button><div id="BB-p10"></div></div></div>
 <div class="pg" id="p12"><div class="card"><div class="ctitle">لگ</div><button class="addb" onclick="addBrand('p12')">+ افزودن برند</button><div id="BB-p12"></div></div></div>
+<div class="pg" id="p13"><div class="card"><div class="ctitle">جوراب</div><button class="addb" onclick="addBrand('p13')">+ افزودن برند</button><div id="BB-p13"></div></div></div>
 <div class="pg" id="ps">
   <div class="card"><div class="ctitle">جستجو</div>
     <div class="g1"><input class="fi" type="text" id="SQ" placeholder="جستجو با کد، سایز، رنگ یا عنوان..." oninput="doSearch()"></div>
@@ -556,6 +557,7 @@ input[type=file]{display:none}
       <button class="chip" onclick="setFil('p8',this)">تاپ</button>
       <button class="chip" onclick="setFil('p9',this)">بادی</button>
       <button class="chip" onclick="setFil('p10',this)">گن</button>
+<button class="chip" onclick="setFil('p13',this)">جوراب</button>
       <button class="chip" onclick="setFil('in',this)">موجود</button>
       <button class="chip" onclick="setFil('call',this)">تماس بگیرید</button>
       <button class="chip" onclick="setFil('out',this)">ناموجود</button>
@@ -731,6 +733,7 @@ input[type=file]{display:none}
         <button class="chip" onclick="setCgCat('p9',this)">بادی</button>
         <button class="chip" onclick="setCgCat('p10',this)">گن</button>
         <button class="chip" onclick="setCgCat('p12',this)">لگ</button>
+<button class="chip" onclick="setCgCat('p13',this)">جوراب</button>
       </div>
     </div>
     <div id="CG_PRODUCT_FIELDS">
@@ -745,7 +748,12 @@ input[type=file]{display:none}
         <button type="button" class="chip" onclick="setCgP4Group('sexy_clothes',this)">فانتزی و سکسی — لباس سکسی</button>
         <button type="button" class="chip" onclick="setCgP4Group('sexy_tools',this)">فانتزی و سکسی — لوازم سکسی</button>
       </div>
-      <div class="chips" id="CG_TYPE_CHIPS"></div>
+      <div class="chips" id="CG_P13_GROUP_CHIPS" style="display:none;margin-bottom:8px">
+<button type="button" class="chip" onclick="setCgP13Group('pantyhose',this)">جوراب‌شلواری</button>
+<button type="button" class="chip" onclick="setCgP13Group('fancy',this)">جوراب فانتزی و توری</button>
+<button type="button" class="chip" onclick="setCgP13Group('thigh',this)">جوراب بالای ران و نگهدارنده</button>
+</div>
+<div class="chips" id="CG_TYPE_CHIPS"></div>
       <div class="chips" id="CG_P4_GAME_CHIPS" style="display:none;margin-top:8px"></div>
     </div>
 
@@ -1825,6 +1833,7 @@ var PANEL_RELEASES=[
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
     'عکسِ محصولاتِ قدیمی (سبک‌نشده) تو لیست: حالا هر ردیف که دیده بشه «🖼️» نشون می‌ده و عکسش از سندِ خودش گرفته و کوچک می‌شه و تو حافظه‌ی دائمی می‌مونه (بار بعد بدونِ دانلود). با زدنِ روی عکس هم عکسِ اصلی میاد و ویرایشگر با همون باز می‌شه، نه خالی.',
+    'دسته‌ی جدیدِ «جوراب» (تب، تولید محتوا، سایت): جوراب‌شلواری (نازک و شیشه‌ای، ضخیم و زمستانی، فانتزی، طرح‌دار)، جوراب فانتزی و توری (توری، فیشنت ریز، فیشنت درشت، دانتل، طرح‌دار)، جوراب بالای ران و نگهدارنده (چسبی استُپ‌دار، بندار، ساپورت‌دار).',
     'کشورِ سازنده‌ی برند: تو «حسابداری ← برندها» برای هر برند ثبتش کن (🇮🇷 ایران، 🇹🇷 ترکیه، 🇨🇳 چین، 🇪🇺 اروپا)؛ کپشن‌نویس تو «تولید محتوا» با نوشتنِ برند خودش کشور رو پر می‌کنه و می‌تونی برای یه محصول عوضش کنی. اگه برند کشور نداشت، با انتخابِ کشور یه دکمه‌ی «ثبت برای همیشه» میاد. (همین‌جا یه ایرادِ قدیمی هم درست شد: ذخیره‌ی برند نامِ مستعارهای ادغام رو پاک می‌کرد، و ویرایشِ محصول کشورش رو تو کپشن نمی‌آورد.)',
     'لیستِ انبار: اول خودِ لیست میاد، بعد عکسِ کوچکِ کالاها یکی‌یکی (به ترتیب، فقط وقتی ردیف دیده بشه) از روی محصولِ هم‌کد (برند+کد) گرفته می‌شه؛ تا اون موقع می‌تونی کالا رو باز و ویرایش کنی.',
     'دکمه‌ی لوگوی برند حالا مثلِ بقیه‌ی دکمه‌های عکسِ پنل (با .click() روی ورودیِ مخفی) ساخته شد، نه با label روی ورودیِ مخفی.',
@@ -3329,7 +3338,7 @@ setTimeout(startCustomersListener,1400);
 
 
 // ── سینک محصولات با Firestore ──
-var TABLBL_FA={p1:'سوتین و ست',p2:'نیمتنه و ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',p12:'لگ'};
+var TABLBL_FA={p1:'سوتین و ست',p2:'نیمتنه و ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',p12:'لگ',p13:'جوراب'};
 function sanitizeDocId(s){
   var out=String(s).trim().replace(/[\/\s]+/g,'-').replace(/[^\w\-.\u0600-\u06FF]/g,'');
   return out.slice(0,120)||('x'+Date.now());
@@ -3364,7 +3373,7 @@ function collectSingleProduct(targetRid){
           result={
             id:docId,rid:rid,
             tab:tab,tabLabel:TABLBL_FA[tab]||tab,brand:brand,
-            type:type,typeLabel:TLBL[type]||'',
+            type:type,typeLabel:TLBL[type]||'',grp:(tab==='p13'?(typeToP13Group(type)||''):''),
             title:(tiEl?tiEl.value:''),code:code,
             sizes:V('SZ'+rid),colors:V('CL'+rid),
             minOrder:V('MO'+rid),price:V('PR'+rid),
@@ -3749,7 +3758,7 @@ function collectAllProducts(){
           id:docId,
           tab:tab,tabLabel:TABLBL_FA[tab]||tab,
           brand:brand,
-          type:type,typeLabel:TLBL[type]||'',
+          type:type,typeLabel:TLBL[type]||'',grp:(tab==='p13'?(typeToP13Group(type)||''):''),
           title:(tiEl?tiEl.value:''),code:code,
           sizes:V('SZ'+rid),colors:V('CL'+rid),
           minOrder:V('MO'+rid),price:V('PR'+rid),
@@ -3948,7 +3957,7 @@ function syncProductsToFirestore(){
 
 var BANNERS=[null,null,null,null],BANNER_IDS=[null,null,null,null];
 var ARCHIVE_MS=2*24*60*60*1000;
-var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12'];
+var TABS=['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13'];
 var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','brapad_wire','brapad_nowire','branopad_wire','branopad_nowire','brajelly','braplastic','brabutterfly'],p2:['tset','top'],p3:['panty_cotton','panty_laser','panty_shortex','panty_fantasy','panty_solar','panty_padar','panty_boklos'],
   p4:['pajama','nightgown','nightgownset','robe',
     'sexy_twopiece','sexy_fantasy','sexy_costume','sexy_topshort','sexy_onepiece','sexy_babydoll',
@@ -3958,6 +3967,7 @@ var TSEQ={p1:['setpad_wire','setpad_nowire','setnopad_wire','setnopad_nowire','b
   p11:['prosthetic_hipdip','prosthetic_hips','prosthetic_thigh'],
   p10:['corset_slip','corset_waist','corset_top','corset_cotton','corset_laser'],
   p12:['legging_widewaist','legging_hourglass','legging_fleece','legging_sport','legging_filament','legging_seamless','legging_bermuda','legging_warmer','legging_biker'],
+p13:['sockp_thin','sockp_thick','sockp_fancy','sockp_pattern','sockf_lace','sockf_fishfine','sockf_fishbig','sockf_dantel','sockf_pattern','sockt_stop','sockt_garter','sockt_support'],
 };
 var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شورت',
   panty_cotton:'شورت نخی',panty_laser:'شورت لیزری',panty_shortex:'شورتکس',panty_fantasy:'شورت فانتزی سکسی',panty_solar:'شورت سولار',panty_padar:'شورت پادار',panty_boklos:'شورت بکلس',
@@ -3975,6 +3985,7 @@ var TLBL={set:'ست',bra:'سوتین',tset:'ست',top:'نیمتنه',panty:'شو
   bodycotton:'بادی نخی',bodysilk:'بادی حریر',bodyfishnet:'بادی فیشنت',bodysexy:'بادی سکسی',
   corset_slip:'گن اسلیپ فنردار',corset_waist:'گن کمری',corset_top:'گن تاپی',corset_cotton:'گن نخی',corset_laser:'گن لیزری',
   legging_widewaist:'لگ کمر پهن',legging_hourglass:'لگ ساعت شنی',legging_fleece:'لگ تو کرکی',legging_sport:'لگ ورزشی',legging_filament:'لگ فیلامنت',legging_seamless:'لگ سیملس',legging_bermuda:'لگ برمودا',legging_warmer:'لگ وارمر',legging_biker:'بایکر',
+sockp_thin:'جوراب‌شلواری نازک و شیشه‌ای',sockp_thick:'جوراب‌شلواری ضخیم و زمستانی',sockp_fancy:'جوراب‌شلواری فانتزی',sockp_pattern:'جوراب‌شلواری طرح‌دار',sockf_lace:'جوراب توری',sockf_fishfine:'جوراب فیشنت ریز',sockf_fishbig:'جوراب فیشنت درشت',sockf_dantel:'جوراب دانتل',sockf_pattern:'جوراب فانتزی طرح‌دار',sockt_stop:'جوراب چسبی (استُپ‌دار)',sockt_garter:'جوراب بندار',sockt_support:'جوراب ساپورت‌دار',
   game_snake:'مار و پله',game_love:'لاو',game_flower:'گل‌یاپوچ',game_map:'نقشه',game_challenge:'چالش',game_cards:'کارت‌بازی'};
 var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',
   setpad_wire:'tbtn t-set',setpad_nowire:'tbtn t-c1',setnopad_wire:'tbtn t-c2',setnopad_nowire:'tbtn t-c3',
@@ -3982,6 +3993,7 @@ var TCLS={set:'tbtn t-set',bra:'tbtn t-bra',tset:'tbtn t-tset',top:'tbtn t-top',
   brajelly:'tbtn t-c1',braplastic:'tbtn t-c2',brabutterfly:'tbtn t-c3',
   panty:'tbtn t-bra',panty_cotton:'tbtn t-c4',panty_laser:'tbtn t-c1',panty_shortex:'tbtn t-c2',panty_fantasy:'tbtn t-c5',panty_solar:'tbtn t-c6',panty_padar:'tbtn t-c1',panty_boklos:'tbtn t-c2',
   legging_widewaist:'tbtn t-c1',legging_hourglass:'tbtn t-c2',legging_fleece:'tbtn t-c3',legging_sport:'tbtn t-c4',legging_filament:'tbtn t-c5',legging_seamless:'tbtn t-c6',legging_bermuda:'tbtn t-c1',legging_warmer:'tbtn t-c2',legging_biker:'tbtn t-c3',
+sockp_thin:'tbtn t-c1',sockp_thick:'tbtn t-c2',sockp_fancy:'tbtn t-c3',sockp_pattern:'tbtn t-c4',sockf_lace:'tbtn t-c5',sockf_fishfine:'tbtn t-c6',sockf_fishbig:'tbtn t-c1',sockf_dantel:'tbtn t-c2',sockf_pattern:'tbtn t-c3',sockt_stop:'tbtn t-c4',sockt_garter:'tbtn t-c5',sockt_support:'tbtn t-c6',
   pajama:'tbtn t-c1',nightgown:'tbtn t-c3',nightgownset:'tbtn t-c6',robe:'tbtn t-bra',
   sexy_twopiece:'tbtn t-set',sexy_fantasy:'tbtn t-c1',sexy_costume:'tbtn t-c2',sexy_topshort:'tbtn t-c5',sexy_onepiece:'tbtn t-c6',sexy_babydoll:'tbtn t-c5',sexy_disco:'tbtn t-c4',
   tool_mask:'tbtn t-c2',tool_whip:'tbtn t-c6',tool_buttplug:'tbtn t-c4',tool_hat:'tbtn t-c1',tool_bracelet:'tbtn t-c3',tool_garter:'tbtn t-c4',tool_tiara:'tbtn t-c5',tool_choker:'tbtn t-c6',
@@ -4509,7 +4521,7 @@ function openContentGroup(){SUBNAV_IS_PRODUCTS_GROUP=false;renderSubNavAndOpen(C
 var PRODUCTS_GROUP_TABS=[
   {id:'p1',l:'سوتین+ست'},{id:'p2',l:'نیمتنه+ست'},{id:'p3',l:'شورت'},
   {id:'p4',l:'لباس خواب'},{id:'p11',l:'پروتز'},{id:'p5',l:'لوازم جانبی'},{id:'p6',l:'مایو'},
-  {id:'p7',l:'کراپ'},{id:'p8',l:'تاپ'},{id:'p9',l:'بادی'},{id:'p10',l:'گن'},{id:'p12',l:'لگ'},
+  {id:'p7',l:'کراپ'},{id:'p8',l:'تاپ'},{id:'p9',l:'بادی'},{id:'p10',l:'گن'},{id:'p12',l:'لگ'},{id:'p13',l:'جوراب'},
   {id:'ppdf',l:'PDF'},{id:'ps',l:'جستجو'},{id:'pa',l:'آرشیو'}
 ];
 var SITE_GROUP_TABS=[
@@ -10843,6 +10855,30 @@ var P4_GROUPS={
   sexy_tools:['tool_mask','tool_whip','tool_buttplug','tool_hat','tool_bracelet','tool_garter','tool_tiara','tool_choker']
 };
 var P4_GAME_TYPES=['game_snake','game_love','game_flower','game_map','game_challenge','game_cards'];
+// ── جوراب: دسته‌ی اصلی ← ۳ زیرمجموعه ← زیرمجموعه‌های هر کدوم (نوعِ محصول همون زیرمجموعه‌ی آخره؛ گروه تو فیلدِ grp هم ثبت می‌شه) ──
+var P13_GROUPS={
+pantyhose:['sockp_thin','sockp_thick','sockp_fancy','sockp_pattern'],
+fancy:['sockf_lace','sockf_fishfine','sockf_fishbig','sockf_dantel','sockf_pattern'],
+thigh:['sockt_stop','sockt_garter','sockt_support']
+};
+var P13_GROUP_LBL={pantyhose:'جوراب‌شلواری',fancy:'جوراب فانتزی و توری',thigh:'جوراب بالای ران و نگهدارنده'};
+var P13_SHORT={sockp_thin:'نازک و شیشه‌ای',sockp_thick:'ضخیم و زمستانی',sockp_fancy:'فانتزی',sockp_pattern:'طرح‌دار',sockf_lace:'توری',sockf_fishfine:'فیشنت ریز',sockf_fishbig:'فیشنت درشت',sockf_dantel:'دانتل',sockf_pattern:'طرح‌دار',sockt_stop:'جوراب چسبی (استُپ‌دار)',sockt_garter:'جوراب بندار',sockt_support:'جوراب ساپورت‌دار'};
+function typeToP13Group(type){for(var g in P13_GROUPS){if(P13_GROUPS[g].indexOf(type)>-1)return g;}return '';}
+function setCgP13Group(group,btn){
+document.querySelectorAll('#CG_P13_GROUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+btn.classList.add('on');
+renderP13SubtypeChips(group);
+}
+function renderP13SubtypeChips(group){
+var wrap=document.getElementById('CG_TYPE_CHIPS');
+var seq=P13_GROUPS[group]||[];
+CG_TYPE=seq[0]||'';
+wrap.innerHTML=seq.map(function(t,i){
+return '<button class="chip'+(i===0?' on':'')+'" onclick="setCgType(&#39;'+t+'&#39;,this)">'+P13_SHORT[t]+'</button>';
+}).join('');
+updateSizeFieldVisibility();
+updateFabricTagsUI();
+}
 function typeToP4Group(type){
   if(P4_GAME_TYPES.indexOf(type)>-1)return 'sexy_tools';
   for(var g in P4_GROUPS){if(P4_GROUPS[g].indexOf(type)>-1)return g;}
@@ -10909,9 +10945,10 @@ function renderCgTypeChips(){
   var wrap=document.getElementById('CG_TYPE_CHIPS');
   var typeWrapEl=document.getElementById('CG_TYPE_WRAP');
   var p1GroupWrap=document.getElementById('CG_P1_GROUP_CHIPS');
-  var p4GroupWrap=document.getElementById('CG_P4_GROUP_CHIPS');
-  var gameWrap=document.getElementById('CG_P4_GAME_CHIPS');
-  var seq=TSEQ[CG_CATEGORY]||[];
+var p4GroupWrap=document.getElementById('CG_P4_GROUP_CHIPS');
+var p13GroupWrap=document.getElementById('CG_P13_GROUP_CHIPS');
+var gameWrap=document.getElementById('CG_P4_GAME_CHIPS');
+var seq=TSEQ[CG_CATEGORY]||[];
   var cupWrap=document.getElementById('CG_CUP_WRAP');
   var braSizeWrap=document.getElementById('CG_BRA_SIZE_WRAP');
   if(CG_CATEGORY==='p1'){
@@ -10923,9 +10960,20 @@ function renderCgTypeChips(){
     CG_CUPS=[];
     document.querySelectorAll('#CG_CUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
   }
-  typeWrapEl.style.display='block';
-  gameWrap.style.display='none';gameWrap.innerHTML='';
-  if(CG_CATEGORY==='p1'){
+typeWrapEl.style.display='block';
+gameWrap.style.display='none';gameWrap.innerHTML='';
+if(p13GroupWrap)p13GroupWrap.style.display='none';
+if(CG_CATEGORY==='p13'){
+p1GroupWrap.style.display='none';
+p4GroupWrap.style.display='none';
+p13GroupWrap.style.display='flex';
+var firstBtn13=p13GroupWrap.querySelector('.chip');
+p13GroupWrap.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+if(firstBtn13)firstBtn13.classList.add('on');
+renderP13SubtypeChips('pantyhose');
+return;
+}
+if(CG_CATEGORY==='p1'){
     p4GroupWrap.style.display='none';
     p1GroupWrap.style.display='flex';
     var firstBtn=p1GroupWrap.querySelector('.chip');
@@ -11707,8 +11755,18 @@ function loadProductForEdit(el){
         showP4GameChips(document.getElementById('CG_P4_GAME_BTN'));
       }
     }
-    var typeBtn=null;
-    document.querySelectorAll('#CG_TYPE_CHIPS .chip, #CG_P4_GAME_CHIPS .chip').forEach(function(c){
+if(CG_CATEGORY==='p13'){
+var grp13=typeToP13Group(p.type)||'pantyhose';
+var grp13Btn=null;
+document.querySelectorAll('#CG_P13_GROUP_CHIPS .chip').forEach(function(c,i){
+if(Object.keys(P13_GROUPS)[i]===grp13)grp13Btn=c;
+});
+document.querySelectorAll('#CG_P13_GROUP_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
+if(grp13Btn)grp13Btn.classList.add('on');
+renderP13SubtypeChips(grp13);
+}
+var typeBtn=null;
+document.querySelectorAll('#CG_TYPE_CHIPS .chip, #CG_P4_GAME_CHIPS .chip').forEach(function(c){
       if((c.getAttribute('onclick')||'').indexOf("'"+p.type+"'")>-1)typeBtn=c;
     });
     if(typeBtn)setCgType(p.type,typeBtn);
@@ -13732,7 +13790,7 @@ var TEAM_MEMBER_BY_EMAIL={};
 Object.keys(TEAM_MEMBERS).forEach(function(k){TEAM_MEMBER_BY_EMAIL[TEAM_MEMBERS[k].email]=TEAM_MEMBERS[k];});
 var ROLE_PERMISSIONS={
   sales:{tabs:['pcust'],drawerGroups:[],showSettingsGear:false,showOrdersPanel:true,hideOnlineOrders:true,defaultTab:'pcust'},
-  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','ppdf','ps','pa','pcust','pf','pacc'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc',acc:true}
+  content:{tabs:['pc','psitecontent','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','ppdf','ps','pa','pcust','pf','pacc'],drawerGroups:['content','products'],showSettingsGear:false,showOrdersPanel:true,defaultTab:'pc',acc:true}
 };
 function currentTeamMemberLabel(){
   if(!CURRENT_ROLE)return null;
@@ -14115,7 +14173,7 @@ function injectTeamAccountBar(role){
   }
 }
 var _rvOrigShowTab=showTab;
-var TAB_LABELS_FA={pf:'خانه',pcust:'باشگاه مشتریان',pc:'تولید محتوا',psitecontent:'محتوای سایت',p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',ppdf:'PDF قیمت',ps:'جستجو',pa:'آرشیو',psite:'سایت',psettings:'تنظیمات اتصال',padmins:'ادمین‌ها'};
+var TAB_LABELS_FA={pf:'خانه',pcust:'باشگاه مشتریان',pc:'تولید محتوا',psitecontent:'محتوای سایت',p1:'سوتین+ست',p2:'نیمتنه+ست',p3:'شورت',p4:'لباس خواب',p5:'لوازم جانبی',p6:'مایو',p7:'کراپ',p8:'تاپ',p9:'بادی',p10:'گن',p11:'پروتز',p13:'جوراب',ppdf:'PDF قیمت',ps:'جستجو',pa:'آرشیو',psite:'سایت',psettings:'تنظیمات اتصال',padmins:'ادمین‌ها'};
 showTab=function(id,btn){
   if(CURRENT_ROLE){
     var perm=ROLE_PERMISSIONS[CURRENT_ROLE];

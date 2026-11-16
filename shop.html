@@ -800,7 +800,23 @@ var CATS=[
   {v:'p12-seamless',l:'لگ سیملس',tab:'p12',type:'legging_seamless'},
   {v:'p12-bermuda',l:'لگ برمودا',tab:'p12',type:'legging_bermuda'},
   {v:'p12-warmer',l:'لگ وارمر',tab:'p12',type:'legging_warmer'},
-  {v:'p12-biker',l:'بایکر',tab:'p12',type:'legging_biker'}
+  {v:'p12-biker',l:'بایکر',tab:'p12',type:'legging_biker'},
+  {v:'p13',l:'جوراب',tab:'p13',type:null},
+  {v:'p13-g-pantyhose',l:'جوراب‌شلواری',tab:'p13',type:null,grp:'pantyhose'},
+  {v:'p13-sockp_thin',l:'نازک و شیشه‌ای',tab:'p13',type:'sockp_thin',grp:'pantyhose'},
+  {v:'p13-sockp_thick',l:'ضخیم و زمستانی',tab:'p13',type:'sockp_thick',grp:'pantyhose'},
+  {v:'p13-sockp_fancy',l:'فانتزی',tab:'p13',type:'sockp_fancy',grp:'pantyhose'},
+  {v:'p13-sockp_pattern',l:'طرح‌دار',tab:'p13',type:'sockp_pattern',grp:'pantyhose'},
+  {v:'p13-g-fancy',l:'جوراب فانتزی و توری',tab:'p13',type:null,grp:'fancy'},
+  {v:'p13-sockf_lace',l:'توری',tab:'p13',type:'sockf_lace',grp:'fancy'},
+  {v:'p13-sockf_fishfine',l:'فیشنت ریز',tab:'p13',type:'sockf_fishfine',grp:'fancy'},
+  {v:'p13-sockf_fishbig',l:'فیشنت درشت',tab:'p13',type:'sockf_fishbig',grp:'fancy'},
+  {v:'p13-sockf_dantel',l:'دانتل',tab:'p13',type:'sockf_dantel',grp:'fancy'},
+  {v:'p13-sockf_pattern',l:'طرح‌دار',tab:'p13',type:'sockf_pattern',grp:'fancy'},
+  {v:'p13-g-thigh',l:'جوراب بالای ران و نگهدارنده',tab:'p13',type:null,grp:'thigh'},
+  {v:'p13-sockt_stop',l:'جوراب چسبی (استُپ‌دار)',tab:'p13',type:'sockt_stop',grp:'thigh'},
+  {v:'p13-sockt_garter',l:'جوراب بندار',tab:'p13',type:'sockt_garter',grp:'thigh'},
+  {v:'p13-sockt_support',l:'جوراب ساپورت‌دار',tab:'p13',type:'sockt_support',grp:'thigh'}
 ];
 var PRODUCTS=[];
 var CUR_CAT='all';
@@ -1004,6 +1020,7 @@ function catQueryBase(catKey){
   if(cat&&cat.tab){
     q=q.where('tab','==',cat.tab);
     if(cat.type)q=q.where('type','==',cat.type);
+    else if(cat.grp)q=q.where('grp','==',cat.grp);
   }
   return q.orderBy(firebase.firestore.FieldPath.documentId());
 }
@@ -1298,9 +1315,9 @@ function buildCatGroups(){
   var groups=[],byTab={};
   CATS.forEach(function(c){
     if(c.v==='all')return;
-    if(_emptyCategories[c.v]&&c.type)return;
+    if(_emptyCategories[c.v]&&(c.type||c.grp))return;
     if(!byTab[c.tab]){byTab[c.tab]={tab:c.tab,parent:null,children:[]};groups.push(byTab[c.tab]);}
-    if(!c.type)byTab[c.tab].parent=c;
+    if(!c.type&&!c.grp)byTab[c.tab].parent=c;
     else byTab[c.tab].children.push(c);
   });
   return groups;
@@ -1340,7 +1357,7 @@ function renderHomeProdAccList(){
     var hasKids=g.children.length>0;
     var isOpen=!!_catAccOpen[g.tab];
     var kidsHTML=hasKids?('<div class="home-prod-subgroup'+(isOpen?' open':'')+'">'+g.children.map(function(c){
-      return '<div class="home-prod-item home-prod-subitem'+(CUR_CAT===c.v?' on':'')+'" onclick="setCatFromHome(\''+c.v+'\')">'+c.l+'</div>';
+      return '<div class="home-prod-item home-prod-subitem'+(CUR_CAT===c.v?' on':'')+'" style="'+(c.grp&&!c.type?'font-weight:800;color:#5a3d2b;':(c.grp?'margin-right:34px;':''))+'" onclick="setCatFromHome(\''+c.v+'\')">'+c.l+'</div>';
     }).join('')+'</div>'):'';
     if(hasKids){
       return '<div class="home-prod-item'+(CUR_CAT===g.parent.v?' on':'')+'" style="display:flex;justify-content:space-between;align-items:center">'+
@@ -1360,7 +1377,7 @@ function renderProductsAccList(){
     var hasKids=g.children.length>0;
     var isOpen=!!_catAccOpen[g.tab];
     var kidsHTML=hasKids?('<div class="home-prod-subgroup'+(isOpen?' open':'')+'">'+g.children.map(function(c){
-      return '<div class="side-drawer-sub-item side-drawer-subsub-item" onclick="selectDrawerCat(\''+c.v+'\')">'+c.l+'</div>';
+      return '<div class="side-drawer-sub-item side-drawer-subsub-item" style="'+(c.grp&&!c.type?'font-weight:800;color:#5a3d2b;':(c.grp?'margin-right:44px;':''))+'" onclick="selectDrawerCat(\''+c.v+'\')">'+c.l+'</div>';
     }).join('')+'</div>'):'';
     if(hasKids){
       return '<div class="side-drawer-sub-item" style="display:flex;justify-content:space-between;align-items:center">'+
@@ -1537,11 +1554,14 @@ function pdpOfferInfo(p){
 function bidiNums(t){return String(t==null?'':t).replace(/(\d+(?:[_\-–]\d+)+)/g,'<bdi dir="ltr" style="unicode-bidi:isolate">$1</bdi>');}
 function pdpCrumbHTML(p){
   if(!p)return '';
-  var main=CATS.filter(function(c){return c.tab&&c.tab===p.tab&&!c.type;})[0];
+  var main=CATS.filter(function(c){return c.tab&&c.tab===p.tab&&!c.type&&!c.grp;})[0];
   var sub=p.type?CATS.filter(function(c){return c.tab===p.tab&&c.type===p.type;})[0]:null;
+  var gk=(sub&&sub.grp)||p.grp||'';
+  var grpE=gk?CATS.filter(function(c){return c.tab===p.tab&&c.grp===gk&&!c.type;})[0]:null;
   var parts=[];
   if(main)parts.push({v:main.v,l:main.l});
   else if(p.tabLabel&&p.tab)parts.push({v:p.tab,l:p.tabLabel});
+  if(grpE)parts.push({v:grpE.v,l:grpE.l});
   if(sub)parts.push({v:sub.v,l:sub.l});
   if(!parts.length)return '';
   return '<div class="pdp-crumb" id="PDP_CRUMB">'+parts.map(function(x,i){
