@@ -892,6 +892,7 @@ input[type=file]{display:none}
         <button class="chip" onclick="setCgCountry('china',this)">🇨🇳 چین</button>
         <button class="chip" onclick="setCgCountry('europe',this)">🇪🇺 سفارش اروپا</button>
       </div>
+      <div id="CG_COUNTRY_NOTE" style="font-size:0.7rem;line-height:1.9;margin-top:4px"></div>
     </div>
     <div class="g1"><span class="lbl">۹. توضیحات محصول (یه توضیح کلی — چون تو کپشن کوچیک و تاشو میشه، جمله‌ی کامل هم اشکالی نداره)</span><input class="fi" type="text" id="CG_DESC1" placeholder="مثال: این ست با پارچه‌ی نرم و دوخت ظریف، حسی لوکس و راحت می‌ده"></div>
     <input type="hidden" id="CG_DESC2" value="">
@@ -1824,6 +1825,7 @@ var PANEL_RELEASES=[
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
     'عکسِ محصولاتِ قدیمی (سبک‌نشده) تو لیست: حالا هر ردیف که دیده بشه «🖼️» نشون می‌ده و عکسش از سندِ خودش گرفته و کوچک می‌شه و تو حافظه‌ی دائمی می‌مونه (بار بعد بدونِ دانلود). با زدنِ روی عکس هم عکسِ اصلی میاد و ویرایشگر با همون باز می‌شه، نه خالی.',
+    'کشورِ سازنده‌ی برند: تو «حسابداری ← برندها» برای هر برند ثبتش کن (🇮🇷 ایران، 🇹🇷 ترکیه، 🇨🇳 چین، 🇪🇺 اروپا)؛ کپشن‌نویس تو «تولید محتوا» با نوشتنِ برند خودش کشور رو پر می‌کنه و می‌تونی برای یه محصول عوضش کنی. اگه برند کشور نداشت، با انتخابِ کشور یه دکمه‌ی «ثبت برای همیشه» میاد. (همین‌جا یه ایرادِ قدیمی هم درست شد: ذخیره‌ی برند نامِ مستعارهای ادغام رو پاک می‌کرد، و ویرایشِ محصول کشورش رو تو کپشن نمی‌آورد.)',
     'لیستِ انبار: اول خودِ لیست میاد، بعد عکسِ کوچکِ کالاها یکی‌یکی (به ترتیب، فقط وقتی ردیف دیده بشه) از روی محصولِ هم‌کد (برند+کد) گرفته می‌شه؛ تا اون موقع می‌تونی کالا رو باز و ویرایش کنی.',
     'دکمه‌ی لوگوی برند حالا مثلِ بقیه‌ی دکمه‌های عکسِ پنل (با .click() روی ورودیِ مخفی) ساخته شد، نه با label روی ورودیِ مخفی.',
     'دکمه‌ی انتخابِ لوگوی برند محکم‌تر شد: خواندنِ عکس با روشِ دوم هم امتحان می‌شه، پیشرفت و خطا (فرمتِ نامناسب، حجم) درست کنارِ دکمه نوشته می‌شه نه فقط بالای صفحه، و اگه صفحه وسطِ کار دوباره رندر بشه عکسِ انتخاب‌شده نمی‌پره.',
@@ -5500,7 +5502,7 @@ function accBrandLogoHtml(b,size){
 function accBrandRowHtml(b,onclick){
   var dp=ACC.brandDisc[b.id],cnt=accBrandItemCount(b.name);
   return '<div class="acc-br-row" data-n="'+accEsc(normSearchText(b.name))+'" onclick="'+onclick+'">'+accBrandLogoHtml(b,40)+
-    '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+accEsc(b.name)+'</div>'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(CG_COUNTRY_FLAGS[b.country]?CG_COUNTRY_FLAGS[b.country]+' ':'')+accEsc(b.name)+'</div>'+
     '<div style="font-size:0.66rem;color:#7a5a38">'+(dp!=null?('<b style="color:#1a6a3a">تخفیفِ پیش‌فرض: '+accPct(dp)+'٪</b> · '):'بدونِ تخفیفِ پیش‌فرض · ')+accFa(cnt)+' کالا</div></div></div>';
 }
 function accFilterBrands(q){
@@ -5666,7 +5668,8 @@ function accMergeRun(){
   addAl(ns);if(srcReg)(srcReg.aliases||[]).forEach(addAl);
   if(an.indexOf(src.n)<0)an.push(src.n);if(srcReg)(srcReg.aliasNames||[]).forEach(function(x){if(an.indexOf(x)<0)an.push(x);});
   accSetStat('در حال ادغام... (ثبتِ نامِ مستعار)');
-  var chain=db.collection('accBrands').doc(tgt.id).set({aliases:al,aliasNames:an},{merge:true}).then(function(){tgt.aliases=al;tgt.aliasNames=an;al.forEach(function(x){ACC.aliasMap[x]=tgt.name;});});
+  var _upd={aliases:al,aliasNames:an},_inhC=(!tgt.country&&srcReg&&srcReg.country)?srcReg.country:'';if(_inhC)_upd.country=_inhC;
+  var chain=db.collection('accBrands').doc(tgt.id).set(_upd,{merge:true}).then(function(){tgt.aliases=al;tgt.aliasNames=an;if(_inhC)tgt.country=_inhC;al.forEach(function(x){ACC.aliasMap[x]=tgt.name;});});
   // ۲) هر کالا با یه تراکنشِ جدا
   plan.items.forEach(function(m,i){
     chain=chain.then(function(){
@@ -5725,10 +5728,15 @@ function accRenderBrandView(){
   ACC.brandLogoFor=id;
   if(!(ACC.brandLogo&&ACC.brandLogo.changed&&ACC.brandLogo.forId===id))ACC.brandLogo={data:b?(b.logo||''):'',changed:false,forId:id};
   var dp=b?ACC.brandDisc[id]:null;ACC_BDISC={pct:(dp==null?null:dp)};
+  var _bcKeep=!!(ACC.brandCountry&&ACC.brandCountry.forId===id&&ACC.brandCountry.changed);
+  var bc=_bcKeep?ACC.brandCountry.v:(b?(b.country||''):'');
+  ACC.brandCountry={v:bc,forId:id,changed:_bcKeep};
   var nameVal=b?b.name:(ACC.brandDraftName||'');
   var h='<div style="font-weight:900;font-size:0.9rem;margin-bottom:8px">'+(b?'✏️ ویرایشِ برند':'➕ برندِ جدید')+'</div>';
   h+='<div class="g1"><span class="lbl">اسمِ برند (همون شکلی که تو کالاها و کپشن‌ها می‌نویسی؛ مثلاً Fitan | فیتن)</span><input class="fi" id="ACC_B_NAME" value="'+accEsc(nameVal)+'"'+(locked?' readonly style="opacity:.7"':'')+' autocomplete="off">'+(locked?'<div class="acc-hint" style="color:#c0702a">اسمِ این برند قفله چون '+accFa(cnt)+' کالا با همین اسم ثبت شده (کلیدِ کالاها به اسمِ برند وابسته‌ست). لوگو و تخفیف رو می‌تونی عوض کنی.</div>':'')+'</div>';
   h+='<div class="g1"><span class="lbl">🖼️ لوگوی برند</span><div id="ACC_B_LOGO_BOX" style="margin-bottom:6px">'+(ACC.brandLogo.changed?'<img class="acc-br-logo" style="width:72px;height:72px;border:2px solid #2a9d5c" src="'+ACC.brandLogo.data+'" alt=""> <span style="font-size:0.68rem;color:#1a6a3a">لوگو انتخاب شد؛ «ذخیره» رو بزن</span>':(b&&b.logo?'<img class="acc-br-logo" style="width:72px;height:72px" src="'+accEsc(b.logo)+'" alt="">':'<span style="font-size:0.7rem;color:#9a6e3a">هنوز لوگویی نداره</span>'))+'</div><button type="button" class="sbig stg" style="display:block;width:100%;text-align:center;margin:0" onclick="document.getElementById(\'ACC_B_LOGO_FILE\').click()">+ انتخاب / تغییرِ لوگو</button><input type="file" id="ACC_B_LOGO_FILE" accept="image/*" style="display:none" onchange="accPickBrandLogo(this)"></div>';
+  var cch=[['','هیچکدام'],['iran','🇮🇷 ایران'],['turkey','🇹🇷 ترکیه'],['china','🇨🇳 چین'],['europe','🇪🇺 اروپا']].map(function(x){return '<button type="button" class="chip'+(bc===x[0]?' on':'')+'" data-bc="'+x[0]+'" onclick="accBrandCountrySet(\''+x[0]+'\')">'+x[1]+'</button>';}).join('');
+  h+='<div class="g1" id="ACC_BCOUNTRY_BOX"><span class="lbl">🌍 کشورِ سازنده (کپشن‌نویس تو «تولید محتوا» خودش از روی همین پر می‌کنه)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+cch+'</div></div>';
   var ch=[25,20,17,15,10,7,5].map(function(p){return '<button type="button" class="chip'+(ACC_BDISC.pct===p?' on':'')+'" data-bd="'+p+'" onclick="accBrandDiscSet('+p+')">'+accFa(p)+'٪</button>';}).join('');
   h+='<div class="g1" id="ACC_BDISC_BOX"><span class="lbl">🏷️ تخفیفِ پیش‌فرضِ این تأمین‌کننده (٪ از قیمتِ فروش)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+ch+'<button type="button" class="chip'+(ACC_BDISC.pct===null?' on':'')+'" data-bd="none" onclick="accBrandDiscSet(\'\')">بدونِ پیش‌فرض</button></div><input class="fi" id="ACC_B_DISC" inputmode="decimal" placeholder="یا درصد رو دستی بنویس (مثلاً ۱۲٫۵)" value="'+(ACC_BDISC.pct!==null&&[25,20,17,15,10,7,5].indexOf(ACC_BDISC.pct)<0?accEsc(String(ACC_BDISC.pct)):'')+'" oninput="accBrandDiscSet(this.value,true)" autocomplete="off"><div class="acc-hint" id="ACC_B_DISC_HINT" style="font-size:0.68rem;color:#1a6a3a;min-height:14px">'+(ACC_BDISC.pct!==null?('تخفیفِ پیش‌فرض: '+accPct(ACC_BDISC.pct)+'٪'):'')+'</div><div style="font-size:0.66rem;color:#9a6e3a">وقتی کالای جدیدی از این برند ثبت کنی، قیمتِ خرید خودکار با همین درصد از قیمتِ فروش حساب می‌شه؛ تو خودِ کالا هم می‌تونی عوضش کنی.</div></div>';
   h+='<button class="sbig" style="background:#2a9d5c;color:#fff" onclick="accSaveBrand(\''+accEsc(id)+'\')">💾 ذخیره</button>';
@@ -5755,6 +5763,10 @@ function accLogoRead(file,maxW,cb){
   }
   try{url=URL.createObjectURL(file);var im0=new Image();im0.onload=function(){draw(im0);};im0.onerror=function(){viaReader();};im0.src=url;}catch(e){viaReader();}
   setTimeout(function(){fin(null,'خیلی طول کشید؛ یه عکسِ کوچک‌تر انتخاب کن');},30000);
+}
+function accBrandCountrySet(v){
+  ACC.brandCountry={v:v,forId:ACC.brandLogoFor||'',changed:true};
+  document.querySelectorAll('#ACC_BCOUNTRY_BOX .chip').forEach(function(c){c.classList.toggle('on',c.getAttribute('data-bc')===v);});
 }
 function accBrandMsg(t,ok){
   var m=document.getElementById('ACC_B_MSG');
@@ -5794,9 +5806,11 @@ function accSaveBrand(id){
   if(id&&key!==id&&ACC.brands[key]){accBrandMsg('اسمِ جدید با برندِ «'+ACC.brands[key].name+'» یکیه');return;}
   var old=id?ACC.brands[id]:null,b=db.batch();
   var logo=ACC.brandLogo&&ACC.brandLogo.changed?(ACC.brandLogo.data||''):(old?old.logo||'':'');
-  var doc={name:name,logo:logo,ts:old&&old.ts?old.ts:Date.now()};
+  var cc=(ACC.brandCountry&&ACC.brandCountry.forId===id)?ACC.brandCountry.v:(old?(old.country||''):'');
+  var doc={name:name,logo:logo,ts:old&&old.ts?old.ts:Date.now(),country:cc};
+  if(old&&id&&key!==id){if(old.aliases)doc.aliases=old.aliases;if(old.aliasNames)doc.aliasNames=old.aliasNames;}      // اگه اسم عوض شد، نامِ مستعارهای ادغام همراهش می‌ره
   if(id&&key!==id){b.delete(db.collection('accBrands').doc(id));b.delete(db.collection('accBrandDisc').doc(id));}
-  b.set(db.collection('accBrands').doc(key),doc);
+  b.set(db.collection('accBrands').doc(key),doc,{merge:true});      // merge: نامِ مستعارهای ادغام (aliases) و فیلدهای دیگه پاک نمی‌شن
   if(ACC_BDISC.pct!==null)b.set(db.collection('accBrandDisc').doc(key),{pct:ACC_BDISC.pct});
   else b.delete(db.collection('accBrandDisc').doc(key));
   b.commit().then(function(){
@@ -10434,6 +10448,58 @@ function cgRegBrandList(){
   var src=(ACC.brandsLoaded&&accHasAccess())?ACC.brands:STK_BRANDS;
   return Object.keys(src||{}).map(function(k){return src[k];});
 }
+var CG_COUNTRIES={iran:'🇮🇷 ایران',turkey:'🇹🇷 ترکیه',china:'🇨🇳 چین',europe:'🇪🇺 اروپا'};
+var CG_COUNTRY_FLAGS={iran:'🇮🇷',turkey:'🇹🇷',china:'🇨🇳',europe:'🇪🇺'};
+var CG_COUNTRY_SRC='',CG_COUNTRY_BRAND='';      // منبعِ انتخابِ کشورِ فرمِ محتوا: 'brand' (از روی برند)، 'manual' (دستی) یا ''
+function cgBrandObjOf(v){var c=cgCanonBrand(v);if(!c)return null;var l=cgRegBrandList().filter(function(b){return b.name===c;});return l.length?l[0]:null;}
+function cgCountryChipSet(val){
+  CG_COUNTRY=val||'';
+  document.querySelectorAll('#CG_COUNTRY_CHIPS .chip').forEach(function(c){c.classList.toggle('on',(c.getAttribute('onclick')||'').indexOf("'"+CG_COUNTRY+"'")>-1);});
+}
+function cgBrandCountryNote(){
+  var n=document.getElementById('CG_COUNTRY_NOTE');if(!n)return;
+  var el=document.getElementById('CG_BRAND'),bo=el?cgBrandObjOf(el.value):null,h='';
+  if(bo){
+    var nm=escHtml(bo.name);
+    if(bo.country){
+      if(CG_COUNTRY===bo.country&&CG_COUNTRY_SRC==='brand')h='<span style="color:#1a6a3a">🌍 کشورِ تولید از روی برندِ «'+nm+'» پر شد ('+CG_COUNTRIES[bo.country]+'). اگه این محصول فرق داره، عوضش کن.</span>';
+      else if(CG_COUNTRY!==bo.country)h='<span style="color:#7a5a38">ℹ️ کشورِ ثبت‌شده‌ی برندِ «'+nm+'»: '+CG_COUNTRIES[bo.country]+'؛ فقط برای این محصول عوض شده.</span>';
+    }else if(CG_COUNTRY&&CG_COUNTRIES[CG_COUNTRY]){
+      h=accHasAccess()?('<a style="color:#2a7fb8;text-decoration:underline;cursor:pointer" onclick="cgBrandCountrySave()">📌 «'+CG_COUNTRIES[CG_COUNTRY]+'» رو برای همیشه برای برندِ «'+nm+'» ثبت کن (دیگه لازم نیست هر بار بزنی)</a>'):('<span style="color:#7a5a38">ℹ️ کشورِ این برند هنوز ثبت نشده؛ به امین یا مبینا بگو ثبتش کنن تا خودکار پر بشه.</span>');
+    }else h='<span style="color:#7a5a38">ℹ️ کشورِ سازنده‌ی برندِ «'+nm+'» هنوز ثبت نشده'+(accHasAccess()?' (تو «حسابداری ← برندها» یا با انتخابِ کشور و دکمه‌ی ثبت)':'')+'.</span>';
+  }
+  n.innerHTML=h;
+}
+// برندِ فرم عوض شد (یا فهرستِ برندها رسید): اگه برند کشور داره خودکار پر می‌شه؛ اگه کشورِ قبلی از روی یه برندِ دیگه بود پاک می‌شه (تا کشورِ اشتباه نمونه)
+function cgBrandCountryApply(){
+  var el=document.getElementById('CG_BRAND');if(!el)return;
+  var bo=cgBrandObjOf(el.value),c=bo?(bo.country||''):'';
+  if(bo&&c){
+    if(!(CG_COUNTRY_SRC==='manual'&&CG_COUNTRY_BRAND===bo.name)){cgCountryChipSet(c);CG_COUNTRY_SRC='brand';CG_COUNTRY_BRAND=bo.name;}
+  }else if(CG_COUNTRY_SRC==='brand'&&CG_COUNTRY_BRAND!==(bo?bo.name:'')){
+    cgCountryChipSet('');CG_COUNTRY_SRC='';CG_COUNTRY_BRAND='';
+  }
+  cgBrandCountryNote();
+}
+function cgBrandCountrySave(){
+  var el=document.getElementById('CG_BRAND'),bo=el?cgBrandObjOf(el.value):null;
+  if(!bo||!CG_COUNTRY||!CG_COUNTRIES[CG_COUNTRY]){return;}
+  var db=accDb(),n=document.getElementById('CG_COUNTRY_NOTE'),val=CG_COUNTRY;
+  function say(t,c){if(n)n.innerHTML='<span style="color:'+(c||'#1a6a3a')+'">'+t+'</span>';}
+  function done(){
+    [ACC.brands,STK_BRANDS].forEach(function(m){if(m&&m[bo.id])m[bo.id].country=val;});
+    CG_COUNTRY_SRC='brand';CG_COUNTRY_BRAND=bo.name;cgBrandCountryNote();
+    addNotif('🌍 کشورِ سازنده‌ی «'+bo.name+'» ثبت شد: '+CG_COUNTRIES[val]+' — از این به بعد کپشن‌نویس خودش پر می‌کنه');
+  }
+  function fail(e){say(((e&&e.code==='permission-denied')?'اجازه‌ی ثبت نداری (یا قوانینِ جدیدِ فایربیس Publish نشدن)':'ثبت نشد: '+(e&&e.message||e)),'#c0304a');}
+  if(!db){say('اتصال برقرار نیست','#c0304a');return;}
+  say('در حال ثبت...');
+  if(typeof rvPreferRest==='function'&&rvPreferRest()){
+    rvRestCommit([{update:{name:rvRestName('accBrands',bo.id),fields:{country:{stringValue:val}}},updateMask:{fieldPaths:['country']}}]).then(function(){RVNET.rest.writes++;done();}).catch(fail);
+    return;
+  }
+  db.collection('accBrands').doc(bo.id).set({country:val},{merge:true}).then(done).catch(fail);
+}
 function cgBrandParts(n){return String(n||'').split('|').map(function(s){return normSearchText(s);}).filter(Boolean);}
 // نوشته‌ی کاربر اگه معادلِ دقیقِ یه برندِ فهرست باشه (کلِ اسم، یا یکی از دو بخشِ «انگلیسی | فارسی» که فقط مالِ همون برنده) → اسمِ رسمی
 function cgCanonBrand(v){
@@ -10452,7 +10518,8 @@ function cgBrandEnsureRegistry(){
   if((ACC.brandsLoaded&&accHasAccess())||STK_LOADED||STK_LOADING||!stkCanRetry())return;
   stkCatalogLoad(function(){var el=document.getElementById('CG_BRAND');if(el&&el.value)cgBrandCheck();});
 }
-function cgBrandCheck(){
+function cgBrandCheck(){cgBrandCheck0();cgBrandCountryApply();}
+function cgBrandCheck0(){
   var el=document.getElementById('CG_BRAND'),note=document.getElementById('CG_BRAND_NOTE');
   if(!el)return;
   var v=el.value.trim();
@@ -10470,7 +10537,7 @@ function suggestBrands(q){
   cgBrandEnsureRegistry();
   if(!q){el.innerHTML='';el.style.display='none';CG_BRAND_SUGGESTIONS=[];return;}
   var nq=normSearchText(q),reg=cgRegBrandList(),cands=[],seen={};
-  reg.forEach(function(b){seen[normSearchText(b.name)]=1;cands.push({n:b.name,logo:b.logo||'',reg:true});});
+  reg.forEach(function(b){seen[normSearchText(b.name)]=1;cands.push({n:b.name,logo:b.logo||'',reg:true,country:b.country||''});});
   document.querySelectorAll('[id^="B"][data-tab]').forEach(function(bl){
     var bnEl=document.getElementById('BN'+bl.id.slice(1));
     var name=bnEl?bnEl.value.trim():'';
@@ -10491,7 +10558,7 @@ function suggestBrands(q){
   if(!hit.length){el.innerHTML='';el.style.display='none';return;}
   el.innerHTML=hit.map(function(c,i){
     var lg=c.logo?('<img src="'+accEsc(c.logo)+'" alt="" style="width:24px;height:24px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid #e2cdb0;flex-shrink:0">'):(c.reg?'<span style="width:24px;height:24px;line-height:24px;border-radius:6px;background:#3d2b1f;color:#fff;text-align:center;font-weight:900;font-size:0.7rem;flex-shrink:0">'+accEsc(c.n.trim().charAt(0).toUpperCase())+'</span>':'');
-    return '<div class="srch-item" style="display:flex;align-items:center;gap:8px" onclick="pickSuggestedBrand('+i+')">'+(lg||'🏷️')+'<span style="flex:1">'+escHtml(c.n)+'</span>'+(reg.length&&!c.reg?'<span style="font-size:0.62rem;color:#c0702a">(ثبت‌نشده)</span>':'')+'</div>';
+    return '<div class="srch-item" style="display:flex;align-items:center;gap:8px" onclick="pickSuggestedBrand('+i+')">'+(lg||'🏷️')+'<span style="flex:1">'+escHtml(c.n)+'</span>'+(c.country&&CG_COUNTRY_FLAGS[c.country]?'<span style="font-size:0.9rem">'+CG_COUNTRY_FLAGS[c.country]+'</span>':'')+(reg.length&&!c.reg?'<span style="font-size:0.62rem;color:#c0702a">(ثبت‌نشده)</span>':'')+'</div>';
   }).join('');
   el.style.display='block';
 }
@@ -10515,7 +10582,7 @@ function stkCatalogLoad(cb){
   rvLoaderStart('stk',function(){STK_LOADING=false;STK_ERR='';stkCatalogLoad();},'انبار (انتخاب برای محتوا)');
   Promise.all([db.collection('accItems').get({source:'server'}),db.collection('accBrands').get({source:'server'}).then(function(s){return s;},function(){return null;})]).then(function(both){
     var snap=both[0];STK_BRANDS={};
-    if(both[1])both[1].forEach(function(d){var x=d.data()||{};STK_BRANDS[d.id]={id:d.id,name:x.name,logo:x.logo||'',aliases:x.aliases||[]};});
+    if(both[1])both[1].forEach(function(d){var x=d.data()||{};STK_BRANDS[d.id]={id:d.id,name:x.name,logo:x.logo||'',aliases:x.aliases||[],country:x.country||''};});
     STK_CATALOG={};snap.forEach(function(d){var x=d.data();STK_CATALOG[d.id]={id:d.id,brand:x.brand,code:x.code,name:x.name,sellPrice:x.sellPrice,qty:x.qty,thumb:x.thumb,hasImg:x.hasImg};});
     STK_LOADED=true;STK_LOADING=false;rvLoaderOk('stk');if(cb)cb();
     if(typeof cgStockHint==='function')cgStockHint();
@@ -11240,6 +11307,9 @@ function setCgCountry(val,btn){
   CG_COUNTRY=val;
   document.querySelectorAll('#CG_COUNTRY_CHIPS .chip').forEach(function(c){c.classList.remove('on');});
   btn.classList.add('on');
+  var _bel=document.getElementById('CG_BRAND'),_bo=_bel?cgBrandObjOf(_bel.value):null;
+  CG_COUNTRY_SRC='manual';CG_COUNTRY_BRAND=_bo?_bo.name:'';
+  cgBrandCountryNote();
 }
 var CAPTION_EMOJI_SETS=[
   {tail:'💝😍',star:'⭐',d1:'💎',d2:'✨'},
@@ -11660,6 +11730,8 @@ function loadProductForEdit(el){
     if((c.getAttribute('onclick')||'').indexOf("'"+(p.country||'')+"'")>-1)countryBtn=c;
   });
   if(countryBtn)countryBtn.classList.add('on');
+  CG_COUNTRY=p.country||'';
+  (function(){var _bo=cgBrandObjOf(p.brandName||'');CG_COUNTRY_SRC=CG_COUNTRY?'manual':'';CG_COUNTRY_BRAND=_bo?_bo.name:'';cgBrandCountryApply();})();
 
   document.getElementById('EDIT_CODE_LBL').textContent=p.code||'(بدون کد)';
   document.getElementById('EDIT_BANNER').style.display='flex';
