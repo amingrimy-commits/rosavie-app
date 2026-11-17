@@ -346,6 +346,32 @@ input[type=file]{display:none}
     <div style="text-align:center"><a href="javascript:void(0)" onclick="showRoleSelectGate()" style="font-size:0.74rem;color:#9a6e3a;text-decoration:underline">بازگشت</a></div>
   </div>
 </div>
+<div id="AUTH_RESUME" style="display:none;position:fixed;inset:0;z-index:99999;background:#3d2b1f;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:#f5e9dc">
+<div style="font-size:2rem;margin-bottom:10px">🔑</div>
+<div id="AUTH_RESUME_TXT" style="font-size:0.95rem;font-weight:800;line-height:2"></div>
+<div id="AUTH_RESUME_SUB" style="font-size:0.78rem;opacity:0.8;margin-top:8px;line-height:1.9;max-width:300px">اتصال کنده‌ست؛ تا یک دقیقه ممکنه طول بکشه. لازم نیست رمز بزنی، فقط صبر کن.</div>
+<button id="AUTH_RESUME_BTN" type="button" style="display:none;margin-top:16px;padding:10px 18px;border-radius:12px;border:1px solid #c9a56a;background:transparent;color:#f5e9dc;font-weight:800;font-family:inherit" onclick="rvAuthSplashOff()">ورودِ دستی (با رمز)</button>
+</div>
+<script>
+// ── ورودِ برگشتی: وقتی صفحه دوباره بارگذاری می‌شه (گوشی تب رو می‌بنده / reload) و فایربیس هنوز نشست رو برنگردونده، به‌جای صفحه‌ی انتخابِ نقش «در حال برگرداندنِ ورود» نشون بده ──
+var RV_AUTH_LOG=[];
+function rvAuthLog(e,x){RV_AUTH_LOG.push({t:Date.now(),e:e,x:x||{}});RV_AUTH_LOG=RV_AUTH_LOG.slice(-16);try{localStorage.setItem('rv_auth_log',JSON.stringify(RV_AUTH_LOG));}catch(_){}}
+function rvSessionSave(role,email){try{localStorage.setItem('rv_session',JSON.stringify({role:role||'',email:email||'',ts:Date.now()}));}catch(_){}}
+function rvSessionClear(){try{localStorage.removeItem('rv_session');}catch(_){}}
+function rvSessionRecent(){try{var s=JSON.parse(localStorage.getItem('rv_session')||'null');if(s&&Date.now()-s.ts<36*3600*1000)return s;}catch(_){}return null;}
+function rvAuthSplashOff(){var sp=document.getElementById('AUTH_RESUME');if(sp)sp.style.display='none';}
+(function(){
+  try{RV_AUTH_LOG=JSON.parse(localStorage.getItem('rv_auth_log')||'[]');}catch(_){RV_AUTH_LOG=[];}
+  var nav='';try{var n=performance.getEntriesByType('navigation')[0];nav=n?n.type:'';}catch(_){}
+  rvAuthLog('page-load',{nav:nav,discarded:!!document.wasDiscarded,vis:document.visibilityState});
+  var s=rvSessionRecent();if(!s)return;
+  var lbl={content:'مبینا',sales:'علی',owner:'مدیر'}[s.role]||'';
+  var sp=document.getElementById('AUTH_RESUME'),tx=document.getElementById('AUTH_RESUME_TXT');if(!sp||!tx)return;
+  tx.textContent='در حالِ برگرداندنِ ورودِ '+(lbl||'قبلی')+'…';sp.style.display='flex';
+  var ms=(window.__RV_T&&window.__RV_T.splashBtn)||25000;
+  setTimeout(function(){var b=document.getElementById('AUTH_RESUME_BTN');if(b&&sp.style.display!=='none')b.style.display='inline-block';},ms);
+})();
+</script>
 <div id="APP_ROOT" style="display:none">
 <div id="PRODLOAD_BAR" data-rv-noload="1" style="display:none;position:sticky;top:0;z-index:900;background:#3d2b1f;color:#f9f0e8;padding:6px 12px;font-size:0.72rem;text-align:center">
   <style>@keyframes prodloadSlide{0%{margin-right:-35%}100%{margin-right:100%}}.prodload-indet{width:35%!important;animation:prodloadSlide 1.1s linear infinite}.prodload-ph{padding:22px 10px;text-align:center;color:#9a6e3a;font-size:0.8rem;border:1.5px dashed #d4a87a;border-radius:10px;margin:10px 0}</style>
@@ -1637,7 +1663,7 @@ function rvRender(){
     else if(s==='offline'){msg='📵 اینترنت یا فیلترشکن قطعه (یا به گوگل نمی‌رسه). هر ۲ ثانیه چک می‌کنم و وصل که شد خودم ادامه می‌دم';spin=true;}
     else if(s==='stuck'){msg='🐢 به اینترنت وصلی، ولی اتصالِ زنده‌ی فایربیس گیر کرده (معمولاً فیلترشکن). '+(rvPreferRest()?'از مسیرِ جایگزین (درخواستِ ساده) برای محصولات و ذخیره استفاده می‌کنم':'دارم دوباره تلاش می‌کنم');spin=true;}
     if(s==='stuck'&&fbCompatOn()&&RVNET.stuckSince&&Date.now()-RVNET.stuckSince>60000){msg+='<br>🔧 «حالتِ سازگار» روشنه و هنوز گیره؛ «حالتِ عادی» رو هم امتحان کن:';btns+='<button onclick="rvCompatToggle()">↩️ حالتِ عادی</button>';}
-    else if(RVNET.compatSuggested&&s!=='online'){msg+='<br>🔧 «حالتِ سازگار» برای دفعه‌ی بعد خودکار روشن شد؛ برای اعمالِ همین الان بزن:';btns+='<button onclick="location.reload()">↻ بارگذاری مجدد</button>';}
+    else if(RVNET.compatSuggested&&s!=='online'){msg+='<br>🔧 «حالتِ سازگار» برای دفعه‌ی بعد خودکار روشن شد؛ برای اعمالِ همین الان بزن:';btns+='<button onclick="if(confirm(\'صفحه دوباره بارگذاری می‌شه و برگشتنِ ورودت چند لحظه طول می‌کشه. اگه فرمِ نیمه‌کاره داری اول ذخیره‌ش کن. ادامه بدم؟\'))location.reload()">↻ بارگذاری مجدد</button>';}
     else if(msg&&RVNET.alert&&RVNET.alert.kind==='net'){btns+='<button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button>';}
     if(msg){ban.className=cls;ban.innerHTML='<span'+(spin?' class="rv-spin"':'')+'>'+msg+'</span><br>'+btns;ban.style.display='block';}
     else{ban.style.display='none';ban.innerHTML='';}
@@ -1678,6 +1704,7 @@ function rvReportText(){
   L.push('آخرین پیشرفتِ لودِ محصولات: '+((RVLOAD.products&&RVLOAD.products.progressAt)?(Math.round((Date.now()-RVLOAD.products.progressAt)/1000)+' ثانیه پیش'):'هنوز نه')+' | تلاش‌های خودکار: '+((RVLOAD.products&&RVLOAD.products.attempts)||0)+' | ثانیه‌ی ثابت‌مونده تا تایم‌اوت: '+Math.round(RV_LOAD_TIMEOUT/1000));
   if(RVNET.rest.prodDocs)L.push('حجمِ دریافتیِ محصولات (REST'+(rvLightListOn()?'، لیستِ سبک بدونِ عکسِ بزرگ':'')+'): '+Math.round(RVNET.rest.prodBytes/1024)+' کیلوبایت برای '+RVNET.rest.prodDocs+' محصول | میانگین هر محصول: '+Math.round(RVNET.rest.prodBytes/RVNET.rest.prodDocs/1024)+' کیلوبایت'+(RVNET.rest.prodBytes/RVNET.rest.prodDocs>80*1024?' ⚠️ سنگین (عکسِ بزرگ تو خودِ سند؛ سبک‌سازی لازمه)':' ✓ سبک')+(RVNET.rest.lightGuess?(' | ⚠️ '+RVNET.rest.lightGuess+' محصول احتمالاً هنوز عکسِ سنگین دارن (بدونِ thumb؛ سبک‌سازی لازمه)'):''));
   L.push('لودِ محصولات (تدریجی با حافظه‌ی دائمی): فاز '+RVPL.phase+' | '+RVPL.done+' از '+RVPL.total+' محصول | از حافظه‌ی دائم '+RVPL.cachedN+' | '+(RVPL.bytesDone/1048576).toFixed(2)+' از ~'+(rvPLEst()/1048576).toFixed(2)+' مگابایت');
+  (function(){var al=(window.RV_AUTH_LOG||[]).slice(-8).reverse().map(function(x){var hm=new Date(x.t).toTimeString().slice(0,8);var e=x.e,xx=x.x||{};return hm+' '+(e==='page-load'?('بارگذاریِ صفحه ('+(xx.nav||'؟')+(xx.discarded?'، تب توسطِ مرورگر بسته شده بود':'')+')'):e==='auth'?('احرازِ هویت: '+(xx.u?('کاربر '+xx.u):'بدونِ کاربر (خارج)')):e==='logout'?'خروجِ دستی':e);});L.push('رویدادهای ورود (جدیدترین اول): '+(al.join(' ← ')||'—'));})();
   L.push('محصولاتِ رسیده تا الان: '+(window.PRODLOAD_COUNT||0)+' | اندازه‌ی صفحه‌ی بعدی/تلاش‌ها: '+(RV_PROD_PAGES.docs.length)+' سندِ نیمه‌کاره');
   L.push('خواندنِ این نشست: '+RVREAD.total+' سند'+(rvTopReads(6).length?(' | بیشترین: '+rvTopReads(6).map(function(x){return x.name+' '+x.n;}).join('، ')):''));
   L.push('شنونده‌ها: '+RVLISTEN.list.length+' فعال، '+RVLISTEN.failed+' خطای کل'+RVLISTEN.list.filter(function(e){return e.lastErr;}).map(function(e){return ' | '+e.name+': '+e.lastErr.code;}).join(''));
@@ -1833,6 +1860,7 @@ var PANEL_RELEASES=[
     'اگه «حالتِ سازگار» روشن باشه و اتصال بیش از ۱ دقیقه گیر کنه، دکمه‌ی «حالتِ عادی» هم پیشنهاد می‌شه.',
     'بنرِ نارنجیِ «گیر کرده» دیگه روی نوارِ لودِ محصولات و بالای صفحه نمی‌افته.',
     'عکسِ محصولاتِ قدیمی (سبک‌نشده) تو لیست: حالا هر ردیف که دیده بشه «🖼️» نشون می‌ده و عکسش از سندِ خودش گرفته و کوچک می‌شه و تو حافظه‌ی دائمی می‌مونه (بار بعد بدونِ دانلود). با زدنِ روی عکس هم عکسِ اصلی میاد و ویرایشگر با همون باز می‌شه، نه خالی.',
+    'ورود: اگه صفحه دوباره بارگذاری بشه (گوشی تب رو ببنده یا reload) و فایربیس هنوز نشستت رو برنگردونده، به‌جای صفحه‌ی انتخابِ نقش «در حالِ برگرداندنِ ورودِ مبینا…» می‌بینی (لازم نیست رمز بزنی)؛ اگه واقعاً برنگشت پیام می‌گه چرا. رویدادهای ورود و بارگذاری تو «کپیِ گزارش» هم ثبت می‌شه. قبلِ reload دستی هم هشدار می‌ده.',
     'دسته‌ی جدیدِ «جوراب» (تب، تولید محتوا، سایت): جوراب‌شلواری (نازک و شیشه‌ای، ضخیم و زمستانی، فانتزی، طرح‌دار)، جوراب فانتزی و توری (توری، فیشنت ریز، فیشنت درشت، دانتل، طرح‌دار)، جوراب بالای ران و نگهدارنده (چسبی استُپ‌دار، بندار، ساپورت‌دار).',
     'کشورِ سازنده‌ی برند: تو «حسابداری ← برندها» برای هر برند ثبتش کن (🇮🇷 ایران، 🇹🇷 ترکیه، 🇨🇳 چین، 🇪🇺 اروپا)؛ کپشن‌نویس تو «تولید محتوا» با نوشتنِ برند خودش کشور رو پر می‌کنه و می‌تونی برای یه محصول عوضش کنی. اگه برند کشور نداشت، با انتخابِ کشور یه دکمه‌ی «ثبت برای همیشه» میاد. (همین‌جا یه ایرادِ قدیمی هم درست شد: ذخیره‌ی برند نامِ مستعارهای ادغام رو پاک می‌کرد، و ویرایشِ محصول کشورش رو تو کپشن نمی‌آورد.)',
     'لیستِ انبار: اول خودِ لیست میاد، بعد عکسِ کوچکِ کالاها یکی‌یکی (به ترتیب، فقط وقتی ردیف دیده بشه) از روی محصولِ هم‌کد (برند+کد) گرفته می‌شه؛ تا اون موقع می‌تونی کالا رو باز و ویرایش کنی.',
@@ -2133,7 +2161,7 @@ function fbCompatOn(){
 }
 function setFbCompatMode(on,noReload){
   try{localStorage.setItem(FB_COMPAT_KEY,on?'1':'0');}catch(e){}
-  if(!noReload)location.reload();
+  if(!noReload){if(window.confirm('صفحه دوباره بارگذاری می‌شه و برگشتنِ ورودت چند لحظه طول می‌کشه (اتصال کنده). اگه فرمِ نیمه‌کاره داری اول ذخیره‌ش کن. ادامه بدم؟'))location.reload();}
 }
 function toggleFbCompatMode(){
   var on=!fbCompatOn();
@@ -14141,10 +14169,12 @@ function teamDoLogin(){
 }
 
 function teamLogout(){
+  rvSessionClear();rvAuthLog('logout',{});
   logTeamActivity('خروج از پنل',null);
   setTimeout(function(){firebase.auth().signOut().then(function(){location.reload();});},400);
 }
 function ownerLogout(){
+  rvSessionClear();rvAuthLog('logout',{});
   firebase.auth().signOut().then(function(){location.reload();});
 }
 function injectTeamAccountBar(role){
@@ -14281,6 +14311,7 @@ function applyRolePermissions(role){
   showTab(perm.defaultTab,null);
 }
 function teamShowApp(role){
+  rvAuthSplashOff();try{rvSessionSave(role,(firebase.auth().currentUser||{}).email||'');}catch(e){}
   CURRENT_ROLE=role;      // قبل از اجرای صفِ «مدیر آماده شد»؛ وگرنه گاردهای accIsOwner() هنوز همه رو «مدیر» می‌دیدن و شنونده‌های مخصوصِ مدیر برای تیم هم راه می‌افتاد
   document.getElementById('ROLE_SELECT_GATE').style.display='none';
   document.getElementById('TEAM_LOGIN_GATE').style.display='none';
@@ -14293,6 +14324,7 @@ function teamShowApp(role){
   applyRolePermissions(role);
 }
 function adminShowApp(){
+  rvAuthSplashOff();try{rvSessionSave('owner',(firebase.auth().currentUser||{}).email||'');}catch(e){}
   CURRENT_ROLE=null;
   document.getElementById('ROLE_SELECT_GATE').style.display='none';
   document.getElementById('TEAM_LOGIN_GATE').style.display='none';
@@ -14304,6 +14336,13 @@ function adminShowApp(){
   checkServerConnection();
 }
 function adminShowGate(msg){
+  rvAuthSplashOff();
+  if(rvSessionRecent()){      // نشستِ قبلی بود ولی فایربیس برنگردوندش (اتصالِ خراب یا نشستِ منقضی)
+    var g0=document.getElementById('ROLE_SELECT_GATE'),n0=document.getElementById('ROLE_GATE_NOTE');
+    if(g0&&!n0){n0=document.createElement('div');n0.id='ROLE_GATE_NOTE';n0.style.cssText='background:rgba(201,48,74,0.18);border:1px solid #c9304a;color:#ffd6dc;border-radius:12px;padding:10px 12px;font-size:0.78rem;line-height:1.9;margin-bottom:14px;max-width:320px;text-align:center';g0.insertBefore(n0,g0.firstChild);}
+    if(n0)n0.textContent='⚠️ ورودِ قبلی‌ت برنگشت (اتصال خراب بود یا نشست منقضی شد). دوباره وارد شو؛ اگه وارد نمی‌شه فیلترشکن رو عوض کن.';
+    rvSessionClear();
+  }
   document.getElementById('APP_ROOT').style.display='none';
   document.getElementById('ADMIN_LOGIN_GATE').style.display='none';
   document.getElementById('TEAM_LOGIN_GATE').style.display='none';
@@ -14331,9 +14370,11 @@ function adminDoLogin(){
     err.textContent=m[e.code]||('خطا: '+(e.message||e.code));
   });
 }
+setInterval(function(){var s=rvSessionRecent();var r=document.getElementById('APP_ROOT');if(s&&r&&r.style.display!=='none')rvSessionSave(s.role,s.email);},300000);
 (function initAdminAuthGate(){
   if(!initFirebase())return;
   firebase.auth().onAuthStateChanged(function(user){
+    rvAuthLog('auth',{u:user?(user.email||user.uid):null});
     if(user&&user.uid===ADMIN_UID){adminShowApp();}
     else if(user&&TEAM_MEMBER_BY_EMAIL[user.email]){teamShowApp(TEAM_MEMBER_BY_EMAIL[user.email].role);}
     else{if(user)firebase.auth().signOut();adminShowGate();}
