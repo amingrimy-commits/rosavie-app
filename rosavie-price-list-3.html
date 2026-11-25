@@ -13392,6 +13392,13 @@ window.RV_TESTS=[
     ADMIN_IS_READY=savedReady;ADMIN_READY_QUEUE=savedQueue;
     if(!called)throw new Error('باید بلافاصله اجرا می‌شد');
   }},
+  {name:'وظایف تیم: شنونده قبل از آماده‌شدن ادمین باید تو صف بره (حتی وقتی نقش هنوز خالیه) — رگرشنِ «در حال اتصال...» همیشگی',fn:function(){
+    var sr=ADMIN_IS_READY,sq=ADMIN_READY_QUEUE,sRole=window.CURRENT_ROLE;
+    ADMIN_IS_READY=false;ADMIN_READY_QUEUE=[];window.CURRENT_ROLE=null;
+    var queued=false;
+    try{startTeamTasksListener();queued=ADMIN_READY_QUEUE.length===1;}finally{ADMIN_IS_READY=sr;ADMIN_READY_QUEUE=sq;window.CURRENT_ROLE=sRole;}
+    if(!queued)throw new Error('شنونده‌ی وظایف باید تو صفِ «ادمین آماده شد» بره، ولی نرفت');
+  }},
   {name:'normPhone/findCustomerByPhone: فرمت‌های مختلف شماره باید یه مشتری شناخته بشن (رگرشن باگ قبلی)',fn:function(){
     var savedCustomers=window.CUSTOMERS;
     window.CUSTOMERS=[{id:'rvtest_c1',name:'مشتری تست',phone:'09123456789',purchases:[]}];
@@ -14014,8 +14021,9 @@ function loadTeamTasksAdmin(){
   }).catch(function(e){list.innerHTML='<div class="stat serr">خطا: '+(e.message||e)+'</div>';});
 }
 function startTeamTasksListener(){
-  if(!CURRENT_ROLE)return;
+  // ترتیبِ این دو شرط مهمه: اول صبرِ آماده‌شدنِ ادمین، بعد چکِ نقش. (قبلاً اول نقش چک می‌شد؛ چون ۲۵۰ میلی‌ثانیه بعد از باز شدنِ صفحه هنوز کسی وارد نشده و نقش خالیه، تابع بی‌صدا برمی‌گشت و هیچ‌وقت تو صف نمی‌رفت؛ یعنی «وظایف من» برای تیم همیشه روی «در حال اتصال...» می‌موند.)
   if(!ADMIN_IS_READY){whenAdminReady(startTeamTasksListener);return;}
+  if(!CURRENT_ROLE)return;
   if(!initFirebase())return;
   if(TEAM_TASKS_UNSUB){TEAM_TASKS_UNSUB();TEAM_TASKS_UNSUB=null;}
   TEAM_TASKS_UNSUB=fbDb.collection('teamTasks').where('person','==',CURRENT_ROLE).onSnapshot(function(snap){
