@@ -1722,6 +1722,31 @@ var RV_LAG={ev:[],stall:[],last:0,vis:0};
     if(d>500&&!document.hidden&&Date.now()-RV_LAG.vis>3000)rec(RV_LAG.stall,{t:Date.now(),ms:Math.round(d),pg:pageId()});
   },250);
 })();
+var RV_FNS={};
+(function(){
+  if(typeof window==='undefined')return;
+  var NAMES=["accLoad", "accLoadBrands", "accLoadOrders", "accOpenItem", "accOpenMerge", "accOpenReturn", "accReload", "accRender", "accRenderBg", "accRenderBrandMerge", "accRenderBrandView", "accRenderBrands", "accRenderHome", "accRenderInvForm", "accRenderInvView", "accRenderInvoices", "accRenderItemView", "accRenderItems", "accRenderLines", "accRenderParties", "accRenderPartyEdit", "accRenderPartyView", "accRenderPayForm", "accRenderReport", "accRenderReturnForm", "accUpdateTotals", "accViewAllowed", "addNotif", "addSendMediaFiles", "autoBackupCheck", "autoNotifyFromStatEl", "buildCaptionData", "cgBrandCheck", "cgBrandCheck0", "cgBrandCountryApply", "cgBrandCountryNote", "cgBrandCountrySave", "cgBrandEnsureRegistry", "cgBrandObjOf", "cgBrandParts", "cgCanonBrand", "cgCountryChipSet", "cgFetchBigForEdit", "cgFindPublished", "cgOpenPublished", "cgPublishedChannels", "cgPublishedNotice", "cgRegBrandList", "cgStockAddClose", "cgStockAddOpen", "cgStockAddSubmit", "cgStockHint", "checkArchive", "checkDeliveryTimers", "loadProductForEdit", "preloadAll", "render", "renderArchive", "renderCart", "renderCgColorListUI", "renderCgPatternChips", "renderCgSizePriceList", "renderCgTypeChips", "renderConfirmedOrdersList", "renderCustomerDetail", "renderCustomerList", "renderCustomers2", "renderDiscountCodesList", "renderFxCard", "renderGenericPDF", "renderHistory", "renderHoodDatalist", "renderInvItems", "renderInvNumBadge", "renderInvoiceWithReceiptPDF", "renderJalaliCal", "renderNotifs", "renderOrderForm", "renderOrderSummary", "renderOrdersList", "renderP13SubtypeChips", "renderP1SubtypeChips", "renderP4SubtypeChips", "renderPDF", "renderPriceExcelPreview", "renderProductPage", "renderProductSearchResults", "renderReport", "renderReviewsAdminList", "renderSendMediaList", "renderSubNavAndOpen", "renderSupportMsgList", "renderTaskVoiceUI", "renderTeamTaskList", "renderVipList", "rvFlushScan", "rvHealAll", "rvPLRender", "rvRender", "rvRenderPanel", "rvRenderUpdateModal", "rvRunLoader", "rvTick", "rvUpdateTop", "rvWatchdog", "setCgCat", "setCgCountry", "setCgFreeSizeRange", "setCgP13Group", "setCgP1Group", "setCgP4Group", "setCgPantyFreeSizeRange", "setCgSaleType", "setCgSleepSize", "setCgSpMode", "setCgType", "showCaptionPreview", "stkPick", "stkSearch", "updateFabricTagsUI", "updateHomeContentWidget", "updateHomeTelegramWidgets", "updateLiveClock", "updateSizeFieldVisibility"];
+  function pageId(){try{var p=document.querySelector('.pg.on');return p?(p.id||'?'):'-';}catch(e){return '?';}}
+  function install(){
+    NAMES.forEach(function(n){
+      var f=window[n];
+      if(typeof f!=='function'||f.__rvw)return;
+      var w=function(){
+        var t0=performance.now();
+        try{return f.apply(this,arguments);}
+        finally{
+          var ms=performance.now()-t0,r=RV_FNS[n]||(RV_FNS[n]={c:0,tot:0,max:0,pg:'',t:0});
+          r.c++;r.tot+=ms;
+          if(ms>r.max){r.max=ms;r.pg=pageId();r.t=Date.now();}
+          if(ms>200){RV_LAG.fn=RV_LAG.fn||[];RV_LAG.fn.push({t:Date.now(),ms:Math.round(ms),fn:n,pg:pageId()});if(RV_LAG.fn.length>14)RV_LAG.fn.shift();}
+        }
+      };
+      w.__rvw=true;
+      try{window[n]=w;}catch(e){}
+    });
+  }
+  if(document.readyState==='complete')install();else window.addEventListener('load',install);
+})();
 // ── گزارش عملکرد (برای پیدا کردن علتِ کندی/هنگ): اعدادِ واقعیِ همین گوشی ──
 function rvPerfLines(L){
   function sec(fn){try{return fn();}catch(e){return '؟';}}
@@ -1748,6 +1773,8 @@ function rvPerfLines(L){
   function fmtT(t){try{return new Date(t).toTimeString().slice(0,8);}catch(e){return '';}}
   L.push('کندترین رویدادها (>150ms): '+(RV_LAG.ev.length?RV_LAG.ev.slice().sort(function(a,b){return b.ms-a.ms;}).slice(0,8).map(function(x){return fmtT(x.t)+' '+x.ms+'ms '+x.type+' صفحه:'+x.pg+' '+x.tg;}).join(' || '):'هیچ (تا الان)'));
   L.push('قفل‌شدن‌های صفحه (>500ms): '+(RV_LAG.stall.length?RV_LAG.stall.slice().sort(function(a,b){return b.ms-a.ms;}).slice(0,8).map(function(x){return fmtT(x.t)+' '+x.ms+'ms صفحه:'+x.pg;}).join(' || '):'هیچ (تا الان)'));
+  L.push('کندترین توابع (جمعِ زمان | بیشترین | تعداد): '+(function(){var k=Object.keys(RV_FNS).sort(function(a,b){return RV_FNS[b].tot-RV_FNS[a].tot;}).slice(0,10);return k.length?k.map(function(n){var r=RV_FNS[n];return n+' '+Math.round(r.tot)+'ms | '+Math.round(r.max)+'ms ('+r.pg+') | '+r.c+'x';}).join(' || '):'هنوز چیزی ثبت نشده';})());
+  L.push('تابع‌های بیشتر از ۲۰۰ میلی‌ثانیه (جدید‌ترین‌ها): '+((RV_LAG.fn&&RV_LAG.fn.length)?RV_LAG.fn.slice(-8).map(function(x){return fmtT(x.t)+' '+x.fn+' '+x.ms+'ms صفحه:'+x.pg;}).join(' || '):'هیچ'));
   L.push('عملکرد | حافظه‌ی جاوااسکریپت: '+sec(function(){return performance.memory?(mb(performance.memory.usedJSHeapSize)+' از سقفِ '+mb(performance.memory.jsHeapSizeLimit)):'(این مرورگر گزارش نمی‌دهد)';})+' | رم گوشی: '+sec(function(){return navigator.deviceMemory?navigator.deviceMemory+'GB':'؟';}));
 }
 function rvReportText(){
