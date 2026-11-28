@@ -737,7 +737,7 @@ function rvAuthSplashOff(){var sp=document.getElementById('AUTH_RESUME');if(sp)s
     <p style="font-size:0.72rem;color:#9a6e3a;margin-bottom:10px">هر کدوم رو خالی بذاری، خودکار از کپشن حذف میشه.</p>
 
     <div class="g1" style="background:#eef7ff;border:1.5px dashed #4a9dff;border-radius:10px;padding:10px;margin-bottom:10px"><span class="lbl">📦 انتخاب از انبار (با کد، برند یا اسم)</span>
-      <input class="fi" type="text" id="STKSRCH" placeholder="مثلاً 205 یا EMA یا شورت..." oninput="stkSearch(this.value)" autocomplete="off">
+      <input class="fi" type="text" id="STKSRCH" placeholder="مثلاً 205 یا EMA یا شورت..." oninput="stkSearchDeb(this.value)" autocomplete="off">
       <div class="srch-res" id="STKSRCH_RES"></div>
     </div>
     <div id="EDIT_BANNER" style="display:none;background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:10px 14px;margin-bottom:12px;justify-content:space-between;align-items:center">
@@ -791,7 +791,7 @@ function rvAuthSplashOff(){var sp=document.getElementById('AUTH_RESUME');if(sp)s
       <div class="acc-hint" id="CG_BRAND_NOTE" style="font-size:0.7rem;min-height:14px;line-height:1.8"></div>
     </div>
     <div class="g2">
-      <div><span class="lbl">۳. کد</span><input class="fi" type="text" id="CG_CODE" placeholder="مثال: 7236" oninput="cgStockHint()"></div>
+      <div><span class="lbl">۳. کد</span><input class="fi" type="text" id="CG_CODE" placeholder="مثال: 7236" oninput="cgStockHintDeb()"></div>
       <div><span class="lbl">۴. رنگ</span><input class="fi" type="text" id="CG_COLOR" placeholder="مثال: مشکی قرمز طوسی"></div>
     </div>
     <div id="CG_STOCK_HINT" style="font-size:0.72rem;margin:-4px 0 8px;line-height:1.8"></div>
@@ -10698,6 +10698,12 @@ function stkReady(){return STK_LOADED||(ACC.loaded&&accHasAccess());}
 function stkFindProduct(it){
   return allProds().filter(function(p){return String(p.code||'').trim()&&p.code!=='--'&&accItemKey(p.brandName,p.code)===it.id;})[0]||null;
 }
+function stkLoadingBanner(){
+  if(!(typeof _loading!=='undefined'&&_loading))return '';
+  return '<div class="srch-item" style="color:#b8651b;font-size:0.72rem">⏳ محصولات هنوز در حال بارگذاری‌اند ('+accFa(RVPL.done||0)+' از '+accFa(RVPL.total||0)+')؛ وضعیت «منتشر شده» ممکنه ناقص باشه — برای انتخاب و ثبت صبر کن تا کامل بشه</div>';
+}
+var _stkT=null;
+function stkSearchDeb(v){clearTimeout(_stkT);if(!String(v||'').trim()){stkSearch(v);return;}_stkT=setTimeout(function(){stkSearch(v);},140);}
 function stkSearch(q){
   var el=document.getElementById('STKSRCH_RES');if(!el)return;
   var nq=normSearchText(q||'');
@@ -10713,7 +10719,14 @@ function stkSearch(q){
   var list=Object.keys(map).map(function(k){return map[k];}).filter(function(it){
     return normSearchText(it.code).indexOf(nq)>-1||normSearchText(it.name).indexOf(nq)>-1||normSearchText(it.brand).indexOf(nq)>-1;
   });
-  allProds().forEach(function(p){
+  // کندی: قبلاً برای هر نتیجه یک بار دیگر کلِ ردیف‌ها خونده می‌شد (تا ۱۱ بار برای هر حرفی که تایپ می‌شد). حالا فقط یک بار می‌خونیم و ایندکس می‌سازیم.
+  var AP=allProds(),APKEY={};
+  AP.forEach(function(p){
+    if(!String(p.code||'').trim()||p.code==='--')return;
+    var k0=accItemKey(p.brandName,p.code);
+    if(!(k0 in APKEY))APKEY[k0]=p;
+  });
+  AP.forEach(function(p){
     var code=String(p.code||'').trim(),brand=String(p.brandName||'').trim();
     if(!code||code==='--'||!brand)return;
     var key=accItemKey(brand,code);
@@ -10727,9 +10740,9 @@ function stkSearch(q){
     return xc-yc||String(x.brand).localeCompare(String(y.brand),'fa');
   }).slice(0,10);
   STK_SUGG=list;
-  if(!list.length){el.innerHTML='<div class="srch-item" style="color:#9a6e3a">کالایی تو انبار پیدا نشد</div>';el.style.display='block';return;}
-  el.innerHTML=list.map(function(it,i){
-    var p=stkFindProduct(it);
+  if(!list.length){el.innerHTML=stkLoadingBanner()+'<div class="srch-item" style="color:#9a6e3a">کالایی تو انبار پیدا نشد</div>';el.style.display='block';return;}
+  el.innerHTML=stkLoadingBanner()+list.map(function(it,i){
+    var p=APKEY[it.id]||null;
     var th=it.thumb||(p&&p.img)||'';
     var imgH=th?('<img src="'+th+'" class="srch-item-ph" style="object-fit:cover">'):'<div class="srch-item-ph">📦</div>';
     var q=Number(it.qty)||0;
@@ -10738,6 +10751,8 @@ function stkSearch(q){
   el.style.display='block';
 }
 function stkPick(i){
+  clearTimeout(_stkT);
+  if(typeof _loading!=='undefined'&&_loading){alert('محصولات هنوز در حال بارگذاری‌اند؛ چند ثانیه صبر کن تا کامل بشه و بعد انتخاب کن (وگرنه ممکنه محصولِ قبلاً ثبت‌شده «جدید» حساب بشه).');return;}
   var it=STK_SUGG[i];if(!it)return;
   var el=document.getElementById('STKSRCH_RES'),box=document.getElementById('STKSRCH');
   if(el){el.innerHTML='';el.style.display='none';}
@@ -10875,6 +10890,8 @@ function cgStockAddSubmit(){
     return db.collection('accItems').doc(key).set(doc).then(done);
   }).catch(fail);
 }
+var _cgHT=null;
+function cgStockHintDeb(){clearTimeout(_cgHT);_cgHT=setTimeout(cgStockHint,160);}
 function cgStockHint(){
   cgPublishedNotice();
   var el=document.getElementById('CG_STOCK_HINT');if(!el)return;
@@ -11739,6 +11756,10 @@ function cgFetchBigForEdit(rid,tries){
   });
 }
 function cgBigBlocked(){
+  if(typeof _loading!=='undefined'&&_loading){
+    alert('محصولات هنوز در حال بارگذاری‌اند ('+(RVPL.done||0)+' از '+(RVPL.total||0)+'). چند ثانیه صبر کن تا کامل بشه و بعد ارسال/ذخیره کن؛ وگرنه چک محصولِ تکراری ناقص کار می‌کنه.');
+    return true;
+  }
   if(window.CG_BIG_PENDING&&EDITING_RID){
     alert('عکس‌های این محصول هنوز از سرور نیومدن. چند ثانیه صبر کن و دوباره بزن (تا نیومدن، ذخیره قفله تا عکس‌ها از بین نرن).');
     return true;
@@ -13066,6 +13087,7 @@ function rvPLStart(attempt){
     if(_guess>=5&&typeof accIsOwner==='function'&&accIsOwner())addNotif('🪶 '+_guess+' محصول (احتمالاً) هنوز عکسِ سنگین دارن و پنل/سایت رو کند می‌کنن. از «سایت ← سبک‌سازیِ عکس محصولات» تبدیلشون کن.');
     try{if(RVPL.done>0){localStorage.setItem('rv_prod_avg',String(Math.round(RVPL.bytesDone/RVPL.done)));localStorage.setItem('rv_prod_n',String(RVPL.total));}}catch(e){}
     RVPL.phase='done';RVPL.running=false;_loading=false;
+    try{var _sb=document.getElementById('STKSRCH');if(_sb&&_sb.value.trim())stkSearch(_sb.value);}catch(_e){}
     rvLoaderOk('products');rvPLRender(true);
     setTimeout(function(){save();preloadAll(function(){});checkArchive();renderVipList();},200);
   }).catch(function(e){
