@@ -1691,6 +1691,37 @@ function rvRenderPanel(){
     '<div><b>مسیرِ جایگزین (REST):</b> '+(rvPreferRest()?'<span style="color:#b8651b">فعاله</span>':'آماده‌ست')+' · '+accFa(RVNET.rest.reads)+' خواندن، '+accFa(RVNET.rest.writes)+' نوشتن'+(RVNET.rest.fail?(' · '+accFa(RVNET.rest.fail)+' خطا'):'')+'<br><span style="font-weight:600;color:#7a5a38">درخواست‌ها: '+accFa(RVNET.rest.tries)+(RVNET.rest.last?(' · آخرین خطا: '+accEsc(RVNET.rest.last.what+' ← '+RVNET.rest.last.code+' '+RVNET.rest.last.msg)):'')+'</span>'+(RVNET.rest.test?('<br>'+RVNET.rest.test.lines.map(accEsc).join('<br>')+(RVNET.rest.test.running?'<br><span class="rv-spin">در حال آزمایش...</span>':'')):'')+'</div>'+
     '<button onclick="rvHealAll(\'manual\')">🔄 تلاش دوباره‌ی همه</button><button onclick="rvCompatToggle()">'+(fbCompatOn()?'↩️ حالتِ عادی':'🔧 حالتِ سازگار')+'</button><button onclick="rvRestSelfTest()">🧪 آزمایشِ REST</button><button onclick="rvCopyReport()">📋 کپیِ گزارش</button>';
 }
+// ── ردیاب کندی: هر رویدادی (کلیک/تایپ) که کند بود و هر بار که صفحه قفل شد، با اسمِ صفحه و دکمه/فیلد ثبت می‌شه و تو «کپی گزارش» میاد ──
+var RV_LAG={ev:[],stall:[],last:0,vis:0};
+(function(){
+  if(typeof document==='undefined'||typeof performance==='undefined')return;
+  function pageId(){try{var p=document.querySelector('.pg.on');return p?(p.id||'?'):'-';}catch(e){return '?';}}
+  function desc(el){
+    try{
+      if(!el||!el.tagName)return '?';
+      var b=el.closest?(el.closest('button,[onclick],a,label')||el):el;
+      var oc=(b.getAttribute&&b.getAttribute('onclick'))||'';
+      var txt=(b.textContent||'').replace(/\s+/g,' ').trim().slice(0,18);
+      return (el.id?('#'+el.id+' '):'')+b.tagName.toLowerCase()+(oc?(' ['+oc.slice(0,40)+']'):'')+(txt&&!(el.tagName==='INPUT'||el.tagName==='TEXTAREA')?(' «'+txt+'»'):'');
+    }catch(e){return '?';}
+  }
+  function rec(arr,o){arr.push(o);if(arr.length>14)arr.shift();}
+  ['click','input','change'].forEach(function(type){
+    document.addEventListener(type,function(e){
+      var t0=performance.now(),tgt=e.target,pg=pageId();
+      setTimeout(function(){
+        var ms=Math.round(performance.now()-t0);
+        if(ms>150)rec(RV_LAG.ev,{t:Date.now(),ms:ms,type:type,pg:pg,tg:desc(tgt)});
+      },0);
+    },true);
+  });
+  document.addEventListener('visibilitychange',function(){RV_LAG.vis=Date.now();});
+  RV_LAG.last=performance.now();
+  setInterval(function(){
+    var n=performance.now(),d=n-RV_LAG.last-250;RV_LAG.last=n;
+    if(d>500&&!document.hidden&&Date.now()-RV_LAG.vis>3000)rec(RV_LAG.stall,{t:Date.now(),ms:Math.round(d),pg:pageId()});
+  },250);
+})();
 // ── گزارش عملکرد (برای پیدا کردن علتِ کندی/هنگ): اعدادِ واقعیِ همین گوشی ──
 function rvPerfLines(L){
   function sec(fn){try{return fn();}catch(e){return '؟';}}
@@ -1714,6 +1745,9 @@ function rvPerfLines(L){
   var cnt=sec(function(){return collectAllProducts().length;});
   var collMs=Math.round(performance.now()-t0);
   L.push('عملکرد | زمانِ یک بار save(): '+saveMs+'ms | زمانِ جمع‌کردنِ همه‌ی محصولات ('+cnt+' محصول): '+collMs+'ms  ← بالای ۲۰۰ms یعنی هر ذخیره/حذف حس می‌شود');
+  function fmtT(t){try{return new Date(t).toTimeString().slice(0,8);}catch(e){return '';}}
+  L.push('کندترین رویدادها (>150ms): '+(RV_LAG.ev.length?RV_LAG.ev.slice().sort(function(a,b){return b.ms-a.ms;}).slice(0,8).map(function(x){return fmtT(x.t)+' '+x.ms+'ms '+x.type+' صفحه:'+x.pg+' '+x.tg;}).join(' || '):'هیچ (تا الان)'));
+  L.push('قفل‌شدن‌های صفحه (>500ms): '+(RV_LAG.stall.length?RV_LAG.stall.slice().sort(function(a,b){return b.ms-a.ms;}).slice(0,8).map(function(x){return fmtT(x.t)+' '+x.ms+'ms صفحه:'+x.pg;}).join(' || '):'هیچ (تا الان)'));
   L.push('عملکرد | حافظه‌ی جاوااسکریپت: '+sec(function(){return performance.memory?(mb(performance.memory.usedJSHeapSize)+' از سقفِ '+mb(performance.memory.jsHeapSizeLimit)):'(این مرورگر گزارش نمی‌دهد)';})+' | رم گوشی: '+sec(function(){return navigator.deviceMemory?navigator.deviceMemory+'GB':'؟';}));
 }
 function rvReportText(){
